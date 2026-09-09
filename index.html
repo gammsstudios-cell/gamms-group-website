@@ -5,112 +5,128 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <meta name="theme-color" content="#05070b" />
   <meta name="description" content="GAMMS GROUP — Group for Advanced Modern Multiplatform Systems. Building what comes next." />
+  <meta property="og:title" content="GAMMS GROUP — Building what comes next" />
+  <meta property="og:description" content="Technology, systems and companies designed as one ecosystem." />
   <title>GAMMS GROUP — Building what comes next</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div class="ambient ambient-a"></div>
-  <div class="ambient ambient-b"></div>
+  <div class="noise" aria-hidden="true"></div>
+  <div class="ambient ambient-1" aria-hidden="true"></div>
+  <div class="ambient ambient-2" aria-hidden="true"></div>
+  <div class="ambient ambient-3" aria-hidden="true"></div>
 
-  <header class="nav-wrap">
-    <nav class="nav container">
-      <a class="brand" href="#home" aria-label="GAMMS GROUP home">
-        <span class="brand-mark">G</span><span>GAMMS GROUP</span>
+  <header class="site-header" id="top">
+    <nav class="nav container" aria-label="Main navigation">
+      <a href="#home" class="brand" aria-label="GAMMS GROUP">
+        <span class="brand-symbol">G</span>
+        <span class="brand-name">GAMMS GROUP</span>
       </a>
-      <div class="nav-links">
+      <button class="menu-btn" id="menuBtn" aria-label="Open menu" aria-expanded="false"><span></span><span></span></button>
+      <div class="nav-panel" id="navPanel">
         <a href="#home" data-i18n="nav.home">Inicio</a>
-        <a href="#ecosystem" data-i18n="nav.ecosystem">Ecosistema</a>
+        <a href="#technology" data-i18n="nav.technology">Tecnología</a>
         <a href="#companies" data-i18n="nav.companies">Compañías</a>
-        <a href="#vision" data-i18n="nav.vision">Visión</a>
+        <a href="#newsroom" data-i18n="nav.newsroom">Newsroom</a>
         <a href="#about" data-i18n="nav.about">Nosotros</a>
+        <a href="#contact" data-i18n="nav.contact">Contacto</a>
       </div>
       <div class="lang-switch" role="group" aria-label="Language selector">
-        <button class="lang active" data-lang="es">ES</button>
-        <span>/</span>
-        <button class="lang" data-lang="en">EN</button>
+        <button class="lang active" data-lang="es">ES</button><span>/</span><button class="lang" data-lang="en">EN</button>
       </div>
     </nav>
   </header>
 
   <main>
-    <section id="home" class="hero container reveal">
-      <div class="hero-logo-shell" aria-hidden="true">
-        <div class="halo"></div>
-        <img src="assets/gamms-logo.svg" alt="GAMMS GROUP" class="hero-logo" />
+    <section class="hero container" id="home">
+      <div class="hero-media reveal">
+        <div class="logo-aura"></div>
+        <div class="logo-ring ring-1"></div>
+        <div class="logo-ring ring-2"></div>
+        <img id="heroLogo" class="hero-logo" alt="GAMMS GROUP logo" />
       </div>
-      <p class="eyebrow">GAMMS GROUP</p>
-      <h1 data-i18n="hero.title">Construyendo lo que viene.</h1>
-      <p class="hero-copy" data-i18n="hero.subtitle">Group for Advanced Modern Multiplatform Systems. Creamos ecosistemas tecnológicos capaces de crecer entre plataformas, industrias y generaciones.</p>
-      <div class="hero-actions">
-        <a class="btn btn-primary" href="#ecosystem" data-i18n="hero.explore">Explorar GAMMS</a>
-        <a class="btn btn-ghost" href="#vision" data-i18n="hero.vision">Nuestra visión</a>
+      <div class="hero-copy reveal">
+        <p class="eyebrow">GAMMS GROUP</p>
+        <h1 data-i18n="hero.title">Construyendo lo que viene.</h1>
+        <p class="hero-subtitle" data-i18n="hero.subtitle">Group for Advanced Modern Multiplatform Systems. Ingeniería, software, servicios y experiencias diseñados como un solo ecosistema.</p>
+        <div class="hero-actions">
+          <a href="#technology" class="button button-primary" data-i18n="hero.explore">Explorar GAMMS</a>
+          <a href="#vision" class="button button-secondary" data-i18n="hero.vision">Nuestra visión</a>
+        </div>
       </div>
-      <div class="scroll-cue"><span></span></div>
+      <a href="#layers" class="scroll-cue" aria-label="Scroll"><span></span></a>
     </section>
 
-    <section id="ecosystem" class="section container reveal">
-      <div class="section-head">
-        <p class="eyebrow" data-i18n="ecosystem.kicker">UN SOLO ECOSISTEMA</p>
-        <h2 data-i18n="ecosystem.title">Tecnología diseñada para convivir.</h2>
-        <p data-i18n="ecosystem.copy">Desde software y sistemas operativos hasta infraestructura, movilidad, servicios financieros y experiencias digitales: cada producto nace para integrarse con los demás.</p>
-      </div>
-      <div class="feature-grid">
-        <article class="feature-card accent-cyan">
-          <div class="mini-orb"></div><h3>SecretOS</h3><p data-i18n="ecosystem.secretos">Una plataforma de sistema operativo enfocada en privacidad, continuidad y una experiencia propia.</p>
-        </article>
-        <article class="feature-card accent-blue">
-          <div class="mini-orb"></div><h3>Secret Suite</h3><p data-i18n="ecosystem.suite">Aplicaciones conectadas para comunicación, productividad, identidad y servicios digitales.</p>
-        </article>
-        <article class="feature-card accent-purple">
-          <div class="mini-orb"></div><h3>GMA-64</h3><p data-i18n="ecosystem.gma">Arquitectura tecnológica de nueva generación concebida para el futuro del ecosistema GAMMS.</p>
-        </article>
-      </div>
-    </section>
-
-    <section id="companies" class="section container reveal">
-      <div class="section-head split-head">
-        <div><p class="eyebrow" data-i18n="companies.kicker">ONE GROUP. MULTIPLE INDUSTRIES.</p><h2 data-i18n="companies.title">Compañías que comparten una misma visión.</h2></div>
-        <p data-i18n="companies.copy">Cada unidad opera con identidad propia, pero todas comparten tecnología, diseño, infraestructura y una dirección estratégica común.</p>
-      </div>
-      <div class="company-grid">
-        <article class="company-card"><span>01</span><h3>GAMMS Secret Labs</h3><h4 data-i18n="labels.mission">Misión</h4><p data-i18n="companies.secretlabs.m">Investigar y crear tecnologías fundamentales para el ecosistema GAMMS.</p><h4 data-i18n="labels.vision">Visión</h4><p data-i18n="companies.secretlabs.v">Convertir investigación avanzada en plataformas útiles, seguras y escalables.</p></article>
-        <article class="company-card"><span>02</span><h3>GAMMS Secret Studios</h3><h4 data-i18n="labels.mission">Misión</h4><p data-i18n="companies.secretstudios.m">Diseñar productos digitales con identidad, coherencia y excelencia de experiencia.</p><h4 data-i18n="labels.vision">Visión</h4><p data-i18n="companies.secretstudios.v">Crear experiencias que hagan reconocible a GAMMS en cualquier plataforma.</p></article>
-        <article class="company-card"><span>03</span><h3>Expertum Solutions</h3><h4 data-i18n="labels.mission">Misión</h4><p data-i18n="companies.expertum.m">Desarrollar soluciones empresariales prácticas, confiables y adaptables.</p><h4 data-i18n="labels.vision">Visión</h4><p data-i18n="companies.expertum.v">Ser un socio tecnológico de largo plazo para organizaciones de alto impacto.</p></article>
-        <article class="company-card"><span>04</span><h3>GAMMS Services</h3><h4 data-i18n="labels.mission">Misión</h4><p data-i18n="companies.services.m">Conectar productos y clientes mediante servicios digitales consistentes y escalables.</p><h4 data-i18n="labels.vision">Visión</h4><p data-i18n="companies.services.v">Convertirse en la columna operativa del ecosistema GAMMS.</p></article>
-        <article class="company-card"><span>05</span><h3>GAMMS Mobile</h3><h4 data-i18n="labels.mission">Misión</h4><p data-i18n="companies.mobile.m">Integrar conectividad móvil y servicios digitales dentro del ecosistema.</p><h4 data-i18n="labels.vision">Visión</h4><p data-i18n="companies.mobile.v">Hacer que conectividad, identidad y servicios funcionen como una sola experiencia.</p></article>
-        <article class="company-card"><span>06</span><h3>GAMMS Credit</h3><h4 data-i18n="labels.mission">Misión</h4><p data-i18n="companies.credit.m">Desarrollar servicios financieros digitales simples, responsables y tecnológicos.</p><h4 data-i18n="labels.vision">Visión</h4><p data-i18n="companies.credit.v">Construir una capa financiera moderna integrada a la vida digital de los usuarios.</p></article>
-        <article class="company-card"><span>07</span><h3>GAMMS Secret Aerospace</h3><h4 data-i18n="labels.mission">Misión</h4><p data-i18n="companies.aero.m">Explorar aplicaciones de software, comunicaciones y automatización para el sector aeroespacial.</p><h4 data-i18n="labels.vision">Visión</h4><p data-i18n="companies.aero.v">Llevar la ingeniería GAMMS a sistemas de misión crítica y nuevas fronteras.</p></article>
-        <article class="company-card"><span>08</span><h3>GAMMS ENTERTAINMENT</h3><h4 data-i18n="labels.mission">Misión</h4><p data-i18n="companies.ent.m">Impulsar música, contenido y experiencias creativas con soporte tecnológico propio.</p><h4 data-i18n="labels.vision">Visión</h4><p data-i18n="companies.ent.v">Crear una plataforma cultural reconocible dentro y fuera del ecosistema GAMMS.</p></article>
-        <article class="company-card"><span>09</span><h3>GAMMS NOG</h3><p class="tag">Nation of Gamers</p><h4 data-i18n="labels.mission">Misión</h4><p data-i18n="companies.nog.m">Crear productos y experiencias gaming con identidad propia.</p><h4 data-i18n="labels.vision">Visión</h4><p data-i18n="companies.nog.v">Construir una marca gaming global conectada a la ingeniería de GAMMS GROUP.</p></article>
-        <article class="company-card"><span>10</span><h3>Marge’s Coffee</h3><h4 data-i18n="labels.mission">Misión</h4><p data-i18n="companies.marge.m">Crear espacios y productos que conviertan lo cotidiano en una experiencia cálida y memorable.</p><h4 data-i18n="labels.vision">Visión</h4><p data-i18n="companies.marge.v">Crecer como una marca cercana, moderna y conectada a la identidad de GAMMS GROUP.</p></article>
+    <section class="section section-tight" id="layers">
+      <div class="container reveal">
+        <div class="section-heading center">
+          <p class="eyebrow" data-i18n="layers.kicker">ONE SYSTEM. EVERY LAYER.</p>
+          <h2 data-i18n="layers.title">De la arquitectura a la experiencia.</h2>
+          <p data-i18n="layers.copy">GAMMS piensa la tecnología como una pila completa: cada capa puede evolucionar por sí misma y, al mismo tiempo, fortalecer a las demás.</p>
+        </div>
+        <div class="system-stack" aria-label="GAMMS technology stack">
+          <div class="stack-layer layer-experience" data-depth="4"><span data-i18n="layers.experience">Experiencias</span><strong>Secret Suite · Junix UI</strong></div>
+          <div class="stack-layer layer-os" data-depth="3"><span data-i18n="layers.os">Sistema operativo</span><strong>SecretOS</strong></div>
+          <div class="stack-layer layer-platform" data-depth="2"><span data-i18n="layers.platform">Plataforma</span><strong>Junix · Services</strong></div>
+          <div class="stack-layer layer-arch" data-depth="1"><span data-i18n="layers.arch">Arquitectura</span><strong>GMA-64</strong></div>
+          <div class="stack-layer layer-infra" data-depth="0"><span data-i18n="layers.infra">Infraestructura</span><strong>GAMMS GROUP</strong></div>
+        </div>
       </div>
     </section>
 
-    <section id="vision" class="vision-section reveal">
-      <div class="vision-panel container">
-        <p class="eyebrow" data-i18n="vision.kicker">VISIÓN</p>
-        <h2 data-i18n="vision.quote">Crear sistemas capaces de trascender plataformas, industrias y generaciones.</h2>
-        <div class="vision-line"></div>
-        <p data-i18n="vision.copy">GAMMS GROUP existe para construir infraestructura tecnológica con identidad propia: desde la arquitectura más profunda hasta la experiencia final del usuario.</p>
+    <section class="section" id="technology">
+      <div class="container">
+        <div class="section-heading reveal">
+          <p class="eyebrow" data-i18n="tech.kicker">FEATURED TECHNOLOGIES</p>
+          <h2 data-i18n="tech.title">Tecnología con identidad propia.</h2>
+          <p data-i18n="tech.copy">Productos y plataformas en desarrollo que forman el núcleo tecnológico del ecosistema GAMMS.</p>
+        </div>
+        <div class="tech-grid">
+          <article class="tech-card tech-gma reveal"><div class="tech-visual"><div class="cpu"><i></i><b>64</b><em>GMA</em></div></div><div class="tech-body"><span class="status" data-i18n="status.development">En desarrollo</span><h3>GMA-64</h3><p data-i18n="tech.gma">Una arquitectura propia concebida para unir rendimiento, control de plataforma y evolución a largo plazo.</p></div></article>
+          <article class="tech-card tech-secretos reveal"><div class="tech-visual"><div class="phone"><div class="phone-screen"><span class="secret-orb"></span><small>SecretOS</small></div></div></div><div class="tech-body"><span class="status" data-i18n="status.development">En desarrollo</span><h3>SecretOS</h3><p data-i18n="tech.secretos">Sistema operativo enfocado en privacidad, continuidad, administración y una experiencia visual coherente.</p></div></article>
+          <article class="tech-card tech-suite reveal"><div class="tech-visual"><div class="suite-icons"><span>SC</span><span>SM</span><span>SN</span><span>SH</span></div></div><div class="tech-body"><span class="status" data-i18n="status.development">En desarrollo</span><h3>Secret Suite</h3><p data-i18n="tech.suite">Aplicaciones conectadas para comunicación, productividad, identidad, contenido y servicios digitales.</p></div></article>
+          <article class="tech-card tech-junix reveal"><div class="tech-visual"><div class="glass-window"><div class="glass-top"></div><div class="glass-content"></div><div class="glass-dock"><i></i><i></i><i></i><i></i></div></div></div><div class="tech-body"><span class="status" data-i18n="status.development">En desarrollo</span><h3>Junix UI</h3><p data-i18n="tech.junix">Un lenguaje visual y de interacción para experiencias modernas, fluidas y consistentes entre dispositivos.</p></div></article>
+          <article class="tech-card tech-chat reveal"><div class="tech-visual"><div class="chat-ui"><div class="chat-avatar"></div><div class="bubble one"></div><div class="bubble two"></div><div class="bubble three"></div></div></div><div class="tech-body"><span class="status" data-i18n="status.development">En desarrollo</span><h3>SecretChat</h3><p data-i18n="tech.chat">Mensajería privada multiplataforma diseñada para formar parte de la experiencia Secret.</p></div></article>
+          <article class="tech-card tech-services reveal"><div class="tech-visual"><div class="network"><span></span><span></span><span></span><span></span><i></i></div></div><div class="tech-body"><span class="status" data-i18n="status.vision">Visión de plataforma</span><h3>GAMMS Services</h3><p data-i18n="tech.services">Servicios compartidos para identidad, conectividad, sincronización y operaciones del ecosistema.</p></div></article>
+        </div>
       </div>
     </section>
 
-    <section id="about" class="section container reveal">
-      <div class="about-grid">
-        <div><p class="eyebrow" data-i18n="about.kicker">ABOUT GAMMS</p><h2 data-i18n="about.title">Diseñamos sistemas completos, no piezas aisladas.</h2></div>
-        <div class="about-copy"><p data-i18n="about.copy1">Nuestro enfoque combina ingeniería, diseño, infraestructura, software y servicios bajo una misma arquitectura estratégica.</p><p data-i18n="about.copy2">Con sede en Managua, Nicaragua, GAMMS GROUP desarrolla una visión tecnológica pensada para crecer globalmente sin perder identidad.</p></div>
+    <section class="section ecosystem-section" id="ecosystem">
+      <div class="container ecosystem-layout">
+        <div class="section-heading reveal"><p class="eyebrow" data-i18n="ecosystem.kicker">THE GAMMS ECOSYSTEM</p><h2 data-i18n="ecosystem.title">Un grupo. Muchas industrias. Una dirección.</h2><p data-i18n="ecosystem.copy">Pasa el cursor sobre cada nodo para descubrir cómo las compañías y plataformas se conectan alrededor de GAMMS GROUP.</p></div>
+        <div class="ecosystem-map reveal" id="ecosystemMap">
+          <svg class="map-lines" viewBox="0 0 700 700" aria-hidden="true"><g><line x1="350" y1="350" x2="350" y2="90"/><line x1="350" y1="350" x2="555" y2="165"/><line x1="350" y1="350" x2="610" y2="350"/><line x1="350" y1="350" x2="545" y2="540"/><line x1="350" y1="350" x2="350" y2="610"/><line x1="350" y1="350" x2="155" y2="540"/><line x1="350" y1="350" x2="90" y2="350"/><line x1="350" y1="350" x2="155" y2="165"/></g></svg>
+          <button class="eco-node center-node" data-node="group"><strong>GAMMS</strong><small>GROUP</small></button><button class="eco-node n1" data-node="secretos">SecretOS</button><button class="eco-node n2" data-node="gma">GMA-64</button><button class="eco-node n3" data-node="mobile">Mobile</button><button class="eco-node n4" data-node="credit">Credit</button><button class="eco-node n5" data-node="nog">NOG</button><button class="eco-node n6" data-node="aero">Aerospace</button><button class="eco-node n7" data-node="ent">Entertainment</button><button class="eco-node n8" data-node="services">Services</button>
+          <div class="map-info" id="mapInfo"><strong>GAMMS GROUP</strong><span data-i18n="ecosystem.defaultInfo">Centro estratégico del ecosistema.</span></div>
+        </div>
       </div>
     </section>
+
+    <section class="section philosophy" id="vision">
+      <div class="container">
+        <div class="section-heading center reveal"><p class="eyebrow" data-i18n="philosophy.kicker">OUR PHILOSOPHY</p><h2 data-i18n="philosophy.title">Principios antes que tendencias.</h2></div>
+        <div class="philosophy-grid"><article class="principle reveal"><span>01</span><h3 data-i18n="philosophy.p1t">Privacy by design.</h3><p data-i18n="philosophy.p1c">La privacidad se considera desde la arquitectura, no como un añadido final.</p></article><article class="principle reveal"><span>02</span><h3 data-i18n="philosophy.p2t">One ecosystem.</h3><p data-i18n="philosophy.p2c">Productos, servicios y compañías funcionan mejor cuando comparten una visión tecnológica.</p></article><article class="principle reveal"><span>03</span><h3 data-i18n="philosophy.p3t">Engineering without boundaries.</h3><p data-i18n="philosophy.p3c">Exploramos desde aplicaciones hasta sistemas, infraestructura y nuevas arquitecturas.</p></article><article class="principle reveal"><span>04</span><h3 data-i18n="philosophy.p4t">Long-term thinking.</h3><p data-i18n="philosophy.p4c">Diseñamos para evolucionar durante años, no solo para el siguiente lanzamiento.</p></article></div>
+        <blockquote class="vision-quote reveal" data-i18n="vision.quote">“Crear sistemas capaces de trascender plataformas, industrias y generaciones.”</blockquote>
+      </div>
+    </section>
+
+    <section class="section" id="companies"><div class="container"><div class="section-heading reveal"><p class="eyebrow" data-i18n="companies.kicker">OUR COMPANIES</p><h2 data-i18n="companies.title">Identidades propias. Una visión compartida.</h2><p data-i18n="companies.copy">Explora las compañías y marcas del grupo. Cada ficha incluye su misión, visión y enfoque.</p></div><div class="company-grid" id="companyGrid"></div></div></section>
+
+    <section class="section timeline-section" id="timeline"><div class="container"><div class="section-heading reveal"><p class="eyebrow" data-i18n="timeline.kicker">A ROADMAP, NOT A FINISH LINE</p><h2 data-i18n="timeline.title">La historia se construye por capas.</h2><p data-i18n="timeline.copy">Mostramos hitos verificables y etapas de desarrollo, sin convertir planes futuros en logros presentes.</p></div><div class="timeline reveal"><div class="timeline-item done"><time>2026</time><div><h3 data-i18n="timeline.t1">Ecosistema GAMMS</h3><p data-i18n="timeline.c1">Consolidación de proyectos, identidad del grupo y una arquitectura de productos compartida.</p></div></div><div class="timeline-item current"><time>2026</time><div><h3 data-i18n="timeline.t2">GMA-64 y SecretOS</h3><p data-i18n="timeline.c2">Desarrollo activo de tecnologías fundamentales y su hoja de ruta.</p></div></div><div class="timeline-item current"><time>2026</time><div><h3 data-i18n="timeline.t3">Sitio corporativo</h3><p data-i18n="timeline.c3">Lanzamiento de la presencia web oficial de GAMMS GROUP en Cloudflare Pages.</p></div></div><div class="timeline-item future"><time data-i18n="timeline.future">Futuro</time><div><h3 data-i18n="timeline.t4">Expansión del ecosistema</h3><p data-i18n="timeline.c4">Nuevos productos, plataformas y compañías se incorporarán únicamente cuando estén listos para ser anunciados.</p></div></div></div></div></section>
+
+    <section class="managua-section" id="about"><div class="managua-art" aria-hidden="true"><div class="moon"></div><div class="mountain mountain-a"></div><div class="mountain mountain-b"></div><div class="cityline"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="lake"></div></div><div class="container managua-copy reveal"><p class="eyebrow">MANAGUA · NICARAGUA</p><h2 data-i18n="managua.title">Engineered from Managua. Designed for the world.</h2><p data-i18n="managua.copy">Nuestra identidad comienza en Managua y mira hacia afuera. GAMMS GROUP busca construir tecnología global sin renunciar al lugar desde el que nació su visión.</p></div></section>
+
+    <section class="section newsroom" id="newsroom"><div class="container"><div class="section-heading reveal"><p class="eyebrow">GAMMS NEWSROOM</p><h2 data-i18n="news.title">Actualizaciones del grupo.</h2><p data-i18n="news.copy">Un espacio para anuncios oficiales, avances y publicaciones del ecosistema GAMMS.</p></div><div class="news-grid"><article class="news-card reveal"><div class="news-visual news-web"><span>G</span></div><div class="news-body"><time>SEP 2026</time><h3 data-i18n="news.n1t">GAMMS GROUP estrena presencia web corporativa.</h3><p data-i18n="news.n1c">La primera versión reúne identidad, tecnologías, compañías y visión del grupo en un solo sitio.</p><a href="#home" data-i18n="news.read">Leer actualización →</a></div></article><article class="news-card reveal"><div class="news-visual news-gma"><span>64</span></div><div class="news-body"><time>2026</time><h3 data-i18n="news.n2t">GMA-64 continúa su fase de desarrollo.</h3><p data-i18n="news.n2c">La documentación y el roadmap evolucionan junto al emulador, ensamblador y pruebas de la arquitectura.</p><a href="#technology" data-i18n="news.explore">Explorar tecnología →</a></div></article><article class="news-card reveal"><div class="news-visual news-secret"><span>S</span></div><div class="news-body"><time>2026</time><h3 data-i18n="news.n3t">Secret ecosystem toma forma como plataforma conectada.</h3><p data-i18n="news.n3c">SecretOS, Secret Suite y servicios compartidos avanzan como partes de una experiencia coherente.</p><a href="#ecosystem" data-i18n="news.exploreEco">Explorar ecosistema →</a></div></article></div></div></section>
+
+    <section class="section careers" id="careers"><div class="container careers-card reveal"><div><p class="eyebrow" data-i18n="careers.kicker">CAREERS & COLLABORATION</p><h2 data-i18n="careers.title">Build the future with us.</h2><p data-i18n="careers.copy">Este espacio quedará preparado para oportunidades, colaboraciones técnicas, diseño, investigación y alianzas a medida que GAMMS GROUP crezca.</p></div><a href="#contact" class="button button-primary" data-i18n="careers.button">Hablar con GAMMS</a></div></section>
+
+    <section class="section contact" id="contact"><div class="container contact-grid"><div class="section-heading reveal"><p class="eyebrow" data-i18n="contact.kicker">CONTACT GAMMS</p><h2 data-i18n="contact.title">Una conversación puede ser el comienzo.</h2><p data-i18n="contact.copy">Selecciona el motivo y escribe tu mensaje. El formulario abrirá tu aplicación de correo para que tú decidas cuándo enviarlo.</p><div class="contact-tags"><span>Business</span><span>Press</span><span>Developers</span><span>Partnerships</span><span>General</span></div></div><form class="contact-form reveal" id="contactForm"><label><span data-i18n="contact.name">Nombre</span><input id="contactName" name="name" autocomplete="name" required /></label><label><span data-i18n="contact.email">Correo</span><input id="contactEmail" name="email" type="email" autocomplete="email" required /></label><label><span data-i18n="contact.topic">Motivo</span><select id="contactTopic" name="topic"><option>Business</option><option>Press</option><option>Developers</option><option>Partnerships</option><option>General</option></select></label><label><span data-i18n="contact.message">Mensaje</span><textarea id="contactMessage" name="message" rows="6" required></textarea></label><button class="button button-primary" type="submit" data-i18n="contact.send">Preparar correo</button><p class="form-note" data-i18n="contact.note">No se envía nada automáticamente.</p></form></div></section>
   </main>
 
-  <footer class="footer container">
-    <div><div class="footer-brand">GAMMS GROUP</div><p>Group for Advanced Modern Multiplatform Systems</p></div>
-    <div class="footer-meta"><p>Managua, Nicaragua</p><p>© <span id="year"></span> GAMMS GROUP</p></div>
-  </footer>
+  <footer class="footer"><div class="container footer-top"><div class="footer-brand-block"><span class="brand-symbol large">G</span><div><strong>GAMMS GROUP</strong><p>Group for Advanced Modern Multiplatform Systems</p></div></div><div class="footer-columns"><div><h4 data-i18n="footer.company">Company</h4><a href="#about" data-i18n="nav.about">Nosotros</a><a href="#companies" data-i18n="nav.companies">Compañías</a><a href="#careers">Careers</a></div><div><h4 data-i18n="footer.tech">Technologies</h4><a href="#technology">GMA-64</a><a href="#technology">SecretOS</a><a href="#technology">Secret Suite</a></div><div><h4 data-i18n="footer.resources">Resources</h4><a href="#newsroom">Newsroom</a><a href="#timeline">Roadmap</a><a href="#contact" data-i18n="nav.contact">Contacto</a></div><div><h4>Legal</h4><a href="#" data-i18n="footer.privacy">Privacy</a><a href="#" data-i18n="footer.terms">Terms</a></div></div></div><div class="container footer-bottom"><span>Managua, Nicaragua</span><span>© <b id="year"></b> GAMMS GROUP</span><div class="lang-switch footer-lang"><button class="lang active" data-lang="es">ES</button><span>/</span><button class="lang" data-lang="en">EN</button></div></div></footer>
 
+  <dialog class="company-modal" id="companyModal"><button class="modal-close" id="modalClose" aria-label="Close">×</button><div class="modal-accent" id="modalAccent"></div><p class="eyebrow" id="modalSector"></p><h2 id="modalName"></h2><p class="modal-summary" id="modalSummary"></p><div class="modal-columns"><div><h4 data-i18n="labels.mission">Misión</h4><p id="modalMission"></p></div><div><h4 data-i18n="labels.vision">Visión</h4><p id="modalVision"></p></div></div><div class="modal-products"><h4 data-i18n="labels.focus">Enfoque / proyectos</h4><div id="modalProducts"></div></div></dialog>
   <script src="app.js"></script>
 </body>
 </html>
