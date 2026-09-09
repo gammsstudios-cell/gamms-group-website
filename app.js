@@ -11,4 +11,23 @@ function updateMapInfo(key,label){const info=document.getElementById("mapInfo");
 document.querySelectorAll(".eco-node").forEach(node=>{const activate=()=>{document.querySelectorAll(".eco-node").forEach(n=>n.classList.remove("active"));node.classList.add("active");updateMapInfo(node.dataset.node,node.textContent.trim())};node.addEventListener("mouseenter",activate);node.addEventListener("focus",activate);node.addEventListener("click",activate)});
 const header=document.querySelector(".site-header");window.addEventListener("scroll",()=>header.classList.toggle("scrolled",window.scrollY>20),{passive:true});const menuBtn=document.getElementById("menuBtn"),navPanel=document.getElementById("navPanel");menuBtn.addEventListener("click",()=>{const open=navPanel.classList.toggle("open");menuBtn.setAttribute("aria-expanded",String(open))});navPanel.querySelectorAll("a").forEach(a=>a.addEventListener("click",()=>{navPanel.classList.remove("open");menuBtn.setAttribute("aria-expanded","false")}));
 const observer=new IntersectionObserver(entries=>entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add("visible");observer.unobserve(e.target)}}),{threshold:.12});document.querySelectorAll(".reveal").forEach(el=>observer.observe(el));const stack=document.querySelector(".system-stack");stack?.addEventListener("pointermove",e=>{const r=stack.getBoundingClientRect(),x=(e.clientX-r.left)/r.width-.5,y=(e.clientY-r.top)/r.height-.5;stack.style.transform=`rotateY(${x*3}deg) rotateX(${-y*3}deg)`});stack?.addEventListener("pointerleave",()=>stack.style.transform="");
-document.getElementById("contactForm").addEventListener("submit",e=>{e.preventDefault();const name=document.getElementById("contactName").value.trim(),email=document.getElementById("contactEmail").value.trim(),topic=document.getElementById("contactTopic").value,message=document.getElementById("contactMessage").value.trim(),subject=encodeURIComponent(`[GAMMS GROUP · ${topic}] ${name}`),body=encodeURIComponent(`${message}\n\n—\n${name}\n${email}`);window.location.href=`mailto:gamms.studios@gmail.com?subject=${subject}&body=${body}`});setLanguage(currentLang);
+document.getElementById("contactForm").addEventListener("submit",e=>{e.preventDefault();const name=document.getElementById("contactName").value.trim(),email=document.getElementById("contactEmail").value.trim(),topic=document.getElementById("contactTopic").value,message=document.getElementById("contactMessage").value.trim(),subject=encodeURIComponent(`[GAMMS GROUP · ${topic}] ${name}`),body=encodeURIComponent(`${message}\
+\
+—\
+${name}\
+${email}`);window.location.href=`mailto:gamms.studios@gmail.com?subject=${subject}&body=${body}`});
+
+const secretOsCard=document.querySelector(".tech-secretos");
+if(secretOsCard){
+  secretOsCard.setAttribute("role","link");
+  secretOsCard.setAttribute("tabindex","0");
+  secretOsCard.setAttribute("aria-label","Explore SecretOS");
+  secretOsCard.addEventListener("click",()=>window.location.href="/secretos/");
+  secretOsCard.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();window.location.href="/secretos/"}});
+}
+const secretOsNode=document.querySelector('.eco-node[data-node="secretos"]');
+if(secretOsNode){
+  secretOsNode.addEventListener("dblclick",()=>window.location.href="/secretos/");
+  secretOsNode.addEventListener("click",e=>{if(e.detail===1){setTimeout(()=>{if(!window.__secretosDblClick)window.location.href="/secretos/"},120)}});
+}
+setLanguage(currentLang);
