@@ -1,6 +1,13 @@
 export const UM_PER_INCH = 25400;
 export const POINTS_PER_INCH = 72;
 export const BASIS_POINTS = 10000;
+export const DEFAULT_PRINT_ORDER = "top-to-bottom-right-to-left";
+export const PRINT_ORDERS = new Set([
+  DEFAULT_PRINT_ORDER,
+  "top-to-bottom-left-to-right",
+  "left-to-right-top-to-bottom",
+  "right-to-left-top-to-bottom"
+]);
 export const PRINT_PROFILE_LIMITS = {
   minPageUm: 100000,
   maxPageUm: 500000,
@@ -219,26 +226,59 @@ export function getSlotPosition(profile, slotNumber) {
   };
 }
 
-export function paginateLabels(labels, profile, startSlot = 1) {
+export function getOrderedPhysicalSlots(profile, printOrder = DEFAULT_PRINT_ORDER) {
+  const order = PRINT_ORDERS.has(printOrder) ? printOrder : DEFAULT_PRINT_ORDER;
+  const columns = Number(profile.columns);
+  const rows = Number(profile.rows);
+  const slots = [];
+
+  const pushSlot = (rowIndex, colIndex) => {
+    const slot = rowIndex * columns + colIndex + 1;
+    slots.push({ ...getSlotPosition(profile, slot), slot });
+  };
+
+  if (order === "top-to-bottom-right-to-left") {
+    for (let col = columns - 1; col >= 0; col -= 1) {
+      for (let row = 0; row < rows; row += 1) pushSlot(row, col);
+    }
+  } else if (order === "top-to-bottom-left-to-right") {
+    for (let col = 0; col < columns; col += 1) {
+      for (let row = 0; row < rows; row += 1) pushSlot(row, col);
+    }
+  } else if (order === "right-to-left-top-to-bottom") {
+    for (let row = 0; row < rows; row += 1) {
+      for (let col = columns - 1; col >= 0; col -= 1) pushSlot(row, col);
+    }
+  } else {
+    for (let row = 0; row < rows; row += 1) {
+      for (let col = 0; col < columns; col += 1) pushSlot(row, col);
+    }
+  }
+
+  return slots;
+}
+
+export function paginateLabels(labels, profile, startSlot = 1, printOrder = DEFAULT_PRINT_ORDER) {
   const capacity = profileCapacity(profile);
   const firstSlot = Number.parseInt(startSlot, 10);
   if (!Number.isInteger(firstSlot) || firstSlot < 1 || firstSlot > capacity) {
     return { ok: false, code: "INVALID_START_SLOT" };
   }
 
+  const orderedSlots = getOrderedPhysicalSlots(profile, printOrder);
   const pages = [];
   let cursor = 0;
-  let slot = firstSlot;
+  let orderedIndex = firstSlot - 1;
 
   while (cursor < labels.length) {
     const page = [];
-    while (slot <= capacity && cursor < labels.length) {
-      page.push({ slot, label: labels[cursor] });
+    while (orderedIndex < capacity && cursor < labels.length) {
+      page.push({ slot: orderedSlots[orderedIndex].slot, box: orderedSlots[orderedIndex], label: labels[cursor] });
       cursor += 1;
-      slot += 1;
+      orderedIndex += 1;
     }
     pages.push(page);
-    slot = 1;
+    orderedIndex = 0;
   }
 
   return { ok: true, pages };

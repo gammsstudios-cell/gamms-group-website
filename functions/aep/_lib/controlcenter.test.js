@@ -22,7 +22,7 @@ import { disableQr, generateQrBatch, getQrByPublicNumber, listQrCodes, reactivat
 import { generateLabelsPdf } from "./printPdf.js";
 import { getQuietQrDrawPlan } from "./printPdf.js";
 import { buildLabelsPdfFilename, validateBatchPdfLabels } from "./printPdfSecurity.js";
-import { getPrintProfile, getSlotPosition, paginateLabels, profileCapacity, updatePrintProfile, validateProfileInput } from "./printProfiles.js";
+import { getPrintProfile, getOrderedPhysicalSlots, getSlotPosition, paginateLabels, profileCapacity, updatePrintProfile, validateProfileInput } from "./printProfiles.js";
 import { onRequestPost as pdfPost } from "../api/admin/print/pdf.js";
 import { formatFriendlyCustomerId, listSales } from "./sales.js";
 import { getDashboardStats } from "./dashboard.js";
@@ -439,6 +439,64 @@ test("quiet QR draw plan reserves four white modules and remains square", () => 
   assert.ok(plan.modules.every((module) => Math.abs(module.width - module.height) < 0.001));
 });
 
+test("print order maps items to exact physical MACO slots", async () => {
+  const db = await createTestDb();
+  const profile = await getPrintProfile(db);
+
+  const defaultSlots = getOrderedPhysicalSlots(profile);
+  assert.deepEqual({ row: defaultSlots[0].row, column: defaultSlots[0].column }, { row: 1, column: 5 });
+  assert.deepEqual({ row: defaultSlots[9].row, column: defaultSlots[9].column }, { row: 10, column: 5 });
+  assert.deepEqual({ row: defaultSlots[10].row, column: defaultSlots[10].column }, { row: 1, column: 4 });
+  assert.deepEqual({ row: defaultSlots[49].row, column: defaultSlots[49].column }, { row: 10, column: 1 });
+
+  const topBottomLeft = getOrderedPhysicalSlots(profile, "top-to-bottom-left-to-right");
+  assert.deepEqual({ row: topBottomLeft[0].row, column: topBottomLeft[0].column }, { row: 1, column: 1 });
+  assert.deepEqual({ row: topBottomLeft[9].row, column: topBottomLeft[9].column }, { row: 10, column: 1 });
+  assert.deepEqual({ row: topBottomLeft[10].row, column: topBottomLeft[10].column }, { row: 1, column: 2 });
+
+  const leftRightTop = getOrderedPhysicalSlots(profile, "left-to-right-top-to-bottom");
+  assert.deepEqual({ row: leftRightTop[0].row, column: leftRightTop[0].column }, { row: 1, column: 1 });
+  assert.deepEqual({ row: leftRightTop[4].row, column: leftRightTop[4].column }, { row: 1, column: 5 });
+  assert.deepEqual({ row: leftRightTop[5].row, column: leftRightTop[5].column }, { row: 2, column: 1 });
+
+  const rightLeftTop = getOrderedPhysicalSlots(profile, "right-to-left-top-to-bottom");
+  assert.deepEqual({ row: rightLeftTop[0].row, column: rightLeftTop[0].column }, { row: 1, column: 5 });
+  assert.deepEqual({ row: rightLeftTop[4].row, column: rightLeftTop[4].column }, { row: 1, column: 1 });
+  assert.deepEqual({ row: rightLeftTop[5].row, column: rightLeftTop[5].column }, { row: 2, column: 5 });
+});
+
+test("print order startSlot skips positions in the selected order", async () => {
+  const db = await createTestDb();
+  const profile = await getPrintProfile(db);
+  const labels = Array.from({ length: 2 }, (_, index) => ({ publicNumber: index + 1, url: `https://example.com/${index}` }));
+  const pages = paginateLabels(labels, profile, 3, "top-to-bottom-right-to-left");
+
+  assert.equal(pages.ok, true);
+  assert.deepEqual(
+    pages.pages[0].map((item) => ({ row: item.box.row, column: item.box.column })),
+    [{ row: 3, column: 5 }, { row: 4, column: 5 }]
+  );
+});
+
+test("ten default ordered labels fit one Letter sheet without leaving the label bounds", async () => {
+  const db = await createTestDb();
+  const profile = await getPrintProfile(db);
+  const labels = Array.from({ length: 10 }, (_, index) => ({ publicNumber: index + 1, url: `https://example.com/${index}` }));
+  const pages = paginateLabels(labels, profile, 1);
+
+  assert.equal(pages.ok, true);
+  assert.equal(pages.pages.length, 1);
+  assert.equal(pages.pages[0].length, 10);
+  for (const item of pages.pages[0]) {
+    assert.ok(item.box.x >= 0);
+    assert.ok(item.box.y >= 0);
+    assert.ok(item.box.x + item.box.width <= 612);
+    assert.ok(item.box.y + item.box.height <= 792);
+    assert.equal(item.box.width, 108);
+    assert.equal(item.box.height, 72);
+  }
+});
+
 test("print profile validation rejects unsafe or impossible profiles", async () => {
   const db = await createTestDb();
   assert.equal(await getPrintProfile(db, 999), null);
@@ -620,11 +678,15 @@ test("Control Center browser print uses exact Letter sheets without printable in
 
   assert.match(source, /@page \{ size: Letter; margin: 0; \}/);
   assert.match(source, /html, body \{ width: 8\.5in; margin: 0 !important; padding: 0 !important;/);
-  assert.match(source, /\.print-sheet \{ width: 8\.5in; height: 11in; margin: 0; padding: 0\.5in; overflow: hidden;/);
+  assert.match(source, /\.print-sheet \{ position: relative; width: 8\.5in; height: 11in; box-sizing: border-box; margin: 0; padding: 0; overflow: hidden;/);
+  assert.match(source, /\.print-slot \{ position: absolute;/);
   assert.match(source, /\.print-sheet:last-child \{ break-after: auto; page-break-after: auto; \}/);
   assert.match(source, /\.print-instructions \{ display: none !important; \}/);
   assert.match(source, /function renderBrowserPrintSheets\(batch\)/);
+  assert.match(source, /function getOrderedBrowserSlots\(profile, printOrder\)/);
+  assert.match(source, /<option value="top-to-bottom-right-to-left" selected>/);
   assert.doesNotMatch(source, /#printable-labels \{[^}]*min-height: 11in/);
+  assert.doesNotMatch(source, /grid-template-columns: repeat\(5, 1\.5in\)/);
   assert.doesNotMatch(source, /print-guidance/);
 });
 

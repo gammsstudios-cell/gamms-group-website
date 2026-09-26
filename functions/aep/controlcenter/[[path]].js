@@ -156,14 +156,14 @@ export function onRequestGet() {
       #printable-labels, #printable-labels * { visibility: visible; }
       #app, .main-wrapper, .content-area, #printPreview { display: block !important; margin: 0 !important; padding: 0 !important; width: 8.5in !important; max-width: 8.5in !important; background: #FFF !important; overflow: visible !important; }
       #printable-labels { position: absolute; left: 0; top: 0; width: 8.5in; margin: 0; padding: 0; background: #FFF; display: block; overflow: visible; }
-      .print-sheet { width: 8.5in; height: 11in; margin: 0; padding: 0.5in; overflow: hidden; background: #FFF; display: grid; grid-template-columns: repeat(5, 1.5in); grid-template-rows: repeat(10, 1in); gap: 0; break-after: page; page-break-after: always; }
+      .print-sheet { position: relative; width: 8.5in; height: 11in; box-sizing: border-box; margin: 0; padding: 0; overflow: hidden; background: #FFF; display: block; break-after: page; page-break-after: always; }
       .print-sheet:last-child { break-after: auto; page-break-after: auto; }
-      .print-slot { width: 1.5in; height: 1in; margin: 0; padding: 0; overflow: hidden; background: #FFF; border: none; outline: none; }
-      .qr-label-card { border: none !important; outline: none !important; border-radius: 0 !important; padding: 0.04in; width: 1.5in; height: 1in; text-align: left; page-break-inside: avoid; break-inside: avoid; background: #FFF !important; color: #000 !important; box-shadow: none !important; overflow: hidden; }
-      .qr-label-card svg { width: 0.62in; height: 0.62in; margin: 0.13in 0.04in 0 0; float: left; display: block; }
-      .qr-label-title { font-size: 7pt; line-height: 1.1; margin-top: 0.08in; }
-      .qr-label-product { font-size: 6pt; line-height: 1.1; color: #000 !important; }
-      .qr-label-num { font-size: 8pt; line-height: 1.1; margin-top: 0.03in; }
+      .print-slot { position: absolute; margin: 0; padding: 0; overflow: visible; background: #FFF; border: none; outline: none; }
+      .qr-label-card { border: none !important; outline: none !important; border-radius: 0 !important; padding: 0.035in; width: 100%; height: 100%; text-align: left; page-break-inside: avoid; break-inside: avoid; background: #FFF !important; color: #000 !important; box-shadow: none !important; overflow: visible; }
+      .qr-label-card svg { width: 0.58in; height: 0.58in; margin: 0.16in 0.04in 0 0; float: left; display: block; }
+      .qr-label-title { font-size: 6.5pt; line-height: 1.05; margin-top: 0.08in; }
+      .qr-label-product { font-size: 5.8pt; line-height: 1.05; color: #000 !important; }
+      .qr-label-num { font-size: 7.5pt; line-height: 1.05; margin-top: 0.04in; }
       .print-instructions { display: none !important; }
     }
     
@@ -174,7 +174,8 @@ export function onRequestGet() {
     .qr-label-product { font-size: 13px; font-weight: 700; color: #007AFF; margin-top: 2px; }
     .qr-label-num { font-size: 15px; font-weight: 900; margin-top: 4px; }
     .print-instructions { margin: 12px 0; padding: 10px 12px; border-radius: 8px; background: var(--badge-amber-bg); color: var(--badge-amber-text); font-size: 13px; font-weight: 700; }
-    .print-sheet { display: contents; }
+    .print-sheet { position: relative; width: 8.5in; height: 11in; max-width: 100%; background: #FFF; overflow: hidden; box-shadow: var(--card-shadow); margin: 12px 0; transform-origin: top left; }
+    .print-slot { position: absolute; overflow: visible; background: #FFF; }
     .print-slot-empty { display: none; }
 
     /* Responsive */
@@ -221,7 +222,7 @@ export function onRequestGet() {
         </a>
         <a class="nav-item" data-route="qr">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3z"/><path d="M17 17h4v4h-4z"/><path d="M14 19h2v2h-2z"/></svg>
-          Códigos QR
+          CÃ³digos QR
         </a>
         <a class="nav-item" data-route="print">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
@@ -241,11 +242,11 @@ export function onRequestGet() {
         </a>
         <a class="nav-item" data-route="activity">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          Auditoría
+          AuditorÃ­a
         </a>
         <a class="nav-item" data-route="settings">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-          Configuración
+          ConfiguraciÃ³n
         </a>
         <a class="nav-item" data-route="system">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="15" x2="23" y2="15"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="15" x2="4" y2="15"/></svg>
@@ -328,7 +329,7 @@ export function onRequestGet() {
     function showToast(msg, isError = false) {
       const toast = document.createElement("div");
       toast.className = "toast";
-      toast.innerHTML = (isError ? "⚠️ " : "✓ ") + msg;
+      toast.innerHTML = (isError ? "âš ï¸ " : "âœ“ ") + msg;
       document.getElementById("toast-container").appendChild(toast);
       setTimeout(() => toast.remove(), 4000);
     }
@@ -454,7 +455,7 @@ export function onRequestGet() {
     // ----------------------------------------------------
 
     function renderLogin() {
-      pageTitle.textContent = "Iniciar Sesión Administrador";
+      pageTitle.textContent = "Iniciar SesiÃ³n Administrador";
       contentArea.innerHTML = \`
         <div style="max-width: 420px; margin: 40px auto;">
           <div class="card">
@@ -465,7 +466,7 @@ export function onRequestGet() {
             <form id="loginForm">
               <div class="form-group">
                 <label class="form-label">Passcode de Administrador</label>
-                <input id="adminPasscode" type="password" class="form-control" placeholder="••••••••" required autofocus>
+                <input id="adminPasscode" type="password" class="form-control" placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" required autofocus>
               </div>
               <button type="submit" class="btn-primary" style="width:100%; justify-content:center; margin-top:8px;">
                 Ingresar al Panel
@@ -483,11 +484,11 @@ export function onRequestGet() {
           body: JSON.stringify({ passcode })
         });
         if (res.ok) {
-          showToast("Sesión de administrador iniciada.");
+          showToast("SesiÃ³n de administrador iniciada.");
           state.authenticated = true;
           navigate("overview");
         } else {
-          showToast(res.code || "Credenciales inválidas", true);
+          showToast(res.code || "Credenciales invÃ¡lidas", true);
         }
       });
     }
@@ -530,12 +531,12 @@ export function onRequestGet() {
               <div class="stat-icon">$</div>
             </div>
             <div class="stat-value">\${formatMoney(overview.todayRevenueCents)}</div>
-            <div class="stat-sub">Total histórico: \${formatMoney(overview.totalRevenueCents)}</div>
+            <div class="stat-sub">Total histÃ³rico: \${formatMoney(overview.totalRevenueCents)}</div>
           </div>
           <div class="stat-card">
             <div class="stat-header">
               <span>BEBIDAS VENDIDAS</span>
-              <div class="stat-icon">🥤</div>
+              <div class="stat-icon">ðŸ¥¤</div>
             </div>
             <div class="stat-value">\${overview.todaySalesCount}</div>
             <div class="stat-sub">Ventas totales: \${overview.totalSalesCount}</div>
@@ -543,7 +544,7 @@ export function onRequestGet() {
           <div class="stat-card">
             <div class="stat-header">
               <span>REWARDS CANJEADOS</span>
-              <div class="stat-icon">🎁</div>
+              <div class="stat-icon">ðŸŽ</div>
             </div>
             <div class="stat-value">\${overview.redeemedRewardsCount}</div>
             <div class="stat-sub">Disponibles: \${overview.availableRewardsCount} | Claims: \${overview.activeClaimsCount}</div>
@@ -551,7 +552,7 @@ export function onRequestGet() {
           <div class="stat-card">
             <div class="stat-header">
               <span>QR DISPONIBLES</span>
-              <div class="stat-icon">🏷️</div>
+              <div class="stat-icon">ðŸ·ï¸</div>
             </div>
             <div class="stat-value">\${overview.availableQrCount}</div>
             <div class="stat-sub">Usados: \${overview.usedQrCount} | Total: \${overview.totalQrCount}</div>
@@ -585,8 +586,8 @@ export function onRequestGet() {
 
           <div class="card">
             <div class="card-header">
-              <div class="card-title">Productos Más Vendidos</div>
-              <button class="btn-secondary" onclick="navigate('products')">Catálogo</button>
+              <div class="card-title">Productos MÃ¡s Vendidos</div>
+              <button class="btn-secondary" onclick="navigate('products')">CatÃ¡logo</button>
             </div>
             <div class="table-container">
               <table>
@@ -723,7 +724,7 @@ export function onRequestGet() {
             </table>
           </div>
           <div class="pagination-bar">
-            <span>Página \${res.pagination.page} de \${res.pagination.totalPages}</span>
+            <span>PÃ¡gina \${res.pagination.page} de \${res.pagination.totalPages}</span>
             <div>
               <button class="pagination-btn" \${res.pagination.page <= 1 ? 'disabled' : ''} onclick="renderSales(\${res.pagination.page - 1})">Anterior</button>
               <button class="pagination-btn" \${res.pagination.page >= res.pagination.totalPages ? 'disabled' : ''} onclick="renderSales(\${res.pagination.page + 1})">Siguiente</button>
@@ -745,7 +746,7 @@ export function onRequestGet() {
       contentArea.innerHTML = \`
         <div class="card">
           <div class="card-header">
-            <div class="card-title">Gestión de Productos</div>
+            <div class="card-title">GestiÃ³n de Productos</div>
             <div class="filter-bar">
               <button class="btn-primary" onclick="showCreateProductModal()">+ Nuevo Producto</button>
               <button class="btn-secondary" onclick="exportCsv('products')">Exportar CSV</button>
@@ -754,12 +755,12 @@ export function onRequestGet() {
           <div class="table-container">
             <table>
               <thead>
-                <tr><th>Producto</th><th>Categoría</th><th>Precio</th><th>Stock</th><th>QR Disponibles</th><th>Ventas</th><th>Estado</th><th>Acciones</th></tr>
+                <tr><th>Producto</th><th>CategorÃ­a</th><th>Precio</th><th>Stock</th><th>QR Disponibles</th><th>Ventas</th><th>Estado</th><th>Acciones</th></tr>
               </thead>
               <tbody>
                 \${res.items.map(p => \`
                   <tr>
-                    <td><strong>\${p.name}</strong><br><small style="color:var(--text-muted)">\${p.description || 'Sin descripción'}</small></td>
+                    <td><strong>\${p.name}</strong><br><small style="color:var(--text-muted)">\${p.description || 'Sin descripciÃ³n'}</small></td>
                     <td>\${p.category}</td>
                     <td><strong>\${formatMoney(p.priceCents)}</strong></td>
                     <td>
@@ -789,11 +790,11 @@ export function onRequestGet() {
             <input name="name" class="form-control" required placeholder="Ej: Coca-Cola 500ml">
           </div>
           <div class="form-group">
-            <label class="form-label">Categoría</label>
+            <label class="form-label">CategorÃ­a</label>
             <input name="category" class="form-control" value="bebidas">
           </div>
           <div class="form-group">
-            <label class="form-label">Precio en Céntimos (Ej: 4000 = C$ 40.00)</label>
+            <label class="form-label">Precio en CÃ©ntimos (Ej: 4000 = C$ 40.00)</label>
             <input name="priceCents" type="number" class="form-control" required value="4000">
           </div>
           <div class="form-group">
@@ -827,7 +828,7 @@ export function onRequestGet() {
             <input name="name" class="form-control" value="\${product.name}" required>
           </div>
           <div class="form-group">
-            <label class="form-label">Precio en Céntimos</label>
+            <label class="form-label">Precio en CÃ©ntimos</label>
             <input name="priceCents" type="number" class="form-control" value="\${product.priceCents}" required>
           </div>
           <div class="form-group">
@@ -865,8 +866,8 @@ export function onRequestGet() {
             <label class="form-label">Tipo de Movimiento</label>
             <select name="movement_type" class="form-control">
               <option value="restock">Restock (+)</option>
-              <option value="adjustment">Ajuste / Corrección</option>
-              <option value="return">Devolución (+)</option>
+              <option value="adjustment">Ajuste / CorrecciÃ³n</option>
+              <option value="return">DevoluciÃ³n (+)</option>
             </select>
           </div>
           <div class="form-group">
@@ -874,7 +875,7 @@ export function onRequestGet() {
             <input name="quantity_delta" type="number" class="form-control" required placeholder="Ej: 20 o -5">
           </div>
           <div class="form-group">
-            <label class="form-label">Razón</label>
+            <label class="form-label">RazÃ³n</label>
             <input name="reason" class="form-control" required value="Restock administrativo manual">
           </div>
           <button type="submit" class="btn-primary" style="width:100%; justify-content:center;">Guardar Ajuste</button>
@@ -945,16 +946,16 @@ export function onRequestGet() {
       contentArea.innerHTML = \`
         <div class="card">
           <div class="card-header">
-            <div class="card-title">Inventario de Códigos QR</div>
+            <div class="card-title">Inventario de CÃ³digos QR</div>
             <div class="filter-bar">
-              <button class="btn-primary" onclick="showGenerateQrModal(\${JSON.stringify(products).replace(/"/g, '&quot;')})">⚡ Generar Lote de QR</button>
+              <button class="btn-primary" onclick="showGenerateQrModal(\${JSON.stringify(products).replace(/"/g, '&quot;')})">âš¡ Generar Lote de QR</button>
               <button class="btn-secondary" onclick="exportCsv('qr')">Exportar CSV</button>
             </div>
           </div>
           <div class="table-container">
             <table>
               <thead>
-                <tr><th>Público #</th><th>Producto Asignado</th><th>Estado</th><th>Creado En</th><th>Usado En</th><th>Acciones</th></tr>
+                <tr><th>PÃºblico #</th><th>Producto Asignado</th><th>Estado</th><th>Creado En</th><th>Usado En</th><th>Acciones</th></tr>
               </thead>
               <tbody>
                 \${res.items.map(q => \`
@@ -977,7 +978,7 @@ export function onRequestGet() {
             </table>
           </div>
           <div class="pagination-bar">
-            <span>Página \${res.pagination.page} de \${res.pagination.totalPages}</span>
+            <span>PÃ¡gina \${res.pagination.page} de \${res.pagination.totalPages}</span>
             <div>
               <button class="pagination-btn" \${res.pagination.page <= 1 ? 'disabled' : ''} onclick="renderQr(\${res.pagination.page - 1})">Anterior</button>
               <button class="pagination-btn" \${res.pagination.page >= res.pagination.totalPages ? 'disabled' : ''} onclick="renderQr(\${res.pagination.page + 1})">Siguiente</button>
@@ -988,7 +989,7 @@ export function onRequestGet() {
     }
 
     function showGenerateQrModal(products) {
-      openModal("Generar Lote de Códigos QR Imprimibles", \`
+      openModal("Generar Lote de CÃ³digos QR Imprimibles", \`
         <form id="generateQrForm">
           <div class="form-group">
             <label class="form-label">Producto Asignado</label>
@@ -997,11 +998,11 @@ export function onRequestGet() {
             </select>
           </div>
           <div class="form-group">
-            <label class="form-label">Cantidad a Generar (Máx 500)</label>
+            <label class="form-label">Cantidad a Generar (MÃ¡x 500)</label>
             <input name="count" type="number" class="form-control" value="20" min="1" max="500" required>
           </div>
           <div class="form-group">
-            <label class="form-label">Numeración Inicial Pública (Opcional)</label>
+            <label class="form-label">NumeraciÃ³n Inicial PÃºblica (Opcional)</label>
             <input name="start_number" type="number" class="form-control" placeholder="Auto-incrementar">
           </div>
           <button type="submit" class="btn-primary" style="width:100%; justify-content:center;">Generar y Ver Etiquetas</button>
@@ -1014,7 +1015,7 @@ export function onRequestGet() {
         const payload = Object.fromEntries(formData.entries());
         const res = await apiFetch("/qr/generate", { method: "POST", body: JSON.stringify(payload) });
         if (res.ok) {
-          showToast(\`Se generaron \${res.count} códigos QR correctamente.\`);
+          showToast(\`Se generaron \${res.count} cÃ³digos QR correctamente.\`);
           closeModal();
           showPrintLabelsModal(res.items);
           renderQr();
@@ -1025,10 +1026,10 @@ export function onRequestGet() {
     }
 
     function showPrintLabelsModal(qrItems) {
-      openModal("Etiquetas Generadas para Impresión (" + qrItems.length + ")", \`
+      openModal("Etiquetas Generadas para ImpresiÃ³n (" + qrItems.length + ")", \`
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
           <p style="font-size:13px; color:var(--text-muted)">Haz clic en Imprimir para enviar a la impresora de etiquetas.</p>
-          <button class="btn-primary" onclick="window.print()">🖨️ Imprimir Etiquetas</button>
+          <button class="btn-primary" onclick="window.print()">ðŸ–¨ï¸ Imprimir Etiquetas</button>
         </div>
         <div id="printable-labels" class="qr-label-grid">
           \${qrItems.map(item => \`
@@ -1075,6 +1076,15 @@ export function onRequestGet() {
                 <div class="form-group"><label class="form-label">Numero inicial</label><input name="startNumber" type="number" min="1" class="form-control" placeholder="Auto"></div>
               </div>
               <div class="form-group"><label class="form-label">Primer slot de hoja parcial</label><input name="startSlot" type="number" min="1" max="50" value="1" class="form-control"></div>
+              <div class="form-group">
+                <label class="form-label">Orden de impresion</label>
+                <select name="printOrder" class="form-control">
+                  <option value="top-to-bottom-right-to-left" selected>Arriba -> abajo, derecha -> izquierda</option>
+                  <option value="top-to-bottom-left-to-right">Arriba -> abajo, izquierda -> derecha</option>
+                  <option value="left-to-right-top-to-bottom">Izquierda -> derecha, arriba -> abajo</option>
+                  <option value="right-to-left-top-to-bottom">Derecha -> izquierda, arriba -> abajo</option>
+                </select>
+              </div>
               <div class="filter-bar">
                 <button type="submit" class="btn-primary">Generar lote</button>
                 <button type="button" class="btn-secondary" onclick="loadCalibration()">Calibrar</button>
@@ -1109,6 +1119,7 @@ export function onRequestGet() {
         const payload = Object.fromEntries(new FormData(event.target).entries());
         const res = await apiFetch("/qr/generate", { method: "POST", body: JSON.stringify(payload) });
         if (!res.ok) return showToast(res.message || res.code || "Error generando lote", true);
+        res.printOrder = payload.printOrder || "top-to-bottom-right-to-left";
         currentPrintBatch = res;
         renderPrintPreview(res);
         showToast("Batch " + res.batchId + " generado.");
@@ -1122,7 +1133,7 @@ export function onRequestGet() {
           <span class="badge badge-warning">Slot inicial \${batch.startSlot}</span>
           <span class="badge badge-success">\${batch.count} etiquetas</span>
         </div>
-        <div class="print-instructions">Imprimir a Tama�o real / 100%. Desactivar Ajustar a pagina.</div>
+        <div class="print-instructions">Imprimir a Tamaño real / 100%. Desactivar Ajustar a pagina.</div>
         <div id="printable-labels" class="qr-label-grid">
           \${renderBrowserPrintSheets(batch)}
         </div>
@@ -1130,8 +1141,10 @@ export function onRequestGet() {
     }
 
     function renderBrowserPrintSheets(batch) {
-      const capacity = 50;
+      const profile = batch.printProfile || {};
+      const capacity = Number(profile.columns || 5) * Number(profile.rows || 10);
       const firstSlot = Math.max(1, Math.min(capacity, Number(batch.startSlot || 1)));
+      const orderedSlots = getOrderedBrowserSlots(profile, batch.printOrder || "top-to-bottom-right-to-left");
       const cells = [];
       for (let slot = 1; slot < firstSlot; slot += 1) cells.push({ empty: true });
       for (const item of batch.items) cells.push({ item });
@@ -1145,12 +1158,58 @@ export function onRequestGet() {
 
       return sheets.map((sheet) => \`
         <div class="print-sheet">
-          \${sheet.map((cell) => cell.empty
-            ? '<div class="print-slot print-slot-empty"></div>'
-            : \`<div class="print-slot"><div class="qr-label-card"><div class="qr-label-title">GAMMS AEP</div><div class="qr-label-product">\${cell.item.product.name}</div>\${cell.item.svg}<div class="qr-label-num">#\${cell.item.publicNumber}</div></div></div>\`
+          \${sheet.map((cell, index) => {
+            const slot = orderedSlots[index];
+            const style = \`left:\${slot.leftIn}in; top:\${slot.topIn}in; width:\${slot.widthIn}in; height:\${slot.heightIn}in;\`;
+            return cell.empty
+              ? \`<div class="print-slot print-slot-empty" style="\${style}"></div>\`
+              : \`<div class="print-slot" style="\${style}"><div class="qr-label-card"><div class="qr-label-title">GAMMS AEP</div><div class="qr-label-product">\${cell.item.product.name}</div>\${cell.item.svg}<div class="qr-label-num">#\${cell.item.publicNumber}</div></div></div>\`;
+          }
           ).join('')}
         </div>
       \`).join('');
+    }
+
+    function getOrderedBrowserSlots(profile, printOrder) {
+      const columns = Number(profile.columns || 5);
+      const rows = Number(profile.rows || 10);
+      const pageHeightUm = Number(profile.pageHeightUm || 279400);
+      const marginLeftUm = Number(profile.marginLeftUm || 12700);
+      const marginTopUm = Number(profile.marginTopUm || 12700);
+      const labelWidthUm = Number(profile.labelWidthUm || 38100);
+      const labelHeightUm = Number(profile.labelHeightUm || 25400);
+      const gapXUm = Number(profile.gapXUm || 0);
+      const gapYUm = Number(profile.gapYUm || 0);
+      const offsetXUm = Number(profile.offsetXUm || 0);
+      const offsetYUm = Number(profile.offsetYUm || 0);
+      const scaleX = Number(profile.scaleXBp || 10000) / 10000;
+      const scaleY = Number(profile.scaleYBp || 10000) / 10000;
+      const order = printOrder || "top-to-bottom-right-to-left";
+      const slots = [];
+      const umToIn = (um) => Number(um) / 25400;
+      const pushSlot = (row, col) => {
+        const leftUm = marginLeftUm + offsetXUm + col * (labelWidthUm + gapXUm) * scaleX;
+        const topUm = marginTopUm + offsetYUm + row * (labelHeightUm + gapYUm) * scaleY;
+        slots.push({
+          row: row + 1,
+          column: col + 1,
+          leftIn: umToIn(leftUm).toFixed(4),
+          topIn: umToIn(topUm).toFixed(4),
+          widthIn: umToIn(labelWidthUm * scaleX).toFixed(4),
+          heightIn: umToIn(labelHeightUm * scaleY).toFixed(4)
+        });
+      };
+
+      if (order === "top-to-bottom-right-to-left") {
+        for (let col = columns - 1; col >= 0; col -= 1) for (let row = 0; row < rows; row += 1) pushSlot(row, col);
+      } else if (order === "top-to-bottom-left-to-right") {
+        for (let col = 0; col < columns; col += 1) for (let row = 0; row < rows; row += 1) pushSlot(row, col);
+      } else if (order === "right-to-left-top-to-bottom") {
+        for (let row = 0; row < rows; row += 1) for (let col = columns - 1; col >= 0; col -= 1) pushSlot(row, col);
+      } else {
+        for (let row = 0; row < rows; row += 1) for (let col = 0; col < columns; col += 1) pushSlot(row, col);
+      }
+      return slots;
     }
     async function downloadCurrentPdf() {
       if (!currentPrintBatch) return showToast("Genera un batch primero.", true);
@@ -1162,6 +1221,7 @@ export function onRequestGet() {
           batchId: currentPrintBatch.batchId,
           printProfileId: currentPrintBatch.printProfile?.id,
           startSlot: currentPrintBatch.startSlot,
+          printOrder: currentPrintBatch.printOrder || "top-to-bottom-right-to-left",
           items: currentPrintBatch.items.map(item => ({ token: item.token }))
         })
       });
@@ -1218,7 +1278,7 @@ export function onRequestGet() {
           <div class="table-container">
             <table>
               <thead>
-                <tr><th>ID</th><th>Cliente</th><th>Ciclo</th><th>Beneficio</th><th>Estado</th><th>Desbloqueado</th><th>Canjeado</th><th>Acción</th></tr>
+                <tr><th>ID</th><th>Cliente</th><th>Ciclo</th><th>Beneficio</th><th>Estado</th><th>Desbloqueado</th><th>Canjeado</th><th>AcciÃ³n</th></tr>
               </thead>
               <tbody>
                 \${res.items.map(r => \`
@@ -1246,7 +1306,7 @@ export function onRequestGet() {
     }
 
     async function cancelReward(id) {
-      if (!confirm("¿Seguro que deseas cancelar este reward? Esta acción quedará registrada en auditoría.")) return;
+      if (!confirm("Â¿Seguro que deseas cancelar este reward? Esta acciÃ³n quedarÃ¡ registrada en auditorÃ­a.")) return;
       const res = await apiFetch(\`/rewards/\${id}/cancel\`, { method: "POST", body: "{}" });
       if (res.ok) { showToast("Reward #" + id + " cancelado."); renderRewards(); }
       else { showToast(res.message || res.code, true); }
@@ -1260,13 +1320,13 @@ export function onRequestGet() {
       contentArea.innerHTML = \`
         <div class="card">
           <div class="card-header">
-            <div class="card-title">Clientes Anónimos (\${res.pagination.total})</div>
+            <div class="card-title">Clientes AnÃ³nimos (\${res.pagination.total})</div>
             <button class="btn-secondary" onclick="exportCsv('customers')">Exportar CSV</button>
           </div>
           <div class="table-container">
             <table>
               <thead>
-                <tr><th>Cliente</th><th>Compras</th><th>Progreso Ciclo</th><th>Rewards Ganados</th><th>Rewards Usados</th><th>Gastado Total</th><th>Última Actividad</th></tr>
+                <tr><th>Cliente</th><th>Compras</th><th>Progreso Ciclo</th><th>Rewards Ganados</th><th>Rewards Usados</th><th>Gastado Total</th><th>Ãšltima Actividad</th></tr>
               </thead>
               <tbody>
                 \${res.items.map(c => \`
@@ -1301,7 +1361,7 @@ export function onRequestGet() {
           <div class="table-container">
             <table>
               <thead>
-                <tr><th>ID</th><th>Nombre</th><th>Usuario</th><th>Estado</th><th>Último Login</th><th>Acciones</th></tr>
+                <tr><th>ID</th><th>Nombre</th><th>Usuario</th><th>Estado</th><th>Ãšltimo Login</th><th>Acciones</th></tr>
               </thead>
               <tbody>
                 \${res.sellers.map(s => \`
@@ -1328,15 +1388,15 @@ export function onRequestGet() {
         <form id="createSellerForm">
           <div class="form-group">
             <label class="form-label">Nombre del Vendedor</label>
-            <input name="displayName" class="form-control" required placeholder="Ej: Juan Pérez">
+            <input name="displayName" class="form-control" required placeholder="Ej: Juan PÃ©rez">
           </div>
           <div class="form-group">
             <label class="form-label">Nombre de Usuario (Opcional)</label>
             <input name="username" class="form-control" placeholder="vendedor1">
           </div>
           <div class="form-group">
-            <label class="form-label">Passcode de Acceso (Mínimo 4 caracteres)</label>
-            <input name="passcode" type="password" class="form-control" required placeholder="••••">
+            <label class="form-label">Passcode de Acceso (MÃ­nimo 4 caracteres)</label>
+            <input name="passcode" type="password" class="form-control" required placeholder="â€¢â€¢â€¢â€¢">
           </div>
           <button type="submit" class="btn-primary" style="width:100%; justify-content:center;">Crear Vendedor</button>
         </form>
@@ -1362,7 +1422,7 @@ export function onRequestGet() {
         <form id="resetPasscodeForm">
           <div class="form-group">
             <label class="form-label">Nuevo Passcode</label>
-            <input name="passcode" type="password" class="form-control" required placeholder="••••">
+            <input name="passcode" type="password" class="form-control" required placeholder="â€¢â€¢â€¢â€¢">
           </div>
           <button type="submit" class="btn-primary" style="width:100%; justify-content:center;">Cambiar Passcode</button>
         </form>
@@ -1389,13 +1449,13 @@ export function onRequestGet() {
       contentArea.innerHTML = \`
         <div class="card">
           <div class="card-header">
-            <div class="card-title">Registro de Auditoría y Eventos</div>
+            <div class="card-title">Registro de AuditorÃ­a y Eventos</div>
             <button class="btn-secondary" onclick="exportCsv('activity')">Exportar CSV</button>
           </div>
           <div class="table-container">
             <table>
               <thead>
-                <tr><th>ID</th><th>Fecha/Hora</th><th>Actor</th><th>Acción</th><th>Entidad</th><th>Detalles</th></tr>
+                <tr><th>ID</th><th>Fecha/Hora</th><th>Actor</th><th>AcciÃ³n</th><th>Entidad</th><th>Detalles</th></tr>
               </thead>
               <tbody>
                 \${res.items.map(a => \`
@@ -1424,7 +1484,7 @@ export function onRequestGet() {
       contentArea.innerHTML = \`
         <div class="card" style="max-width: 650px;">
           <div class="card-header">
-            <div class="card-title">Configuración del Evento AEP</div>
+            <div class="card-title">ConfiguraciÃ³n del Evento AEP</div>
           </div>
           <form id="settingsForm">
             <div class="form-group">
@@ -1432,7 +1492,7 @@ export function onRequestGet() {
               <input name="event_name" class="form-control" value="\${s.event_name}">
             </div>
             <div class="form-group">
-              <label class="form-label">Moneda (Código y Símbolo)</label>
+              <label class="form-label">Moneda (CÃ³digo y SÃ­mbolo)</label>
               <div style="display:flex; gap:10px;">
                 <input name="currency_code" class="form-control" value="\${s.currency_code}" placeholder="NIO">
                 <input name="currency_symbol" class="form-control" value="\${s.currency_symbol}" placeholder="C$">
@@ -1443,13 +1503,13 @@ export function onRequestGet() {
               <input name="claim_ttl_seconds" type="number" class="form-control" value="\${s.claim_ttl_seconds}">
             </div>
             <div class="form-group">
-              <label class="form-label">Regla de Promoción</label>
+              <label class="form-label">Regla de PromociÃ³n</label>
               <div style="display:flex; gap:10px;">
                 <input name="reward_every_n_purchases" type="number" class="form-control" value="\${s.reward_every_n_purchases}" readonly title="Fijo en esta fase (3ra bebida)">
                 <input name="reward_discount_percent" type="number" class="form-control" value="\${s.reward_discount_percent}" readonly title="Fijo en esta fase (50%)">
               </div>
             </div>
-            <button type="submit" class="btn-primary" style="margin-top:12px;">Guardar Configuración</button>
+            <button type="submit" class="btn-primary" style="margin-top:12px;">Guardar ConfiguraciÃ³n</button>
           </form>
         </div>
       \`;
@@ -1460,9 +1520,9 @@ export function onRequestGet() {
         const payload = Object.fromEntries(formData.entries());
         const res = await apiFetch("/settings", { method: "PUT", body: JSON.stringify({ settings: payload }) });
         if (res.ok) {
-          showToast("Configuración guardada.");
+          showToast("ConfiguraciÃ³n guardada.");
         } else {
-          showToast(res.code || "Error guardando configuración", true);
+          showToast(res.code || "Error guardando configuraciÃ³n", true);
         }
       });
     }
@@ -1476,10 +1536,10 @@ export function onRequestGet() {
       contentArea.innerHTML = \`
         <div class="card" style="max-width: 650px;">
           <div class="card-header">
-            <div class="card-title">Estado y Diagnóstico del Sistema</div>
+            <div class="card-title">Estado y DiagnÃ³stico del Sistema</div>
           </div>
           <div style="display:flex; flex-direction:column; gap:14px; font-size:14px;">
-            <div><strong>Aplicación:</strong> \${sys.appName} v\${sys.version}</div>
+            <div><strong>AplicaciÃ³n:</strong> \${sys.appName} v\${sys.version}</div>
             <div><strong>Conectividad D1:</strong> <span class="badge badge-success">\${sys.d1Connectivity}</span></div>
             <div><strong>Entorno:</strong> \${sys.environment}</div>
             <div><strong>Zona Horaria Evento:</strong> \${sys.eventTimezone}</div>

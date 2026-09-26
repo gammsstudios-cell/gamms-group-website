@@ -1,6 +1,6 @@
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import qrcode from "qrcode-generator";
-import { getSlotPosition, paginateLabels, profileCapacity, umToPt } from "./printProfiles.js";
+import { getSlotPosition, paginateLabels, profileCapacity, umToPt, DEFAULT_PRINT_ORDER } from "./printProfiles.js";
 
 function asString(value) {
   return String(value ?? "");
@@ -107,13 +107,13 @@ export function normalizePdfLabels(items = []) {
   }));
 }
 
-export async function generateLabelsPdf({ labels, profile, startSlot = 1, drawGuides = false }) {
+export async function generateLabelsPdf({ labels, profile, startSlot = 1, drawGuides = false, printOrder = DEFAULT_PRINT_ORDER }) {
   const safeLabels = normalizePdfLabels(labels);
   if (safeLabels.length < 1 || safeLabels.length > 500 || safeLabels.some((item) => !item.publicNumber || !item.url)) {
     return { ok: false, code: "INVALID_LABEL_COUNT" };
   }
 
-  const pages = paginateLabels(safeLabels, profile, startSlot);
+  const pages = paginateLabels(safeLabels, profile, startSlot, printOrder);
   if (!pages.ok) return pages;
 
   const pdfDoc = await PDFDocument.create();
@@ -141,7 +141,7 @@ export async function generateLabelsPdf({ labels, profile, startSlot = 1, drawGu
       }
     }
     for (const item of pageSlots) {
-      drawLabel(page, fonts, getSlotPosition(profile, item.slot), item.label);
+      drawLabel(page, fonts, item.box ?? getSlotPosition(profile, item.slot), item.label);
     }
   }
 

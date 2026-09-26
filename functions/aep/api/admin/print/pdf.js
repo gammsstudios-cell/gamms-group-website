@@ -30,7 +30,8 @@ export async function onRequestPost(context) {
     labels: validation.labels,
     profile,
     startSlot: requestedStartSlot,
-    drawGuides: false
+    drawGuides: false,
+    printOrder: body?.printOrder ?? body?.print_order
   });
   if (!result.ok) return adminError(result.code, 400);
 
