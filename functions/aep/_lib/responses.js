@@ -9,6 +9,6 @@ export function json(data, init = {}) {
   });
 }
 
-export function safeError(code, status = 200) {
-  return json({ ok: false, code }, { status });
+export function safeError(code, status = 200, headers) {
+  return json({ ok: false, code }, { status, headers });
 }
