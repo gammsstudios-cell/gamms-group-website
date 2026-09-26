@@ -2,18 +2,16 @@
 import { parseCookies } from "./cookies.js";
 import { STAFF_COOKIE_NAME, verifyStaffSessionToken } from "./staffSessions.js";
 import { ADMIN_COOKIE_NAME, verifyAdminSession } from "./adminAuth.js";
-
-import { SELLER_COOKIE_NAME, verifySellerSession } from "./sellerAuth.js";
 import { ALL_SYSTEM_PERMISSIONS, userHasPermission } from "./rbac.js";
 import { errorJson } from "./responses.js";
 
 /**
- * Authenticates any staff request (supports new Staff sessions, Owner ENV admin sessions, and legacy seller sessions).
+ * Authenticates any staff request (supports Staff sessions and Owner ENV admin sessions).
  */
 export async function authenticateStaff(request, env, db) {
   const cookies = parseCookies(request.headers.get("Cookie"));
 
-  // 1. Try unified GAMMS-AEP-Staff cookie
+  // 1. Try unified GAMMS-AEP-Staff cookie first
   const staffToken = cookies.get(STAFF_COOKIE_NAME);
   if (staffToken) {
     const staffSession = await verifyStaffSessionToken(db, staffToken);
@@ -33,69 +31,42 @@ export async function authenticateStaff(request, env, db) {
     }
   }
 
-  // 2. Try legacy Owner ENV / Admin session
+  // 2. Try Owner ENV / Admin session second
   const adminToken = cookies.get(ADMIN_COOKIE_NAME);
-  const adminResult = await verifyAdminSession(env, adminToken);
-  if (adminResult.ok) {
-    const username = env?.AEP_ADMIN_USERNAME || "admin";
-    return {
-      authenticated: true,
-      session: {
-        isStaffSession: true,
-        isEnvOwner: true,
-        userId: null,
-        username,
-        displayName: "Owner",
-        mustChangePassword: false,
-        roles: [{ id: 1, name: "Owner", is_builtin: 1 }],
-        permissions: ALL_SYSTEM_PERMISSIONS
-      },
-      actor: {
-        type: "admin",
-        identifier: username,
-        userId: null,
-        displayName: "Owner",
-        permissions: ALL_SYSTEM_PERMISSIONS,
-        isEnvOwner: true
-      }
-    };
-  }
-
-  // 3. Try legacy seller session
-  const sellerToken = cookies.get(SELLER_COOKIE_NAME);
-  const sellerResult = await verifySellerSession(env, sellerToken);
-  if (sellerResult.ok) {
-    const sellerPerms = ["pos.access", "pos.redeem", "sales.read_own", "shifts.use", "sessions.read"];
-    return {
-      authenticated: true,
-      session: {
-        isStaffSession: true,
-        isEnvOwner: false,
-        userId: sellerResult.sellerId || 1,
-        username: sellerResult.username || "vendedor",
-        displayName: sellerResult.displayName || "Vendedor",
-        mustChangePassword: false,
-        roles: [{ id: 5, name: "Vendedor", is_builtin: 1 }],
-        permissions: sellerPerms
-      },
-      actor: {
-        type: "seller",
-        identifier: sellerResult.displayName || "Vendedor",
-        userId: sellerResult.sellerId || 1,
-        displayName: sellerResult.displayName || "Vendedor",
-        permissions: sellerPerms,
-        isEnvOwner: false
-      }
-    };
+  if (adminToken) {
+    const adminResult = await verifyAdminSession(env, adminToken);
+    if (adminResult.ok) {
+      const username = env?.AEP_ADMIN_USERNAME || "admin";
+      return {
+        authenticated: true,
+        session: {
+          isStaffSession: true,
+          isEnvOwner: true,
+          userId: null,
+          username,
+          displayName: "Owner",
+          mustChangePassword: false,
+          roles: [{ id: 1, name: "Owner", is_builtin: 1 }],
+          permissions: ALL_SYSTEM_PERMISSIONS
+        },
+        actor: {
+          type: "admin",
+          identifier: username,
+          userId: null,
+          displayName: "Owner",
+          permissions: ALL_SYSTEM_PERMISSIONS,
+          isEnvOwner: true
+        }
+      };
+    }
   }
 
   return { authenticated: false };
 }
 
-
 /**
  * Requires staff authentication AND specific permission for an endpoint handler.
- * Returns null if authorized, or a Response object (401/403) if unauthorized.
+ * Enforces server-side must_change_password blocking.
  */
 export async function requirePermission(request, env, db, requiredPermission) {
   const auth = await authenticateStaff(request, env, db);
@@ -103,8 +74,25 @@ export async function requirePermission(request, env, db, requiredPermission) {
   if (!auth.authenticated) {
     return {
       authorized: false,
-      response: errorJson("SELLER_AUTH_REQUIRED", 401)
+      response: errorJson("STAFF_AUTH_REQUIRED", 401)
     };
+  }
+
+  // Enforce server-side must_change_password (Section 20)
+  if (auth.session.mustChangePassword === true) {
+    const url = new URL(request.url);
+    const pathname = url.pathname.toLowerCase();
+    const isExempt =
+      pathname.endsWith("/change-password") ||
+      pathname.endsWith("/logout") ||
+      pathname.endsWith("/session");
+
+    if (!isExempt) {
+      return {
+        authorized: false,
+        response: errorJson("PASSWORD_CHANGE_REQUIRED", 403)
+      };
+    }
   }
 
   if (requiredPermission && !userHasPermission(auth.actor.permissions, requiredPermission)) {
@@ -113,7 +101,6 @@ export async function requirePermission(request, env, db, requiredPermission) {
       response: errorJson("PERMISSION_DENIED", 403)
     };
   }
-
 
   return {
     authorized: true,

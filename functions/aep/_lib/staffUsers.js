@@ -1,6 +1,6 @@
 // GAMMS AEP Staff User Management Library
-import { hashPasswordPbkdf2 } from "./passwords.js";
-import { getUserPermissions, getUserRoles, validateNoPrivilegeEscalation } from "./rbac.js";
+import { hashPasswordPbkdf2, MIN_PASSWORD_LENGTH, MAX_PASSWORD_LENGTH } from "./passwords.js";
+import { getUserPermissions, getUserRoles, getPermissionsForRoleIds, validateNoPrivilegeEscalation } from "./rbac.js";
 import { logAuditEvent } from "./audit.js";
 
 /**
@@ -22,11 +22,14 @@ export function validateUsername(username) {
 }
 
 /**
- * Validates password strength (minimum 8 chars).
+ * Validates password strength (minimum 8 chars, maximum 256 chars).
  */
 export function validatePassword(password) {
-  if (typeof password !== "string" || password.length < 8) {
-    return { valid: false, error: "La contraseña debe tener al menos 8 caracteres" };
+  if (typeof password !== "string" || password.length < MIN_PASSWORD_LENGTH) {
+    return { valid: false, error: `La contraseña debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres` };
+  }
+  if (password.length > MAX_PASSWORD_LENGTH) {
+    return { valid: false, error: `La contraseña no puede exceder ${MAX_PASSWORD_LENGTH} caracteres` };
   }
   return { valid: true };
 }
@@ -52,10 +55,19 @@ export async function createStaffUser(db, actor, userData) {
     return { valid: false, error: "El nombre de usuario ya existe" };
   }
 
-  // Validate roles and prevent privilege escalation
+  // Validate roles and prevent privilege escalation (Section 25, 26, 27)
   const requestedRoleIds = Array.isArray(userData.roleIds) ? userData.roleIds : [5]; // Default Vendedor
-  if (requestedRoleIds.includes(1) && !actor.isEnvOwner) {
-    return { valid: false, error: "No se puede asignar el rol Owner desde la interfaz" };
+
+  // Owner Role (1) can NEVER be assigned to DB users!
+  if (requestedRoleIds.includes(1)) {
+    return { valid: false, error: "No se puede asignar el rol Owner a usuarios de base de datos" };
+  }
+
+  // Check privilege escalation for non-Owner ENV actor
+  if (!actor?.isEnvOwner) {
+    const requestedPerms = await getPermissionsForRoleIds(db, requestedRoleIds);
+    const escCheck = validateNoPrivilegeEscalation(actor?.permissions || [], requestedPerms);
+    if (!escCheck.valid) return escCheck;
   }
 
   const { hash, salt, iterations } = await hashPasswordPbkdf2(userData.password);
@@ -71,7 +83,7 @@ export async function createStaffUser(db, actor, userData) {
 
   // Insert roles
   for (const roleId of requestedRoleIds) {
-    await db.prepare("INSERT OR IGNORE INTO aep_user_roles (user_id, role_id) VALUES (?, ?)")
+    await db.prepare("INSERT OR IGNORE INTO aep_user_roles (user_id, role_id)")
       .bind(userId, roleId).run();
   }
 
@@ -113,6 +125,9 @@ export async function listStaffUsers(db) {
  * Gets details for a specific user.
  */
 export async function getStaffUserById(db, userId) {
+  const numericUserId = Number.parseInt(userId, 10);
+  if (!Number.isInteger(numericUserId) || numericUserId <= 0) return null;
+
   const u = await db.prepare(`
     SELECT 
       id, username, display_name as displayName, must_change_password as mustChangePassword,
@@ -120,7 +135,7 @@ export async function getStaffUserById(db, userId) {
       last_login_at as lastLoginAt, totp_enabled as totpEnabled, created_at as createdAt
     FROM aep_users
     WHERE id = ?
-  `).bind(userId).first();
+  `).bind(numericUserId).first();
 
   if (!u) return null;
   u.roles = await getUserRoles(db, u.id);
@@ -129,7 +144,7 @@ export async function getStaffUserById(db, userId) {
 }
 
 /**
- * Updates a staff user profile and roles.
+ * Updates a staff user profile and roles. Revokes sessions on role change or disable.
  */
 export async function updateStaffUser(db, actor, userId, updates) {
   const target = await getStaffUserById(db, userId);
@@ -139,33 +154,47 @@ export async function updateStaffUser(db, actor, userId, updates) {
     if (typeof updates.displayName !== "string" || updates.displayName.trim().length < 2) {
       return { valid: false, error: "Nombre visible inválido" };
     }
+  }
+
+  if (Array.isArray(updates.roleIds)) {
+    // Owner Role (1) CANNOT be assigned to DB users!
+    if (updates.roleIds.includes(1)) {
+      return { valid: false, error: "No se puede otorgar el rol Owner a usuarios de base de datos" };
+    }
+
+    // Check privilege escalation for non-Owner ENV actor
+    if (!actor?.isEnvOwner) {
+      const requestedPerms = await getPermissionsForRoleIds(db, updates.roleIds);
+      const escCheck = validateNoPrivilegeEscalation(actor?.permissions || [], requestedPerms);
+      if (!escCheck.valid) return escCheck;
+    }
+  }
+
+  if (updates.displayName !== undefined) {
     await db.prepare("UPDATE aep_users SET display_name = ? WHERE id = ?")
-      .bind(updates.displayName.trim(), userId).run();
+      .bind(updates.displayName.trim(), target.id).run();
   }
 
   if (updates.active !== undefined) {
     const newActive = updates.active ? 1 : 0;
     await db.prepare("UPDATE aep_users SET active = ? WHERE id = ?")
-      .bind(newActive, userId).run();
+      .bind(newActive, target.id).run();
 
     if (newActive === 0) {
-      // Invalidate all active sessions for disabled user
-      await db.prepare("DELETE FROM aep_staff_sessions WHERE user_id = ?").bind(userId).run();
+      // Invalidate all active sessions for disabled user (Section 18)
+      await db.prepare("DELETE FROM aep_staff_sessions WHERE user_id = ?").bind(target.id).run();
     }
   }
 
   if (Array.isArray(updates.roleIds)) {
-    if (updates.roleIds.includes(1) && !actor.isEnvOwner) {
-      return { valid: false, error: "No se puede otorgar el rol Owner" };
-    }
-
-    await db.prepare("DELETE FROM aep_user_roles WHERE user_id = ?").bind(userId).run();
+    // Perform atomic role assignment & session revocation
+    await db.prepare("DELETE FROM aep_user_roles WHERE user_id = ?").bind(target.id).run();
     for (const rId of updates.roleIds) {
-      await db.prepare("INSERT OR IGNORE INTO aep_user_roles (user_id, role_id) VALUES (?, ?)").bind(userId, rId).run();
+      await db.prepare("INSERT OR IGNORE INTO aep_user_roles (user_id, role_id)").bind(target.id, rId).run();
     }
 
-    // Invalidate sessions on role change
-    await db.prepare("UPDATE aep_staff_sessions SET session_version = session_version + 1 WHERE user_id = ?").bind(userId).run();
+    // Invalidate sessions on role change (Section 17)
+    await db.prepare("DELETE FROM aep_staff_sessions WHERE user_id = ?").bind(target.id).run();
   }
 
   await logAuditEvent(db, {
@@ -173,7 +202,7 @@ export async function updateStaffUser(db, actor, userId, updates) {
     actorIdentifier: actor.identifier || "admin",
     action: "staff.user.updated",
     entityType: "staff_user",
-    entityIdentifier: String(userId),
+    entityIdentifier: String(target.id),
     metadata: updates
   });
 
@@ -195,7 +224,7 @@ export async function resetStaffUserPassword(db, actor, userId, newPassword) {
     WHERE id = ?
   `).bind(hash, salt, iterations, userId).run();
 
-  // Invalidate old sessions
+  // Invalidate old sessions (Section 19)
   await db.prepare("DELETE FROM aep_staff_sessions WHERE user_id = ?").bind(userId).run();
 
   await logAuditEvent(db, {

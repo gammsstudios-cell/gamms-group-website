@@ -1,12 +1,12 @@
 // GET /aep/api/seller/claims/[code]
 import { previewClaim, sanitizeRedemptionError } from "../../../_lib/redemption.js";
-import { requirePermission } from "../../../_lib/staffAuth.js";
+import { requireSellerAuth } from "../../../_lib/sellerAuth.js";
 import { jsonResponse, errorJson } from "../../../_lib/adminResponses.js";
 
 export async function onRequestGet(context) {
   const db = context.env.DB;
-  const perm = await requirePermission(context.request, context.env, db, "pos.access");
-  if (!perm.authorized) return perm.response;
+  const auth = await requireSellerAuth(context.request, context.env);
+  if (!auth.ok) return errorJson(auth.code, auth.status);
 
   const result = await previewClaim(db, context.params.code);
   if (!result.ok) {

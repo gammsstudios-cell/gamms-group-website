@@ -11,9 +11,16 @@ export function adminJson(data, init = {}) {
   headers.set("content-type", "application/json; charset=utf-8");
 
   if (init.headers) {
+    const setCookies = typeof init.headers.getSetCookie === "function"
+      ? init.headers.getSetCookie()
+      : [];
     const extra = new Headers(init.headers);
     for (const [key, value] of extra.entries()) {
+      if (key.toLowerCase() === "set-cookie" && setCookies.length > 0) continue;
       headers.set(key, value);
+    }
+    for (const cookie of setCookies) {
+      headers.append("set-cookie", cookie);
     }
   }
 

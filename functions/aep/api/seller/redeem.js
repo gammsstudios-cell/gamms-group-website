@@ -1,13 +1,12 @@
 // POST /aep/api/seller/redeem
 import { redeemClaim, sanitizeRedemptionError } from "../../_lib/redemption.js";
-import { requirePermission } from "../../_lib/staffAuth.js";
-import { getCurrentShift } from "../../_lib/shifts.js";
+import { requireSellerAuth } from "../../_lib/sellerAuth.js";
 import { jsonResponse, errorJson } from "../../_lib/adminResponses.js";
 
 export async function onRequestPost({ request, env }) {
   const db = env.DB;
-  const perm = await requirePermission(request, env, db, "pos.redeem");
-  if (!perm.authorized) return perm.response;
+  const auth = await requireSellerAuth(request, env);
+  if (!auth.ok) return errorJson(auth.code, auth.status);
 
   let body;
   try {
@@ -19,14 +18,12 @@ export async function onRequestPost({ request, env }) {
   const claimCode = body?.claimCode || body?.code || "";
   const physicalQrToken = body?.physicalQrToken || body?.qrToken || null;
 
-  const currentShift = perm.actor.userId ? await getCurrentShift(db, perm.actor.userId) : null;
-
   const result = await redeemClaim(db, claimCode, {
-    actorType: perm.actor.type || "seller",
-    actorIdentifier: perm.actor.identifier || perm.actor.displayName || "seller",
+    actorType: "seller",
+    actorIdentifier: "legacy-seller",
     physicalQrToken,
-    staffUserId: perm.actor.userId || null,
-    shiftId: currentShift?.id || null,
+    staffUserId: null,
+    shiftId: null,
     audit: true
   });
 

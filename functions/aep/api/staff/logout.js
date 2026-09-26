@@ -8,7 +8,7 @@ import { jsonResponse } from "../../_lib/adminResponses.js";
 export async function onRequestPost({ request, env }) {
   const db = env.DB;
   const cookies = parseCookies(request.headers.get("Cookie"));
-  const staffToken = cookies[STAFF_COOKIE_NAME];
+  const staffToken = cookies.get(STAFF_COOKIE_NAME);
 
   if (staffToken) {
     try {
@@ -20,8 +20,8 @@ export async function onRequestPost({ request, env }) {
   const isSecure = new URL(request.url).protocol === "https:";
   const headers = new Headers();
   headers.append("Set-Cookie", clearStaffCookie(isSecure));
-  headers.append("Set-Cookie", clearAdminCookie(isSecure));
-  headers.append("Set-Cookie", clearSellerCookie(isSecure));
+  headers.append("Set-Cookie", clearAdminCookie(request));
+  headers.append("Set-Cookie", clearSellerCookie(request));
 
   return jsonResponse({ ok: true }, 200, headers);
 }

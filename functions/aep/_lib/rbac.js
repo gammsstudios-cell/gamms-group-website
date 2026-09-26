@@ -49,8 +49,6 @@ export const BUILTIN_ROLES = {
   Vendedor: { name: "Vendedor", permissions: ["pos.access", "pos.redeem", "sales.read_own", "shifts.use"] }
 };
 
-
-
 /**
  * Checks if a user's permission array contains a required permission.
  */
@@ -88,11 +86,17 @@ export function canUserAssignPermissions(actorPermSet, requestedPermList) {
  * Prevents privilege escalation: ensures target permissions are a subset of actor permissions.
  */
 export function validateNoPrivilegeEscalation(actorPermissions, requestedPermissions) {
-  if (actorPermissions.includes("*")) return { valid: true };
+  const actorList = Array.isArray(actorPermissions)
+    ? actorPermissions
+    : (actorPermissions instanceof Set ? Array.from(actorPermissions) : []);
 
-  const invalidKeys = requestedPermissions.filter(
-    (p) => !actorPermissions.includes(p)
-  );
+  if (actorList.includes("*")) return { valid: true };
+
+  const reqList = Array.isArray(requestedPermissions)
+    ? requestedPermissions
+    : (requestedPermissions instanceof Set ? Array.from(requestedPermissions) : []);
+
+  const invalidKeys = reqList.filter((p) => !actorList.includes(p));
 
   if (invalidKeys.length > 0) {
     return {
@@ -139,4 +143,23 @@ export async function getUserRoles(db, userId, isEnvOwner = false) {
   `).bind(userId).all();
 
   return rows?.results || [];
+}
+
+/**
+ * Fetches all distinct permissions for a given set of role IDs.
+ */
+export async function getPermissionsForRoleIds(db, roleIds = []) {
+  if (!Array.isArray(roleIds) || roleIds.length === 0) return [];
+  const validIds = roleIds.filter((id) => Number.isInteger(Number(id)) && Number(id) > 0);
+  if (validIds.length === 0) return [];
+
+  const placeholders = validIds.map(() => "?").join(",");
+  const rows = await db.prepare(`
+    SELECT DISTINCT rp.permission_key
+    FROM aep_role_permissions rp
+    JOIN aep_roles r ON r.id = rp.role_id
+    WHERE rp.role_id IN (${placeholders}) AND r.active = 1
+  `).bind(...validIds).all();
+
+  return (rows?.results || []).map((r) => r.permission_key);
 }

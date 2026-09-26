@@ -1,6 +1,5 @@
 // GAMMS AEP Staff Session Management Library
 import { sha256Hex } from "./crypto.js";
-import { parseCookies } from "./cookies.js";
 import { getUserPermissions, getUserRoles } from "./rbac.js";
 import { logAuditEvent } from "./audit.js";
 
@@ -35,9 +34,14 @@ export function clearStaffCookie(isSecure = true) {
 }
 
 /**
- * Creates a new staff session for a DB user.
+ * Creates a new staff session for a real DB user (aep_users.id > 0).
  */
 export async function createStaffSession(db, userId, userAgent = null, ipAddress = null) {
+  const numericUserId = Number.parseInt(userId, 10);
+  if (!Number.isInteger(numericUserId) || numericUserId <= 0) {
+    throw new TypeError("createStaffSession requires a positive integer DB userId from aep_users.");
+  }
+
   const token = generateSessionToken();
   const tokenHash = await sha256Hex(token);
   const sessionId = `staff-sess-${crypto.randomUUID()}`;
@@ -46,10 +50,10 @@ export async function createStaffSession(db, userId, userAgent = null, ipAddress
   await db.prepare(`
     INSERT INTO aep_staff_sessions (id, user_id, token_hash, expires_at, user_agent, ip_address)
     VALUES (?, ?, ?, ?, ?, ?)
-  `).bind(sessionId, userId, tokenHash, expiresAt, userAgent, ipAddress).run();
+  `).bind(sessionId, numericUserId, tokenHash, expiresAt, userAgent, ipAddress).run();
 
   await db.prepare("UPDATE aep_users SET last_login_at = CURRENT_TIMESTAMP, failed_login_count = 0, locked_until = NULL WHERE id = ?")
-    .bind(userId).run();
+    .bind(numericUserId).run();
 
   return { token, sessionId, expiresAt };
 }
@@ -111,13 +115,17 @@ export async function revokeSession(db, actor, sessionId) {
  * Revokes all sessions for a specific user.
  */
 export async function revokeAllUserSessions(db, actor, userId) {
-  await db.prepare("DELETE FROM aep_staff_sessions WHERE user_id = ?").bind(userId).run();
+  const numericUserId = Number.parseInt(userId, 10);
+  if (!Number.isInteger(numericUserId) || numericUserId <= 0) {
+    return { valid: false, error: "ID de usuario inválido" };
+  }
+  await db.prepare("DELETE FROM aep_staff_sessions WHERE user_id = ?").bind(numericUserId).run();
   await logAuditEvent(db, {
     actorType: actor.type || "staff",
     actorIdentifier: actor.identifier || "system",
     action: "staff.user.sessions_revoked_all",
     entityType: "staff_user",
-    entityIdentifier: String(userId)
+    entityIdentifier: String(numericUserId)
   });
   return { valid: true };
 }
