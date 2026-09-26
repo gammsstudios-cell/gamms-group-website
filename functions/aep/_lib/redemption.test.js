@@ -25,6 +25,8 @@ class FakeD1 {
       { id: 2, customer_id: "cust_a", product_id: 1, qr_code_id: 91 }
     ];
     this.fail = null;
+    this.mutateBeforeClaimInsert = null;
+    this.zeroChange = null;
   }
 
   prepare(sql) {
@@ -104,13 +106,13 @@ class FakeStatement {
       };
     }
 
-    if (this.sql.includes("FROM reward_claims c")) {
+    if (this.sql.includes("FROM reward_claims c") && this.sql.includes("claim_status")) {
       const claim = this.db.claims.find((item) => item.token_hash === this.params[0]);
       if (!claim) return null;
       const qr = [...this.db.qrs.values()].find((item) => item.id === claim.qr_code_id);
       const reward = this.db.rewards.find((item) => item.id === claim.reward_id);
       const product = this.db.products.get(qr.product_id);
-      const expired = claim.expires_at <= "2026-01-01 00:00:00";
+      const expired = claim.expires_at <= "2026-01-01T00:00:00Z";
       return {
         claim_status: claim.status,
         expires_at: claim.expires_at,
@@ -134,6 +136,20 @@ class FakeStatement {
       };
     }
 
+    if (this.sql.includes("FROM reward_claims c") && this.sql.includes("JOIN rewards r")) {
+      const claim = this.db.claims.find((item) => item.token_hash === this.params[0]);
+      if (!claim) return null;
+      const qr = [...this.db.qrs.values()].find((item) => item.id === claim.qr_code_id);
+      const reward = this.db.rewards.find((item) => item.id === claim.reward_id);
+      const product = this.db.products.get(qr.product_id);
+      return {
+        discount_percent: reward.discount_percent,
+        cycle_number: reward.cycle_number,
+        public_number: qr.public_number,
+        product_name: product.name
+      };
+    }
+
     throw new Error(`Unhandled first SQL: ${this.sql}`);
   }
 
@@ -150,34 +166,52 @@ class FakeStatement {
 
     if (this.sql.includes("SET status = 'expired'")) {
       for (const claim of this.db.claims) {
-        if (claim.status === "available" && claim.expires_at <= "2026-01-01 00:00:00") claim.status = "expired";
+        if (claim.status === "available" && claim.expires_at <= "2026-01-01T00:00:00Z") claim.status = "expired";
       }
       return { meta: { changes: 0 }, results: [] };
     }
 
     if (this.sql.includes("INSERT INTO reward_claims")) {
-      const [rewardId, customerId, qrCodeId, tokenHash] = this.params;
-      if (this.db.claims.some((claim) => claim.status === "available" && claim.reward_id === rewardId)) {
+      this.db.mutateBeforeClaimInsert?.(this.db);
+      this.db.mutateBeforeClaimInsert = null;
+
+      const [customerId, tokenHash, qrHash] = this.params;
+      const qr = this.db.qrs.get(qrHash);
+      const product = qr ? this.db.products.get(qr.product_id) : null;
+      const purchaseCount = this.db.purchases.filter((purchase) => purchase.customer_id === customerId).length;
+      const cycleNumber = Math.floor((purchaseCount - 1) / 3) + 1;
+      const reward = this.db.rewards.find((item) =>
+        item.customer_id === customerId &&
+        item.reward_type === "third_drink_50" &&
+        item.status === "available" &&
+        item.cycle_number === cycleNumber
+      );
+
+      if (!qr || qr.status !== "available" || !product || product.active !== 1 || !reward) {
+        return { meta: { changes: 0 }, results: [] };
+      }
+
+      if (this.db.claims.some((claim) => claim.status === "available" && claim.reward_id === reward.id)) {
         throw new Error("available reward claim duplicate");
       }
       const claim = {
         id: this.db.claims.length + 1,
-        reward_id: rewardId,
+        reward_id: reward.id,
         customer_id: customerId,
-        qr_code_id: qrCodeId,
+        qr_code_id: qr.id,
         token_hash: tokenHash,
         status: "available",
-        expires_at: "2026-01-01 00:05:00",
+        expires_at: "2026-01-01T00:05:00Z",
         redeemed_purchase_id: null
       };
       this.db.claims.push(claim);
-      return { meta: { changes: 1 }, results: [{ expires_at: claim.expires_at }] };
+      return { meta: { changes: 1 }, results: [{ expires_at: claim.expires_at, reward_id: claim.reward_id, qr_code_id: claim.qr_code_id }] };
     }
 
     if (this.sql.includes("INSERT INTO purchases")) {
       if (this.db.fail === "purchase") throw new Error("purchase failed");
       const claim = this.db.claims.find((item) => item.token_hash === this.params[0]);
-      if (!claim || claim.status !== "available" || claim.expires_at <= "2026-01-01 00:00:00") {
+      if (!claim || claim.status !== "available" || claim.expires_at <= "2026-01-01T00:00:00Z") {
         return { meta: { changes: 0 }, results: [] };
       }
       const qr = [...this.db.qrs.values()].find((item) => item.id === claim.qr_code_id);
@@ -200,6 +234,7 @@ class FakeStatement {
 
     if (this.sql.includes("UPDATE qr_codes")) {
       if (this.db.fail === "qr") throw new Error("qr failed");
+      if (this.db.zeroChange === "qr") return { meta: { changes: 0 }, results: [] };
       const claim = this.db.claims.find((item) => item.token_hash === this.params[0]);
       const qr = [...this.db.qrs.values()].find((item) => item.id === claim.qr_code_id);
       qr.status = "used";
@@ -208,6 +243,7 @@ class FakeStatement {
 
     if (this.sql.includes("UPDATE rewards")) {
       if (this.db.fail === "reward") throw new Error("reward failed");
+      if (this.db.zeroChange === "reward") return { meta: { changes: 0 }, results: [] };
       const claim = this.db.claims.find((item) => item.token_hash === this.params[1]);
       const reward = this.db.rewards.find((item) => item.id === claim.reward_id);
       const purchase = this.db.purchases.find((item) => item.qr_code_id === claim.qr_code_id);
@@ -218,6 +254,7 @@ class FakeStatement {
 
     if (this.sql.includes("UPDATE reward_claims")) {
       if (this.db.fail === "claim") throw new Error("claim failed");
+      if (this.db.zeroChange === "claim") return { meta: { changes: 0 }, results: [] };
       const claim = this.db.claims.find((item) => item.token_hash === this.params[0]);
       const purchase = this.db.purchases.find((item) => item.qr_code_id === claim.qr_code_id);
       claim.status = "redeemed";
@@ -246,7 +283,40 @@ test("claim codes normalize, reject ambiguous formats, and create a valid claim"
   assert.equal(result.ok, true);
   assert.equal(result.claim.code, "ABCD-EFGH-23");
   assert.match(result.claim.qrSvg, /<svg/);
+  assert.match(result.claim.expiresAt, /Z$/);
   assert.equal(db.claims.length, 1);
+});
+
+test("claim creation revalidates reward QR and product inside the batch", async () => {
+  for (const scenario of ["reward", "qr", "product"]) {
+    const db = new FakeD1();
+    await db.addQr("GGGGGGGGGGGG", 16);
+    db.mutateBeforeClaimInsert = (database) => {
+      if (scenario === "reward") database.rewards[0].status = "redeemed";
+      if (scenario === "qr") database.qrs.get([...database.qrs.keys()][0]).status = "used";
+      if (scenario === "product") database.products.get(1).active = 0;
+    };
+
+    const result = await createRewardClaim(db, requestWithCustomer(), "GGGGGGGGGGGG", {
+      generateClaimCode: () => "ABCDEFGH23"
+    });
+
+    assert.equal(result.ok, false, scenario);
+    assert.equal(db.claims.length, 0, scenario);
+  }
+});
+
+test("two concurrent createRewardClaim calls leave at most one available claim", async () => {
+  const db = new FakeD1();
+  await db.addQr("HHHHHHHHHHHH", 17);
+
+  const [first, second] = await Promise.all([
+    createRewardClaim(db, requestWithCustomer(), "HHHHHHHHHHHH", { generateClaimCode: () => "ABCDEFGH23" }),
+    createRewardClaim(db, requestWithCustomer(), "HHHHHHHHHHHH", { generateClaimCode: () => "JKLMNPQR45" })
+  ]);
+
+  assert.equal([first, second].filter((result) => result.ok).length, 2);
+  assert.equal(db.claims.filter((claim) => claim.status === "available").length, 1);
 });
 
 test("new claim cancels the previous available claim for the same reward", async () => {
@@ -317,5 +387,19 @@ for (const failure of ["purchase", "qr", "reward", "claim"]) {
     assert.equal([...db.qrs.values()][0].status, "available");
     assert.equal(db.rewards[0].status, "available");
     assert.equal(db.claims[0].status, "available");
+  });
+}
+
+for (const mutation of ["qr", "reward", "claim"]) {
+  test(`redemption rejects when ${mutation} mutation changes zero rows`, async () => {
+    const db = new FakeD1();
+    await db.addQr("JJJJJJJJJJJJ", 18);
+    await createRewardClaim(db, requestWithCustomer(), "JJJJJJJJJJJJ", { generateClaimCode: () => "ABCDEFGH23" });
+    db.zeroChange = mutation;
+
+    const result = await redeemClaim(db, "ABCD-EFGH-23");
+
+    assert.equal(result.ok, false);
+    assert.equal(result.code, "REDEMPTION_CONFLICT");
   });
 }

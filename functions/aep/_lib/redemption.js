@@ -212,7 +212,16 @@ export async function redeemClaim(db, rawCode) {
     const qr = firstRow(qrResult);
     const reward = firstRow(rewardResult);
     const claim = firstRow(claimResult);
-    if (!qr || !reward || !claim) return { ok: false, code: "REDEMPTION_CONFLICT" };
+    if (
+      changes(qrResult) !== 1 ||
+      changes(rewardResult) !== 1 ||
+      changes(claimResult) !== 1 ||
+      !qr ||
+      !reward ||
+      !claim
+    ) {
+      return { ok: false, code: "REDEMPTION_CONFLICT" };
+    }
 
     const product = await db
       .prepare("SELECT name FROM products WHERE id = ? LIMIT 1")

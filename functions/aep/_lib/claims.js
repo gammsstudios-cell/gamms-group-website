@@ -62,6 +62,14 @@ function publicClaim(row, code) {
   };
 }
 
+function firstRow(result) {
+  return Array.isArray(result?.results) ? result.results[0] : null;
+}
+
+function changes(result) {
+  return Number(result?.meta?.changes ?? 0);
+}
+
 export async function createRewardClaim(db, request, qrToken, options = {}) {
   const customerId = getCustomerIdFromRequest(request);
   if (!customerId) return { ok: false, code: "CLAIM_INVALID" };
@@ -115,18 +123,18 @@ export async function createRewardClaim(db, request, qrToken, options = {}) {
       db
         .prepare(
           `UPDATE reward_claims
+           SET status = 'expired'
+           WHERE status = 'available'
+             AND expires_at <= strftime('%Y-%m-%dT%H:%M:%SZ', 'now')`
+        ),
+      db
+        .prepare(
+          `UPDATE reward_claims
            SET status = 'cancelled'
            WHERE status = 'available'
              AND (reward_id = ? OR qr_code_id = ?)`
         )
         .bind(preview.reward_id, preview.qr_code_id),
-      db
-        .prepare(
-          `UPDATE reward_claims
-           SET status = 'expired'
-           WHERE status = 'available'
-             AND expires_at <= CURRENT_TIMESTAMP`
-        ),
       db
         .prepare(
           `INSERT INTO reward_claims (
@@ -137,17 +145,57 @@ export async function createRewardClaim(db, request, qrToken, options = {}) {
              status,
              expires_at
            )
-           VALUES (?, ?, ?, ?, 'available', datetime('now', '+5 minutes'))
-           RETURNING expires_at`
+           SELECT
+             r.id,
+             ?,
+             q.id,
+             ?,
+             'available',
+             strftime('%Y-%m-%dT%H:%M:%SZ', 'now', '+5 minutes')
+           FROM rewards r
+           JOIN qr_codes q ON q.token_hash = ?
+             AND q.status = 'available'
+           JOIN products p ON p.id = q.product_id
+             AND p.active = 1
+           WHERE r.customer_id = ?
+             AND r.reward_type = 'third_drink_50'
+             AND r.status = 'available'
+             AND r.cycle_number = (
+               SELECT CAST(((COUNT(*) - 1) / 3) + 1 AS INTEGER)
+               FROM purchases
+               WHERE customer_id = ?
+             )
+           RETURNING
+             expires_at,
+             reward_id,
+             qr_code_id`
         )
-        .bind(preview.reward_id, customerId, preview.qr_code_id, codeHash)
+        .bind(customerId, codeHash, qrTokenHash, customerId, customerId)
     ]);
-    const claimRow = insertResult?.results?.[0];
-    if (!claimRow) return { ok: false, code: "CLAIM_CONFLICT" };
+    const claimRow = firstRow(insertResult);
+    if (changes(insertResult) !== 1 || !claimRow) {
+      return { ok: false, code: "REWARD_NOT_AVAILABLE" };
+    }
+    const details = await db
+      .prepare(
+        `SELECT
+           r.discount_percent AS discount_percent,
+           r.cycle_number AS cycle_number,
+           q.public_number AS public_number,
+           p.name AS product_name
+         FROM reward_claims c
+         JOIN rewards r ON r.id = c.reward_id
+         JOIN qr_codes q ON q.id = c.qr_code_id
+         JOIN products p ON p.id = q.product_id
+         WHERE c.token_hash = ?
+         LIMIT 1`
+      )
+      .bind(codeHash)
+      .first();
 
     return {
       ok: true,
-      claim: publicClaim({ ...preview, ...claimRow }, code)
+      claim: publicClaim({ ...details, ...claimRow }, code)
     };
   } catch {
     return { ok: false, code: "CLAIM_CONFLICT" };
