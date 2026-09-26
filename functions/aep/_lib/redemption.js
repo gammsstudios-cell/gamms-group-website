@@ -10,6 +10,7 @@ const EXPECTED_REDEMPTION_ERRORS = new Set([
   "QR_ALREADY_USED",
   "QR_DISABLED",
   "REWARD_NOT_AVAILABLE",
+  "OUT_OF_STOCK",
   "REDEMPTION_CONFLICT"
 ]);
 
@@ -33,9 +34,11 @@ async function classifyClaimFailure(db, claimHash) {
          c.expires_at AS expires_at,
          c.expires_at <= CURRENT_TIMESTAMP AS expired,
          q.status AS qr_status,
-         r.status AS reward_status
+         r.status AS reward_status,
+         COALESCE(p.stock_quantity, 0) AS stock_quantity
        FROM reward_claims c
        LEFT JOIN qr_codes q ON q.id = c.qr_code_id
+       LEFT JOIN products p ON p.id = q.product_id
        LEFT JOIN rewards r ON r.id = c.reward_id
        WHERE c.token_hash = ?
        LIMIT 1`
@@ -50,6 +53,7 @@ async function classifyClaimFailure(db, claimHash) {
   if (claim.reward_status !== "available") return "REWARD_NOT_AVAILABLE";
   if (claim.qr_status === "used") return "QR_ALREADY_USED";
   if (claim.qr_status === "disabled") return "QR_DISABLED";
+  if (claim.stock_quantity <= 0) return "OUT_OF_STOCK";
 
   return "CLAIM_INVALID";
 }
@@ -69,6 +73,7 @@ export async function previewClaim(db, rawCode) {
          q.public_number AS public_number,
          p.name AS product_name,
          p.price_cents AS price_cents,
+         COALESCE(p.stock_quantity, 0) AS stock_quantity,
          r.status AS reward_status,
          r.discount_percent AS discount_percent
        FROM reward_claims c
@@ -88,6 +93,7 @@ export async function previewClaim(db, rawCode) {
   if (row.reward_status !== "available") return { ok: false, code: "REWARD_NOT_AVAILABLE" };
   if (row.qr_status === "used") return { ok: false, code: "QR_ALREADY_USED" };
   if (row.qr_status === "disabled") return { ok: false, code: "QR_DISABLED" };
+  if (row.stock_quantity <= 0) return { ok: false, code: "OUT_OF_STOCK" };
 
   return {
     ok: true,
@@ -116,7 +122,7 @@ export async function redeemClaim(db, rawCode) {
   const claimHash = await hashClaimCode(code);
 
   try {
-    const [insertResult, qrResult, rewardResult, claimResult] = await db.batch([
+    const [insertResult, qrResult, rewardResult, claimResult, stockResult, inventoryResult] = await db.batch([
       db
         .prepare(
           `INSERT INTO purchases (
@@ -141,6 +147,7 @@ export async function redeemClaim(db, rawCode) {
            WHERE c.token_hash = ?
              AND c.status = 'available'
              AND c.expires_at > CURRENT_TIMESTAMP
+             AND COALESCE(p.stock_quantity, 0) > 0
            RETURNING
              id,
              customer_id,
@@ -185,9 +192,15 @@ export async function redeemClaim(db, rawCode) {
              WHERE token_hash = ?
            )
              AND status = 'available'
+             AND EXISTS (
+               SELECT 1
+               FROM reward_claims c
+               JOIN purchases p ON p.qr_code_id = c.qr_code_id
+               WHERE c.token_hash = ?
+             )
            RETURNING status, cycle_number`
         )
-        .bind(claimHash, claimHash),
+        .bind(claimHash, claimHash, claimHash),
       db
         .prepare(
           `UPDATE reward_claims
@@ -201,7 +214,60 @@ export async function redeemClaim(db, rawCode) {
                )
            WHERE token_hash = ?
              AND status = 'available'
+             AND EXISTS (
+               SELECT 1
+               FROM purchases p
+               WHERE p.qr_code_id = reward_claims.qr_code_id
+             )
            RETURNING status`
+        )
+        .bind(claimHash),
+      db
+        .prepare(
+          `UPDATE products
+           SET stock_quantity = stock_quantity - 1,
+               updated_at = CURRENT_TIMESTAMP
+           WHERE id = (
+             SELECT q.product_id
+             FROM reward_claims c
+             JOIN qr_codes q ON q.id = c.qr_code_id
+             WHERE c.token_hash = ?
+             LIMIT 1
+           )
+           AND stock_quantity > 0
+           AND EXISTS (
+             SELECT 1
+             FROM reward_claims c
+             JOIN purchases p ON p.qr_code_id = c.qr_code_id
+             WHERE c.token_hash = ?
+           )`
+        )
+        .bind(claimHash, claimHash),
+      db
+        .prepare(
+          `INSERT INTO inventory_movements (
+             product_id,
+             movement_type,
+             quantity_delta,
+             reason,
+             purchase_id,
+             actor_type,
+             actor_identifier,
+             created_at
+           )
+           SELECT
+             p.product_id,
+             'sale',
+             -1,
+             'Canje vendedor 50% reward',
+             p.id,
+             'seller',
+             'seller',
+             CURRENT_TIMESTAMP
+           FROM reward_claims c
+           JOIN purchases p ON p.qr_code_id = c.qr_code_id
+           WHERE c.token_hash = ?
+           LIMIT 1`
         )
         .bind(claimHash)
     ]);
@@ -216,6 +282,8 @@ export async function redeemClaim(db, rawCode) {
       changes(qrResult) !== 1 ||
       changes(rewardResult) !== 1 ||
       changes(claimResult) !== 1 ||
+      changes(stockResult) !== 1 ||
+      changes(inventoryResult) !== 1 ||
       !qr ||
       !reward ||
       !claim

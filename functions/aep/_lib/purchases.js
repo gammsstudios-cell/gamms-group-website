@@ -14,6 +14,7 @@ const EXPECTED_PURCHASE_ERRORS = new Set([
   "QR_ALREADY_USED",
   "QR_DISABLED",
   "PRODUCT_NOT_FOUND",
+  "OUT_OF_STOCK",
   "PURCHASE_CONFLICT",
   "REWARD_REQUIRES_SELLER"
 ]);
@@ -45,6 +46,7 @@ async function classifyQrFailure(db, tokenHash) {
          q.status AS status,
          q.product_id AS product_id,
          p.id AS valid_product_id,
+         COALESCE(p.stock_quantity, 0) AS stock_quantity,
          purchases.id AS purchase_id
        FROM qr_codes q
        LEFT JOIN products p ON p.id = q.product_id AND p.active = 1
@@ -60,6 +62,7 @@ async function classifyQrFailure(db, tokenHash) {
   if (qr.status === "disabled") return "QR_DISABLED";
   if (qr.purchase_id) return "PURCHASE_CONFLICT";
   if (!qr.product_id || !qr.valid_product_id) return "PRODUCT_NOT_FOUND";
+  if (qr.stock_quantity <= 0) return "OUT_OF_STOCK";
 
   return "QR_INVALID";
 }
@@ -98,7 +101,7 @@ async function lookupAvailableReward(db, customerId) {
 }
 
 async function createPurchaseAndConsumeQr(db, tokenHash, customerId) {
-  const [insertResult, updateResult, rewardResult] = await db.batch([
+  const [insertResult, updateResult, rewardResult, stockResult, inventoryResult] = await db.batch([
     db
       .prepare(
         `INSERT INTO purchases (
@@ -120,6 +123,7 @@ async function createPurchaseAndConsumeQr(db, tokenHash, customerId) {
          JOIN products p ON p.id = q.product_id AND p.active = 1
          WHERE q.token_hash = ?
            AND q.status = 'available'
+           AND COALESCE(p.stock_quantity, 0) > 0
            AND NOT EXISTS (
              SELECT 1
              FROM rewards
@@ -184,12 +188,62 @@ async function createPurchaseAndConsumeQr(db, tokenHash, customerId) {
         customerId,
         customerId,
         REWARD_TYPE
+      ),
+    db
+      .prepare(
+        `UPDATE products
+         SET stock_quantity = stock_quantity - 1,
+             updated_at = CURRENT_TIMESTAMP
+         WHERE id = (
+           SELECT product_id
+           FROM qr_codes
+           WHERE token_hash = ?
+         )
+         AND stock_quantity > 0
+         AND EXISTS (
+           SELECT 1
+           FROM purchases p
+           JOIN qr_codes q ON q.id = p.qr_code_id
+           WHERE q.token_hash = ?
+         )`
       )
+      .bind(tokenHash, tokenHash),
+    db
+      .prepare(
+        `INSERT INTO inventory_movements (
+           product_id,
+           movement_type,
+           quantity_delta,
+           reason,
+           purchase_id,
+           actor_type,
+           actor_identifier,
+           created_at
+         )
+         SELECT
+           p.product_id,
+           'sale',
+           -1,
+           'Venta cliente escaneo QR',
+           p.id,
+           'customer',
+           ?,
+           CURRENT_TIMESTAMP
+         FROM purchases p
+         JOIN qr_codes q ON q.id = p.qr_code_id
+         WHERE q.token_hash = ?`
+      )
+      .bind(customerId, tokenHash)
   ]);
 
   const consumedQr = getFirstBatchRow(updateResult);
 
-  if (getBatchChanges(insertResult) !== 1 || !consumedQr) {
+  if (
+    getBatchChanges(insertResult) !== 1 ||
+    !consumedQr ||
+    getBatchChanges(stockResult) !== 1 ||
+    getBatchChanges(inventoryResult) !== 1
+  ) {
     return null;
   }
 

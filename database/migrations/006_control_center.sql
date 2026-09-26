@@ -49,8 +49,6 @@ CREATE TABLE IF NOT EXISTS seller_sessions (
     FOREIGN KEY (seller_id) REFERENCES sellers(id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_sellers_username ON sellers(username);
-
 -- Audit log for administrative and critical actions
 CREATE TABLE IF NOT EXISTS audit_events (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

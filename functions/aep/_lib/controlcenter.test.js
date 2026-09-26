@@ -113,7 +113,7 @@ async function createTestDb() {
 // ----------------------------------------------------
 // MIGRATION & SCHEMA VALIDATION TEST (Section 35)
 // ----------------------------------------------------
-test("Database migrations 001 to 006 apply cleanly to fresh SQLite database", async () => {
+test("Database migrations 001 to 007 apply cleanly to fresh SQLite database", async () => {
   const db = await createTestDb();
   const tables = await db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all();
   const tableNames = (tables?.results ?? []).map((t) => t.name);

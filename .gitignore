@@ -1,5 +1,6 @@
 node_modules/
 .wrangler/
+.wrangler-pages-functions-build/
 .dev.vars
 .env
 .env.local
