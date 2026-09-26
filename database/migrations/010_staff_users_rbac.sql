@@ -22,7 +22,6 @@ CREATE TABLE IF NOT EXISTS aep_users (
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX IF NOT EXISTS idx_users_username_norm ON aep_users(username_normalized);
 CREATE INDEX IF NOT EXISTS idx_users_active ON aep_users(active);
 
 -- Roles table
@@ -121,7 +120,7 @@ INSERT OR IGNORE INTO aep_role_permissions (role_id, permission_key)
 SELECT 1, key FROM aep_permissions;
 
 INSERT OR IGNORE INTO aep_role_permissions (role_id, permission_key)
-SELECT 3, key FROM aep_permissions WHERE key NOT IN ('system.manage');
+SELECT 3, key FROM aep_permissions WHERE key NOT IN ('system.manage', 'security.mfa.manage');
 
 -- 2. Desarrollador: technical + administrative read/manage
 INSERT OR IGNORE INTO aep_role_permissions (role_id, permission_key)
@@ -165,7 +164,7 @@ SELECT 8, key FROM aep_permissions WHERE key IN (
 );
 
 -- Migrate existing sellers into aep_users and assign Vendedor role (role_id = 5)
-INSERT OR IGNORE INTO aep_users (
+INSERT INTO aep_users (
     username,
     username_normalized,
     display_name,
@@ -189,4 +188,6 @@ FROM sellers;
 INSERT OR IGNORE INTO aep_user_roles (user_id, role_id)
 SELECT u.id, 5
 FROM aep_users u
-JOIN sellers s ON u.display_name = s.display_name AND u.password_hash = s.passcode_hash;
+JOIN sellers s ON u.username_normalized = LOWER(COALESCE(s.username, 'seller_' || s.id))
+              AND u.password_hash = s.passcode_hash;
+
