@@ -463,6 +463,17 @@ test("print order maps items to exact physical MACO slots", async () => {
   assert.deepEqual({ row: rightLeftTop[0].row, column: rightLeftTop[0].column }, { row: 1, column: 5 });
   assert.deepEqual({ row: rightLeftTop[4].row, column: rightLeftTop[4].column }, { row: 1, column: 1 });
   assert.deepEqual({ row: rightLeftTop[5].row, column: rightLeftTop[5].column }, { row: 2, column: 5 });
+
+  const fifteen = paginateLabels(Array.from({ length: 15 }, (_, index) => ({ publicNumber: index + 1, url: `https://example.com/${index}` })), profile, 1);
+  assert.equal(fifteen.ok, true);
+  assert.deepEqual(
+    fifteen.pages[0].map((item) => ({ row: item.box.row, column: item.box.column })),
+    [
+      { row: 1, column: 5 }, { row: 1, column: 4 }, { row: 1, column: 3 }, { row: 1, column: 2 }, { row: 1, column: 1 },
+      { row: 2, column: 5 }, { row: 2, column: 4 }, { row: 2, column: 3 }, { row: 2, column: 2 }, { row: 2, column: 1 },
+      { row: 3, column: 5 }, { row: 3, column: 4 }, { row: 3, column: 3 }, { row: 3, column: 2 }, { row: 3, column: 1 }
+    ]
+  );
 });
 
 test("default print order startSlot skips positions right-to-left by row", async () => {
@@ -566,7 +577,7 @@ test("batch PDF validation rejects manipulated labels and does not persist plain
 
   const validation = await validateBatchPdfLabels(db, "https://example.com/aep/controlcenter/print", {
     batchId: batch.batchId,
-    items: batch.items.map((item) => ({ token: item.token, url: "https://evil.example/" }))
+    tokens: batch.items.map((item) => item.token)
   });
   assert.equal(validation.ok, true);
   assert.ok(validation.labels.every((label) => label.url.startsWith("https://example.com/aep/promo/r/")));
@@ -648,7 +659,7 @@ test("admin PDF endpoint requires admin/CSRF and emits safe filename plus audit"
     request: new Request("https://example.com/aep/api/admin/print/pdf", {
       method: "POST",
       headers: { "content-type": "application/json", host: "example.com", origin: "https://example.com", cookie },
-      body: JSON.stringify({ batchId: batch.batchId, items: [{ token: batch.items[0].token }], startSlot: 1 })
+      body: JSON.stringify({ batchId: batch.batchId, tokens: [batch.items[0].token], startSlot: 1 })
     }),
     env
   });
@@ -673,27 +684,46 @@ test("admin PDF endpoint requires admin/CSRF and emits safe filename plus audit"
   assert.equal(filename.includes("\n"), false);
 });
 
-test("Control Center browser print uses exact Letter sheets without printable instructions", () => {
+test("Control Center uses the PDF endpoint as the only physical print engine", () => {
   const source = readFileSync(resolve(process.cwd(), "functions/aep/controlcenter/[[path]].js"), "utf8");
 
-  assert.match(source, /@page \{ size: Letter; margin: 0; \}/);
-  assert.match(source, /html, body \{ width: 8\.5in; margin: 0 !important; padding: 0 !important;/);
-  assert.match(source, /\.print-sheet \{ position: relative; width: 8\.5in; height: 11in; box-sizing: border-box; margin: 0; padding: 0; overflow: hidden;/);
+  assert.match(source, /async function fetchCurrentBatchPdf\(\)/);
+  assert.match(source, /async function downloadCurrentPdf\(\)/);
+  assert.match(source, /async function printCurrentBatch\(\)/);
+  assert.equal((source.match(/fetchCurrentBatchPdf\(\)/g) || []).length, 3);
+  assert.equal((source.match(/API_BASE \+ "\/print\/pdf"/g) || []).length, 1);
+  assert.match(source, /batchId: currentPrintBatch\.batchId/);
+  assert.match(source, /printProfileId: currentPrintBatch\.printProfile\?\.id/);
+  assert.match(source, /startSlot: currentPrintBatch\.startSlot/);
+  assert.match(source, /tokens: currentPrintBatch\.items\.map\(item => item\.token\)/);
+  assert.match(source, /link\.download = "gamms-aep-labels-" \+ currentPrintBatch\.batchId \+ "\.pdf"/);
+  assert.match(source, /window\.open\(url, "_blank", "noopener"\)/);
+  assert.match(source, /Motor de impresion: PDF fisico/);
+  assert.match(source, /Letter 8\.5 x 11 in · MACO ML-5000 · 5 x 10/);
+  assert.match(source, /Papel Carta \/ Letter 8\.5 x 11/);
+  assert.match(source, /#printable-labels \{ display: none !important; \}/);
+  assert.match(source, /Browser print is not a production label engine/);
+  assert.doesNotMatch(source, /window\.print\(/);
+  assert.doesNotMatch(source, /@page \{ size: Letter; margin: 0; \}/);
+  assert.doesNotMatch(source, /page-break-after: always/);
+  assert.doesNotMatch(source, /break-after: page/);
+});
+
+test("Control Center browser preview keeps PDF physical mapping without being printable production CSS", () => {
+  const source = readFileSync(resolve(process.cwd(), "functions/aep/controlcenter/[[path]].js"), "utf8");
+
   assert.match(source, /\.print-slot \{ position: absolute;/);
-  assert.match(source, /\.print-sheet:last-child \{ break-after: auto; page-break-after: auto; \}/);
-  assert.match(source, /\.print-instructions \{ display: none !important; \}/);
-  assert.match(source, /\.sidebar, \.top-header, #toast-container, \.modal-overlay, \.mobile-menu-btn, \.print-instructions, #printPreview > :not\(#printable-labels\) \{ display: none !important; \}/);
   assert.match(source, /function renderBrowserPrintSheets\(batch\)/);
   assert.match(source, /function getOrderedBrowserSlots\(profile\)/);
   assert.match(source, /\.print-sheet-frame \{ width: 8\.5in; height: 11in;/);
   assert.match(source, /function fitPrintPreview\(\)/);
-  assert.match(source, /transform: none !important; box-shadow: none !important;/);
   assert.match(source, /window\.addEventListener\("resize", fitPrintPreview\)/);
   assert.match(source, /transform: scale\(var\(--preview-scale, 1\)\)/);
   assert.match(source, /\.print-slot \.qr-label-card svg \{ position: absolute; left: 0\.04in; top: 0\.14in; width: 0\.72in; height: 0\.72in;/);
   assert.match(source, /function renderPrintLabel\(item\)/);
   assert.match(source, /function escapePrintText\(value\)/);
   assert.match(source, /shape-rendering: crispEdges/);
+  assert.match(source, /for \(let row = 0; row < rows; row \+= 1\) \{\s*for \(let col = columns - 1; col >= 0; col -= 1\) pushSlot\(row, col\);/);
   assert.doesNotMatch(source, /name="printOrder"/);
   assert.doesNotMatch(source, /#printable-labels \{[^}]*min-height: 11in/);
   assert.doesNotMatch(source, /grid-template-columns: repeat\(5, 1\.5in\)/);

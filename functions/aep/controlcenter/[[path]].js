@@ -148,27 +148,10 @@ export function onRequestGet() {
     .toast { background: var(--bg-sidebar); color: var(--text-sidebar); padding: 14px 20px; border-radius: 12px; font-size: 14px; font-weight: 600; box-shadow: 0 10px 30px rgba(0,0,0,0.2); display: flex; align-items: center; gap: 10px; animation: slideIn 0.3s ease; }
     @keyframes slideIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
-    /* Print Label Stylesheet */
+    /* Browser print is not a production label engine. Physical labels are printed from the generated PDF only. */
     @media print {
-      @page { size: Letter; margin: 0; }
-      html, body { width: 8.5in; margin: 0 !important; padding: 0 !important; background: #FFF !important; overflow: visible; }
-      body * { visibility: hidden; box-sizing: border-box; }
-      .sidebar, .top-header, #toast-container, .modal-overlay, .mobile-menu-btn, .print-instructions, #printPreview > :not(#printable-labels) { display: none !important; }
-      #printable-labels, #printable-labels * { visibility: visible; }
-      #app, .main-wrapper, .content-area, #printPreview { display: block !important; margin: 0 !important; padding: 0 !important; width: 8.5in !important; max-width: 8.5in !important; background: #FFF !important; overflow: visible !important; }
-      #printable-labels { position: absolute; left: 0; top: 0; width: 8.5in; margin: 0; padding: 0; background: #FFF; display: block; overflow: visible; }
-      .print-sheet { position: relative; width: 8.5in; height: 11in; box-sizing: border-box; margin: 0; padding: 0; overflow: hidden; background: #FFF; display: block; transform: none !important; box-shadow: none !important; break-after: page; page-break-after: always; }
-      .print-sheet:last-child { break-after: auto; page-break-after: auto; }
-      .print-sheet-frame { display: contents !important; width: auto !important; height: auto !important; }
-      .print-slot { position: absolute; margin: 0; padding: 0; overflow: visible; background: #FFF; border: none; outline: none; }
-      .print-slot .qr-label-card { position: relative; box-sizing: border-box; border: none !important; outline: none !important; border-radius: 0 !important; padding: 0; width: 100%; height: 100%; text-align: left; page-break-inside: avoid; break-inside: avoid; background: #FFF !important; color: #000 !important; box-shadow: none !important; overflow: visible; }
-      .print-slot .qr-label-card svg { position: absolute; left: 0.04in; top: 0.14in; width: 0.72in; height: 0.72in; margin: 0; display: block; }
-      .print-slot .qr-label-card svg rect { shape-rendering: crispEdges; }
-      .print-slot .qr-label-card svg rect[fill="#1D1D1F"] { fill: #000 !important; }
-      .print-slot .qr-label-title { position: absolute; left: 0.80in; top: 0.08in; right: 0.03in; font-size: 6.3pt; font-weight: 800; line-height: 1.05; margin: 0; }
-      .print-slot .qr-label-product { position: absolute; left: 0.80in; top: 0.23in; right: 0.03in; max-height: 0.36in; font-size: 5.3pt; font-weight: 700; line-height: 1.1; margin: 0; color: #000 !important; overflow: hidden; overflow-wrap: anywhere; }
-      .print-slot .qr-label-num { position: absolute; left: 0.80in; right: 0.03in; bottom: 0.08in; font-size: 8pt; font-weight: 900; line-height: 1.05; margin: 0; }
-      .print-instructions { display: none !important; }
+      #printable-labels { display: none !important; }
+      .print-instructions::after { content: " Usa el boton Imprimir del Print Center para abrir el PDF fisico."; display: block; margin-top: 6px; }
     }
     
     .qr-label-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; margin-top: 16px; }
@@ -178,7 +161,7 @@ export function onRequestGet() {
     .qr-label-product { font-size: 13px; font-weight: 700; color: #007AFF; margin-top: 2px; }
     .qr-label-num { font-size: 15px; font-weight: 900; margin-top: 4px; }
     .print-instructions { margin: 12px 0; padding: 10px 12px; border-radius: 8px; background: var(--badge-amber-bg); color: var(--badge-amber-text); font-size: 13px; font-weight: 700; }
-    #printable-labels.qr-label-grid { display: block; margin-top: 16px; }
+    .print-preview-sheets { display: block; margin-top: 16px; }
     .print-sheet-frame { width: 8.5in; height: 11in; margin: 12px 0; }
     .print-sheet { position: relative; width: 8.5in; height: 11in; max-width: none; box-sizing: border-box; background: #FFF; overflow: hidden; box-shadow: var(--card-shadow); margin: 0; transform: scale(var(--preview-scale, 1)); transform-origin: top left; }
     .print-slot { position: absolute; overflow: visible; background: #FFF; }
@@ -1041,10 +1024,10 @@ export function onRequestGet() {
     function showPrintLabelsModal(qrItems) {
       openModal("Etiquetas Generadas para Impresión (" + qrItems.length + ")", \`
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-          <p style="font-size:13px; color:var(--text-muted)">Haz clic en Imprimir para enviar a la impresora de etiquetas.</p>
-          <button class="btn-primary" onclick="window.print()">Imprimir Etiquetas</button>
+          <p style="font-size:13px; color:var(--text-muted)">Vista previa visual. Para produccion usa el Print Center y su PDF fisico.</p>
+          <button class="btn-primary" onclick="renderPrintCenter(); closeModal();">Abrir Print Center</button>
         </div>
-        <div id="printable-labels" class="qr-label-grid">
+        <div id="printable-labels" class="print-preview-sheets">
           \${qrItems.map(item => \`
             <div class="qr-label-card">
               <div class="qr-label-title">GAMMS AEP</div>
@@ -1104,7 +1087,9 @@ export function onRequestGet() {
                   <button class="btn-primary" onclick="downloadCurrentPdf()">PDF</button>
                 </div>
               </div>
-              <p style="color:var(--text-muted); font-size:13px; margin-bottom:12px;">Los tokens aparecen solo en esta sesion de creacion. No se guardan en historial ni en base de datos.</p>
+              <p style="color:var(--text-muted); font-size:13px; margin-bottom:8px;">Los tokens aparecen solo en esta sesion de creacion. No se guardan en historial ni en base de datos.</p>
+              <p style="color:var(--text-muted); font-size:13px; margin-bottom:6px;">Motor de impresion: PDF fisico</p>
+              <p style="color:var(--text-muted); font-size:13px; margin-bottom:12px;">Letter 8.5 x 11 in · MACO ML-5000 · 5 x 10</p>
               <div id="printPreview"><p style="color:var(--text-muted)">Genera un lote para ver la hoja.</p></div>
             </div>
             <div class="card">
@@ -1136,8 +1121,8 @@ export function onRequestGet() {
           <span class="badge badge-warning">Slot inicial \${batch.startSlot}</span>
           <span class="badge badge-success">\${batch.count} etiquetas</span>
         </div>
-        <div class="print-instructions">Imprimir a tamaño real / 100%. Desactivar Ajustar a página.</div>
-        <div id="printable-labels" class="qr-label-grid">
+        <div class="print-instructions">En el dialogo de impresion selecciona: Papel Carta / Letter 8.5 x 11 · Escala 100% / Tamano real · Desactivar Ajustar a pagina.</div>
+        <div id="printable-labels" class="print-preview-sheets">
           \${renderBrowserPrintSheets(batch)}
         </div>
       \`;
@@ -1239,7 +1224,7 @@ export function onRequestGet() {
         frame.style.height = (11 * scale).toFixed(4) + "in";
       }
     }
-    async function downloadCurrentPdf() {
+    async function fetchCurrentBatchPdf() {
       if (!currentPrintBatch) return showToast("Genera un batch primero.", true);
       const res = await fetch(API_BASE + "/print/pdf", {
         method: "POST",
@@ -1249,11 +1234,19 @@ export function onRequestGet() {
           batchId: currentPrintBatch.batchId,
           printProfileId: currentPrintBatch.printProfile?.id,
           startSlot: currentPrintBatch.startSlot,
-          items: currentPrintBatch.items.map(item => ({ token: item.token }))
+          tokens: currentPrintBatch.items.map(item => item.token)
         })
       });
-      if (!res.ok) return showToast("No se pudo generar PDF.", true);
-      const blob = await res.blob();
+      if (!res.ok) {
+        showToast("No se pudo generar PDF.", true);
+        return null;
+      }
+      return res.blob();
+    }
+
+    async function downloadCurrentPdf() {
+      const blob = await fetchCurrentBatchPdf();
+      if (!blob) return;
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
@@ -1262,9 +1255,17 @@ export function onRequestGet() {
       URL.revokeObjectURL(url);
     }
 
-    function printCurrentBatch() {
-      if (!currentPrintBatch) return showToast("Genera un batch primero.", true);
-      window.print();
+    async function printCurrentBatch() {
+      const blob = await fetchCurrentBatchPdf();
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const tab = window.open(url, "_blank", "noopener");
+      if (!tab) {
+        URL.revokeObjectURL(url);
+        return showToast("Permite ventanas emergentes para abrir el PDF de impresion.", true);
+      }
+      showToast("PDF fisico abierto. Imprime a 100% / Tamano real en papel Letter.");
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
     }
 
     async function loadCalibration() {

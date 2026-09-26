@@ -38,7 +38,8 @@ export async function validateBatchPdfLabels(db, requestUrl, body = {}) {
   const batchId = asCleanString(body.batchId ?? body.batch_id);
   if (!batchId) return { ok: false, code: "INVALID_BATCH" };
 
-  const rawItems = body.items ?? body.labels;
+  const rawTokens = Array.isArray(body.tokens) ? body.tokens.map((token) => ({ token })) : null;
+  const rawItems = rawTokens ?? body.items ?? body.labels;
   if (!Array.isArray(rawItems) || rawItems.length < 1 || rawItems.length > 500) {
     return { ok: false, code: "INVALID_LABEL_COUNT" };
   }
