@@ -8,7 +8,7 @@ ALTER TABLE products ADD COLUMN cost_cents INTEGER CHECK (cost_cents IS NULL OR 
 ALTER TABLE products ADD COLUMN stock_quantity INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE products ADD COLUMN low_stock_threshold INTEGER NOT NULL DEFAULT 5;
 ALTER TABLE products ADD COLUMN image_url TEXT;
-ALTER TABLE products ADD COLUMN updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE products ADD COLUMN updated_at TEXT;
 
 -- Ledger table for real inventory movements
 CREATE TABLE IF NOT EXISTS inventory_movements (
