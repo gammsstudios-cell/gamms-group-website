@@ -683,8 +683,12 @@ test("Control Center browser print uses exact Letter sheets without printable in
   assert.match(source, /\.print-sheet:last-child \{ break-after: auto; page-break-after: auto; \}/);
   assert.match(source, /\.print-instructions \{ display: none !important; \}/);
   assert.match(source, /function renderBrowserPrintSheets\(batch\)/);
-  assert.match(source, /function getOrderedBrowserSlots\(profile, printOrder\)/);
-  assert.match(source, /<option value="top-to-bottom-right-to-left" selected>/);
+  assert.match(source, /function getOrderedBrowserSlots\(profile\)/);
+  assert.match(source, /\.print-sheet-frame \{ width: 8\.5in; height: 11in;/);
+  assert.match(source, /function fitPrintPreview\(\)/);
+  assert.match(source, /transform: scale\(var\(--preview-scale, 1\)\)/);
+  assert.match(source, /\.print-slot \.qr-label-card svg \{ position: absolute; left: 0\.04in; top: 0\.20in; width: 0\.56in; height: 0\.56in;/);
+  assert.doesNotMatch(source, /name="printOrder"/);
   assert.doesNotMatch(source, /#printable-labels \{[^}]*min-height: 11in/);
   assert.doesNotMatch(source, /grid-template-columns: repeat\(5, 1\.5in\)/);
   assert.doesNotMatch(source, /print-guidance/);

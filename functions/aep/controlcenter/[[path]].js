@@ -158,12 +158,13 @@ export function onRequestGet() {
       #printable-labels { position: absolute; left: 0; top: 0; width: 8.5in; margin: 0; padding: 0; background: #FFF; display: block; overflow: visible; }
       .print-sheet { position: relative; width: 8.5in; height: 11in; box-sizing: border-box; margin: 0; padding: 0; overflow: hidden; background: #FFF; display: block; break-after: page; page-break-after: always; }
       .print-sheet:last-child { break-after: auto; page-break-after: auto; }
+      .print-sheet-frame { display: contents !important; width: auto !important; height: auto !important; }
       .print-slot { position: absolute; margin: 0; padding: 0; overflow: visible; background: #FFF; border: none; outline: none; }
-      .qr-label-card { border: none !important; outline: none !important; border-radius: 0 !important; padding: 0.035in; width: 100%; height: 100%; text-align: left; page-break-inside: avoid; break-inside: avoid; background: #FFF !important; color: #000 !important; box-shadow: none !important; overflow: visible; }
-      .qr-label-card svg { width: 0.58in; height: 0.58in; margin: 0.16in 0.04in 0 0; float: left; display: block; }
-      .qr-label-title { font-size: 6.5pt; line-height: 1.05; margin-top: 0.08in; }
-      .qr-label-product { font-size: 5.8pt; line-height: 1.05; color: #000 !important; }
-      .qr-label-num { font-size: 7.5pt; line-height: 1.05; margin-top: 0.04in; }
+      .print-slot .qr-label-card { position: relative; box-sizing: border-box; border: none !important; outline: none !important; border-radius: 0 !important; padding: 0; width: 100%; height: 100%; text-align: left; page-break-inside: avoid; break-inside: avoid; background: #FFF !important; color: #000 !important; box-shadow: none !important; overflow: visible; }
+      .print-slot .qr-label-card svg { position: absolute; left: 0.04in; top: 0.20in; width: 0.56in; height: 0.56in; margin: 0; display: block; }
+      .print-slot .qr-label-title { position: absolute; left: 0.66in; top: 0.10in; right: 0.04in; font-size: 6.5pt; font-weight: 800; line-height: 1.05; margin: 0; }
+      .print-slot .qr-label-product { position: absolute; left: 0.66in; top: 0.23in; right: 0.04in; font-size: 5.8pt; font-weight: 700; line-height: 1.05; margin: 0; color: #000 !important; overflow-wrap: anywhere; }
+      .print-slot .qr-label-num { position: absolute; left: 0.66in; right: 0.04in; bottom: 0.10in; font-size: 7.5pt; font-weight: 900; line-height: 1.05; margin: 0; }
       .print-instructions { display: none !important; }
     }
     
@@ -174,8 +175,15 @@ export function onRequestGet() {
     .qr-label-product { font-size: 13px; font-weight: 700; color: #007AFF; margin-top: 2px; }
     .qr-label-num { font-size: 15px; font-weight: 900; margin-top: 4px; }
     .print-instructions { margin: 12px 0; padding: 10px 12px; border-radius: 8px; background: var(--badge-amber-bg); color: var(--badge-amber-text); font-size: 13px; font-weight: 700; }
-    .print-sheet { position: relative; width: 8.5in; height: 11in; max-width: 100%; background: #FFF; overflow: hidden; box-shadow: var(--card-shadow); margin: 12px 0; transform-origin: top left; }
+    #printable-labels.qr-label-grid { display: block; margin-top: 16px; }
+    .print-sheet-frame { width: 8.5in; height: 11in; margin: 12px 0; }
+    .print-sheet { position: relative; width: 8.5in; height: 11in; max-width: none; box-sizing: border-box; background: #FFF; overflow: hidden; box-shadow: var(--card-shadow); margin: 0; transform: scale(var(--preview-scale, 1)); transform-origin: top left; }
     .print-slot { position: absolute; overflow: visible; background: #FFF; }
+    .print-slot .qr-label-card { position: relative; box-sizing: border-box; border: none; border-radius: 0; padding: 0; width: 100%; height: 100%; text-align: left; background: #FFF; color: #1D1D1F; box-shadow: none; overflow: visible; }
+    .print-slot .qr-label-card svg { position: absolute; left: 0.04in; top: 0.20in; width: 0.56in; height: 0.56in; margin: 0; display: block; }
+    .print-slot .qr-label-title { position: absolute; left: 0.66in; top: 0.10in; right: 0.04in; font-size: 6.5pt; font-weight: 800; line-height: 1.05; letter-spacing: 0; margin: 0; }
+    .print-slot .qr-label-product { position: absolute; left: 0.66in; top: 0.23in; right: 0.04in; font-size: 5.8pt; font-weight: 700; line-height: 1.05; color: #007AFF; margin: 0; overflow-wrap: anywhere; }
+    .print-slot .qr-label-num { position: absolute; left: 0.66in; right: 0.04in; bottom: 0.10in; font-size: 7.5pt; font-weight: 900; line-height: 1.05; margin: 0; }
     .print-slot-empty { display: none; }
 
     /* Responsive */
@@ -1076,15 +1084,6 @@ export function onRequestGet() {
                 <div class="form-group"><label class="form-label">Numero inicial</label><input name="startNumber" type="number" min="1" class="form-control" placeholder="Auto"></div>
               </div>
               <div class="form-group"><label class="form-label">Primer slot de hoja parcial</label><input name="startSlot" type="number" min="1" max="50" value="1" class="form-control"></div>
-              <div class="form-group">
-                <label class="form-label">Orden de impresion</label>
-                <select name="printOrder" class="form-control">
-                  <option value="top-to-bottom-right-to-left" selected>Arriba -> abajo, derecha -> izquierda</option>
-                  <option value="top-to-bottom-left-to-right">Arriba -> abajo, izquierda -> derecha</option>
-                  <option value="left-to-right-top-to-bottom">Izquierda -> derecha, arriba -> abajo</option>
-                  <option value="right-to-left-top-to-bottom">Derecha -> izquierda, arriba -> abajo</option>
-                </select>
-              </div>
               <div class="filter-bar">
                 <button type="submit" class="btn-primary">Generar lote</button>
                 <button type="button" class="btn-secondary" onclick="loadCalibration()">Calibrar</button>
@@ -1119,7 +1118,6 @@ export function onRequestGet() {
         const payload = Object.fromEntries(new FormData(event.target).entries());
         const res = await apiFetch("/qr/generate", { method: "POST", body: JSON.stringify(payload) });
         if (!res.ok) return showToast(res.message || res.code || "Error generando lote", true);
-        res.printOrder = payload.printOrder || "top-to-bottom-right-to-left";
         currentPrintBatch = res;
         renderPrintPreview(res);
         showToast("Batch " + res.batchId + " generado.");
@@ -1138,13 +1136,14 @@ export function onRequestGet() {
           \${renderBrowserPrintSheets(batch)}
         </div>
       \`;
+      fitPrintPreview();
     }
 
     function renderBrowserPrintSheets(batch) {
       const profile = batch.printProfile || {};
       const capacity = Number(profile.columns || 5) * Number(profile.rows || 10);
       const firstSlot = Math.max(1, Math.min(capacity, Number(batch.startSlot || 1)));
-      const orderedSlots = getOrderedBrowserSlots(profile, batch.printOrder || "top-to-bottom-right-to-left");
+      const orderedSlots = getOrderedBrowserSlots(profile);
       const cells = [];
       for (let slot = 1; slot < firstSlot; slot += 1) cells.push({ empty: true });
       for (const item of batch.items) cells.push({ item });
@@ -1157,7 +1156,8 @@ export function onRequestGet() {
       }
 
       return sheets.map((sheet) => \`
-        <div class="print-sheet">
+        <div class="print-sheet-frame">
+          <div class="print-sheet">
           \${sheet.map((cell, index) => {
             const slot = orderedSlots[index];
             const style = \`left:\${slot.leftIn}in; top:\${slot.topIn}in; width:\${slot.widthIn}in; height:\${slot.heightIn}in;\`;
@@ -1166,11 +1166,12 @@ export function onRequestGet() {
               : \`<div class="print-slot" style="\${style}"><div class="qr-label-card"><div class="qr-label-title">GAMMS AEP</div><div class="qr-label-product">\${cell.item.product.name}</div>\${cell.item.svg}<div class="qr-label-num">#\${cell.item.publicNumber}</div></div></div>\`;
           }
           ).join('')}
+          </div>
         </div>
       \`).join('');
     }
 
-    function getOrderedBrowserSlots(profile, printOrder) {
+    function getOrderedBrowserSlots(profile) {
       const columns = Number(profile.columns || 5);
       const rows = Number(profile.rows || 10);
       const pageHeightUm = Number(profile.pageHeightUm || 279400);
@@ -1184,7 +1185,6 @@ export function onRequestGet() {
       const offsetYUm = Number(profile.offsetYUm || 0);
       const scaleX = Number(profile.scaleXBp || 10000) / 10000;
       const scaleY = Number(profile.scaleYBp || 10000) / 10000;
-      const order = printOrder || "top-to-bottom-right-to-left";
       const slots = [];
       const umToIn = (um) => Number(um) / 25400;
       const pushSlot = (row, col) => {
@@ -1200,16 +1200,22 @@ export function onRequestGet() {
         });
       };
 
-      if (order === "top-to-bottom-right-to-left") {
-        for (let col = columns - 1; col >= 0; col -= 1) for (let row = 0; row < rows; row += 1) pushSlot(row, col);
-      } else if (order === "top-to-bottom-left-to-right") {
-        for (let col = 0; col < columns; col += 1) for (let row = 0; row < rows; row += 1) pushSlot(row, col);
-      } else if (order === "right-to-left-top-to-bottom") {
-        for (let row = 0; row < rows; row += 1) for (let col = columns - 1; col >= 0; col -= 1) pushSlot(row, col);
-      } else {
-        for (let row = 0; row < rows; row += 1) for (let col = 0; col < columns; col += 1) pushSlot(row, col);
+      for (let col = columns - 1; col >= 0; col -= 1) {
+        for (let row = 0; row < rows; row += 1) pushSlot(row, col);
       }
       return slots;
+    }
+
+    function fitPrintPreview() {
+      const preview = document.getElementById("printPreview");
+      const frames = document.querySelectorAll(".print-sheet-frame");
+      if (!preview || !frames.length) return;
+      const scale = Math.min(1, Math.max(0.2, (preview.clientWidth - 24) / (8.5 * 96)));
+      for (const frame of frames) {
+        frame.style.setProperty("--preview-scale", scale.toFixed(4));
+        frame.style.width = (8.5 * scale).toFixed(4) + "in";
+        frame.style.height = (11 * scale).toFixed(4) + "in";
+      }
     }
     async function downloadCurrentPdf() {
       if (!currentPrintBatch) return showToast("Genera un batch primero.", true);
@@ -1221,7 +1227,6 @@ export function onRequestGet() {
           batchId: currentPrintBatch.batchId,
           printProfileId: currentPrintBatch.printProfile?.id,
           startSlot: currentPrintBatch.startSlot,
-          printOrder: currentPrintBatch.printOrder || "top-to-bottom-right-to-left",
           items: currentPrintBatch.items.map(item => ({ token: item.token }))
         })
       });
