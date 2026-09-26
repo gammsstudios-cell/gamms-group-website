@@ -43,11 +43,10 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_reward_claims_available_qr
 ON reward_claims(qr_code_id)
 WHERE status = 'available' AND qr_code_id IS NOT NULL;
 
-CREATE INDEX IF NOT EXISTS idx_reward_claims_token_hash
-ON reward_claims(token_hash);
 
 CREATE INDEX IF NOT EXISTS idx_reward_claims_customer_status
 ON reward_claims(customer_id, status);
+
 
 CREATE INDEX IF NOT EXISTS idx_reward_claims_expires_at
 ON reward_claims(expires_at);
