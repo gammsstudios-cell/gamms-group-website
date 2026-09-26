@@ -14,7 +14,6 @@ CREATE TABLE IF NOT EXISTS aep_staff_sessions (
     FOREIGN KEY (user_id) REFERENCES aep_users(id) ON DELETE CASCADE
 );
 
-CREATE INDEX IF NOT EXISTS idx_staff_sessions_token ON aep_staff_sessions(token_hash);
 CREATE INDEX IF NOT EXISTS idx_staff_sessions_user ON aep_staff_sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_staff_sessions_expires ON aep_staff_sessions(expires_at);
 
@@ -28,8 +27,18 @@ CREATE TABLE IF NOT EXISTS staff_shifts (
     opening_note TEXT,
     closing_note TEXT,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES aep_users(id)
+    FOREIGN KEY (user_id) REFERENCES aep_users(id),
+    UNIQUE (id, user_id),
+    CHECK (
+        (status = 'open' AND ended_at IS NULL)
+        OR
+        (status = 'closed' AND ended_at IS NOT NULL)
+    )
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_shifts_one_open_per_user
+ON staff_shifts(user_id)
+WHERE status = 'open';
 
 CREATE INDEX IF NOT EXISTS idx_shifts_user_status ON staff_shifts(user_id, status);
 CREATE INDEX IF NOT EXISTS idx_shifts_started_at ON staff_shifts(started_at DESC);
@@ -43,7 +52,14 @@ CREATE TABLE IF NOT EXISTS purchase_attribution (
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (purchase_id) REFERENCES purchases(id),
     FOREIGN KEY (staff_user_id) REFERENCES aep_users(id),
-    FOREIGN KEY (shift_id) REFERENCES staff_shifts(id)
+    FOREIGN KEY (shift_id, staff_user_id) REFERENCES staff_shifts(id, user_id),
+    CHECK (
+        (actor_type = 'customer' AND staff_user_id IS NULL AND shift_id IS NULL)
+        OR
+        (actor_type = 'staff' AND staff_user_id IS NOT NULL)
+        OR
+        (actor_type = 'system' AND staff_user_id IS NULL AND shift_id IS NULL)
+    )
 );
 
 CREATE INDEX IF NOT EXISTS idx_purchase_attr_staff ON purchase_attribution(staff_user_id);
