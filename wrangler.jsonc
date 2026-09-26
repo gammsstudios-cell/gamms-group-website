@@ -1,0 +1,26 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "gamms-aep",
+
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "gamms-aep-db-dev",
+      "database_id": "e0fac499-3b75-4d1f-8603-9e6b8b52637a",
+      "migrations_dir": "database/migrations"
+    }
+  ],
+
+  "env": {
+    "production": {
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "gamms-aep-db",
+          "database_id": "f89b478c-1feb-4ec5-ab8b-eb711ee65a19",
+          "migrations_dir": "database/migrations"
+        }
+      ]
+    }
+  }
+}
