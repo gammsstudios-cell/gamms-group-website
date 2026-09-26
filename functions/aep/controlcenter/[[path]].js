@@ -151,12 +151,20 @@ export function onRequestGet() {
     /* Print Label Stylesheet */
     @media print {
       @page { size: Letter; margin: 0; }
-      body * { visibility: hidden; }
+      html, body { width: 8.5in; margin: 0 !important; padding: 0 !important; background: #FFF !important; overflow: visible; }
+      body * { visibility: hidden; box-sizing: border-box; }
       #printable-labels, #printable-labels * { visibility: visible; }
-      #printable-labels { position: absolute; left: 0; top: 0; width: 8.5in; min-height: 11in; display: grid; grid-template-columns: repeat(5, 1.5in); grid-auto-rows: 1in; gap: 0; padding: 0.5in; background: #FFF; }
-      .qr-label-card { border: none; border-radius: 0; padding: 0.05in; width: 1.5in; height: 1in; text-align: left; page-break-inside: avoid; background: #FFF !important; color: #000 !important; box-shadow: none; overflow: hidden; }
-      .qr-label-card svg { width: 0.62in; height: 0.62in; margin: 0.14in 0.04in 0 0; float: left; }
-      .print-guidance { display: block !important; visibility: visible !important; position: fixed; bottom: 0.1in; left: 0.5in; font-size: 8pt; color: #000; }
+      #app, .main-wrapper, .content-area, #printPreview { display: block !important; margin: 0 !important; padding: 0 !important; width: 8.5in !important; max-width: 8.5in !important; background: #FFF !important; overflow: visible !important; }
+      #printable-labels { position: absolute; left: 0; top: 0; width: 8.5in; margin: 0; padding: 0; background: #FFF; display: block; overflow: visible; }
+      .print-sheet { width: 8.5in; height: 11in; margin: 0; padding: 0.5in; overflow: hidden; background: #FFF; display: grid; grid-template-columns: repeat(5, 1.5in); grid-template-rows: repeat(10, 1in); gap: 0; break-after: page; page-break-after: always; }
+      .print-sheet:last-child { break-after: auto; page-break-after: auto; }
+      .print-slot { width: 1.5in; height: 1in; margin: 0; padding: 0; overflow: hidden; background: #FFF; border: none; outline: none; }
+      .qr-label-card { border: none !important; outline: none !important; border-radius: 0 !important; padding: 0.04in; width: 1.5in; height: 1in; text-align: left; page-break-inside: avoid; break-inside: avoid; background: #FFF !important; color: #000 !important; box-shadow: none !important; overflow: hidden; }
+      .qr-label-card svg { width: 0.62in; height: 0.62in; margin: 0.13in 0.04in 0 0; float: left; display: block; }
+      .qr-label-title { font-size: 7pt; line-height: 1.1; margin-top: 0.08in; }
+      .qr-label-product { font-size: 6pt; line-height: 1.1; color: #000 !important; }
+      .qr-label-num { font-size: 8pt; line-height: 1.1; margin-top: 0.03in; }
+      .print-instructions { display: none !important; }
     }
     
     .qr-label-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; margin-top: 16px; }
@@ -165,6 +173,9 @@ export function onRequestGet() {
     .qr-label-title { font-size: 12px; font-weight: 800; letter-spacing: 0.5px; }
     .qr-label-product { font-size: 13px; font-weight: 700; color: #007AFF; margin-top: 2px; }
     .qr-label-num { font-size: 15px; font-weight: 900; margin-top: 4px; }
+    .print-instructions { margin: 12px 0; padding: 10px 12px; border-radius: 8px; background: var(--badge-amber-bg); color: var(--badge-amber-text); font-size: 13px; font-weight: 700; }
+    .print-sheet { display: contents; }
+    .print-slot-empty { display: none; }
 
     /* Responsive */
     @media (max-width: 900px) {
@@ -1111,13 +1122,36 @@ export function onRequestGet() {
           <span class="badge badge-warning">Slot inicial \${batch.startSlot}</span>
           <span class="badge badge-success">\${batch.count} etiquetas</span>
         </div>
+        <div class="print-instructions">Imprimir a Tamaño real / 100%. Desactivar Ajustar a pagina.</div>
         <div id="printable-labels" class="qr-label-grid">
-          <div class="print-guidance" style="display:none;">Imprimir a TamaÃ±o real / 100%. Desactivar Ajustar a pagina.</div>
-          \${batch.items.map(item => \`<div class="qr-label-card"><div class="qr-label-title">GAMMS AEP</div><div class="qr-label-product">\${item.product.name}</div>\${item.svg}<div class="qr-label-num">#\${item.publicNumber}</div></div>\`).join('')}
+          \${renderBrowserPrintSheets(batch)}
         </div>
       \`;
     }
 
+    function renderBrowserPrintSheets(batch) {
+      const capacity = 50;
+      const firstSlot = Math.max(1, Math.min(capacity, Number(batch.startSlot || 1)));
+      const cells = [];
+      for (let slot = 1; slot < firstSlot; slot += 1) cells.push({ empty: true });
+      for (const item of batch.items) cells.push({ item });
+
+      const sheets = [];
+      for (let index = 0; index < cells.length; index += capacity) {
+        const sheet = cells.slice(index, index + capacity);
+        while (sheet.length < capacity) sheet.push({ empty: true });
+        sheets.push(sheet);
+      }
+
+      return sheets.map((sheet) => \`
+        <div class="print-sheet">
+          \${sheet.map((cell) => cell.empty
+            ? '<div class="print-slot print-slot-empty"></div>'
+            : \`<div class="print-slot"><div class="qr-label-card"><div class="qr-label-title">GAMMS AEP</div><div class="qr-label-product">\${cell.item.product.name}</div>\${cell.item.svg}<div class="qr-label-num">#\${cell.item.publicNumber}</div></div></div>\`
+          ).join('')}
+        </div>
+      \`).join('');
+    }
     async function downloadCurrentPdf() {
       if (!currentPrintBatch) return showToast("Genera un batch primero.", true);
       const res = await fetch(API_BASE + "/print/pdf", {

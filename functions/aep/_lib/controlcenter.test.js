@@ -615,6 +615,19 @@ test("admin PDF endpoint requires admin/CSRF and emits safe filename plus audit"
   assert.equal(filename.includes("\n"), false);
 });
 
+test("Control Center browser print uses exact Letter sheets without printable instructions", () => {
+  const source = readFileSync(resolve(process.cwd(), "functions/aep/controlcenter/[[path]].js"), "utf8");
+
+  assert.match(source, /@page \{ size: Letter; margin: 0; \}/);
+  assert.match(source, /html, body \{ width: 8\.5in; margin: 0 !important; padding: 0 !important;/);
+  assert.match(source, /\.print-sheet \{ width: 8\.5in; height: 11in; margin: 0; padding: 0\.5in; overflow: hidden;/);
+  assert.match(source, /\.print-sheet:last-child \{ break-after: auto; page-break-after: auto; \}/);
+  assert.match(source, /\.print-instructions \{ display: none !important; \}/);
+  assert.match(source, /function renderBrowserPrintSheets\(batch\)/);
+  assert.doesNotMatch(source, /#printable-labels \{[^}]*min-height: 11in/);
+  assert.doesNotMatch(source, /print-guidance/);
+});
+
 test("cannot reactivate a used QR code", async () => {
   const db = await createTestDb();
   const prod = await createProduct(db, { name: "Soda", priceCents: 2000, stockQuantity: 50 });
