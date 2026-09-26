@@ -8,6 +8,7 @@ export const MIN_PASSWORD_LENGTH = 8;
 export const MAX_PASSWORD_LENGTH = 256;
 
 const HEX_REGEX = /^[0-9a-fA-F]+$/;
+const DIGITS_REGEX = /^\d+$/;
 
 function bufferToHex(buffer) {
   return Array.from(new Uint8Array(buffer))
@@ -41,6 +42,18 @@ export function timingSafeEqualHex(a, b) {
   return result === 0;
 }
 
+export function parseIterationCount(value) {
+  if (typeof value === "number") {
+    if (!Number.isSafeInteger(value)) return null;
+    return value;
+  }
+  if (typeof value !== "string" || !DIGITS_REGEX.test(value)) {
+    return null;
+  }
+  const iterations = Number(value);
+  return Number.isSafeInteger(iterations) ? iterations : null;
+}
+
 export function parseStoredHash(stored) {
   if (typeof stored !== "string" || !stored) {
     return { valid: false, algo: "invalid" };
@@ -52,7 +65,7 @@ export function parseStoredHash(stored) {
       return { valid: false, algo: "invalid" };
     }
     const salt = parts[1];
-    const iterations = Number.parseInt(parts[2], 10);
+    const iterations = parseIterationCount(parts[2]);
     const hash = parts[3];
 
     if (!salt || salt.length !== 32 || !HEX_REGEX.test(salt)) {
@@ -87,39 +100,26 @@ export function needsPasswordRehash(storedHash, algo, iterations) {
   }
 
   if (algo === "pbkdf2-sha256") {
-    const iter = Number.parseInt(iterations, 10);
-    if (!Number.isInteger(iter) || iter < PBKDF2_TARGET_ITERATIONS) {
-      return true;
-    }
-    return false;
+    const iter = parseIterationCount(iterations);
+    return !Number.isInteger(iter) || iter < PBKDF2_TARGET_ITERATIONS;
   }
 
   return false;
 }
 
-/**
- * Computes PBKDF2-SHA256 hash using Web Crypto API.
- */
-export async function hashPasswordPbkdf2(password, saltHex = null, iterations = PBKDF2_TARGET_ITERATIONS) {
-  if (typeof password !== "string" || password.length < MIN_PASSWORD_LENGTH || password.length > MAX_PASSWORD_LENGTH) {
-    throw new Error(`Password length must be between ${MIN_PASSWORD_LENGTH} and ${MAX_PASSWORD_LENGTH} characters`);
+async function derivePbkdf2(password, saltHex, iterations) {
+  if (typeof password !== "string" || password.length === 0 || password.length > MAX_PASSWORD_LENGTH) {
+    throw new Error(`Password length must be between 1 and ${MAX_PASSWORD_LENGTH} characters`);
   }
 
-  if (!Number.isInteger(iterations) || iterations < MIN_ACCEPTED_ITERATIONS || iterations > MAX_ACCEPTED_ITERATIONS) {
+  const safeIterations = parseIterationCount(iterations);
+  if (!Number.isInteger(safeIterations) || safeIterations < MIN_ACCEPTED_ITERATIONS || safeIterations > MAX_ACCEPTED_ITERATIONS) {
     throw new Error(`Iterations must be an integer between ${MIN_ACCEPTED_ITERATIONS} and ${MAX_ACCEPTED_ITERATIONS}`);
   }
 
-  let saltBuffer;
-  if (saltHex) {
-    saltBuffer = hexToBuffer(saltHex, 16);
-    if (!saltBuffer) {
-      throw new Error("Invalid salt hex string (expected 32 hex chars)");
-    }
-  } else {
-    const saltBytes = new Uint8Array(16);
-    crypto.getRandomValues(saltBytes);
-    saltBuffer = saltBytes.buffer;
-    saltHex = bufferToHex(saltBytes);
+  const saltBuffer = hexToBuffer(saltHex, 16);
+  if (!saltBuffer) {
+    throw new Error("Invalid salt hex string (expected 32 hex chars)");
   }
 
   const encoder = new TextEncoder();
@@ -135,7 +135,7 @@ export async function hashPasswordPbkdf2(password, saltHex = null, iterations = 
     {
       name: "PBKDF2",
       salt: saltBuffer,
-      iterations: iterations,
+      iterations: safeIterations,
       hash: "SHA-256"
     },
     passwordKey,
@@ -148,8 +148,26 @@ export async function hashPasswordPbkdf2(password, saltHex = null, iterations = 
     algo: "pbkdf2-sha256",
     hash: hashHex,
     salt: saltHex,
-    iterations: iterations
+    iterations: safeIterations
   };
+}
+
+/**
+ * Computes PBKDF2-SHA256 hash for creating or changing passwords.
+ */
+export async function hashPasswordPbkdf2(password, saltHex = null, iterations = PBKDF2_TARGET_ITERATIONS) {
+  if (typeof password !== "string" || password.length < MIN_PASSWORD_LENGTH || password.length > MAX_PASSWORD_LENGTH) {
+    throw new Error(`Password length must be between ${MIN_PASSWORD_LENGTH} and ${MAX_PASSWORD_LENGTH} characters`);
+  }
+
+  let safeSaltHex = saltHex;
+  if (!safeSaltHex) {
+    const saltBytes = new Uint8Array(16);
+    crypto.getRandomValues(saltBytes);
+    safeSaltHex = bufferToHex(saltBytes);
+  }
+
+  return derivePbkdf2(password, safeSaltHex, iterations);
 }
 
 export async function hashPassword(password) {
@@ -172,7 +190,7 @@ export async function verifyPassword(password, storedHash, algo = "sha256", salt
   if (storedHash.startsWith("pbkdf2:")) {
     const parsed = parseStoredHash(storedHash);
     if (!parsed.valid) return false;
-    const computed = await hashPasswordPbkdf2(password, parsed.salt, parsed.iterations);
+    const computed = await derivePbkdf2(password, parsed.salt, parsed.iterations);
     return timingSafeEqualHex(computed.hash.toLowerCase(), parsed.hash.toLowerCase());
   }
 
@@ -185,11 +203,11 @@ export async function verifyPassword(password, storedHash, algo = "sha256", salt
 
   if (algo === "pbkdf2-sha256") {
     if (!salt) return false;
-    const iter = Number.parseInt(iterations, 10);
+    const iter = parseIterationCount(iterations);
     if (!Number.isInteger(iter) || iter < MIN_ACCEPTED_ITERATIONS || iter > MAX_ACCEPTED_ITERATIONS) {
       return false;
     }
-    const computed = await hashPasswordPbkdf2(password, salt, iter);
+    const computed = await derivePbkdf2(password, salt, iter);
     return timingSafeEqualHex(computed.hash.toLowerCase(), storedHash.toLowerCase());
   }
 

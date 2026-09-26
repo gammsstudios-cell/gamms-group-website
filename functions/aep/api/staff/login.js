@@ -9,6 +9,65 @@ import { verifyTotpCodeWithReplay, consumeRecoveryCodeAtomic, decryptTotpSecret 
 import { jsonResponse, errorJson } from "../../_lib/adminResponses.js";
 import { logAuditEvent } from "../../_lib/audit.js";
 
+const OWNER_MFA_LOCKOUT_KEY = "owner_mfa_lockout_state";
+const OWNER_MFA_LOCK_THRESHOLD = 5;
+const OWNER_MFA_LOCK_MS = 15 * 60 * 1000;
+
+async function getOwnerMfaLockoutState(db) {
+  if (!db) return { failedCount: 0, lockedUntil: null };
+  try {
+    const row = await db.prepare("SELECT value FROM aep_settings WHERE key = ?")
+      .bind(OWNER_MFA_LOCKOUT_KEY)
+      .first();
+    if (!row?.value) return { failedCount: 0, lockedUntil: null };
+    const parsed = JSON.parse(row.value);
+    const failedCount = Number.isSafeInteger(parsed.failedCount) && parsed.failedCount > 0
+      ? parsed.failedCount
+      : 0;
+    const lockedUntil = typeof parsed.lockedUntil === "string" ? parsed.lockedUntil : null;
+    return { failedCount, lockedUntil };
+  } catch {
+    return { failedCount: 0, lockedUntil: null };
+  }
+}
+
+function isOwnerMfaLocked(state, nowMs = Date.now()) {
+  if (!state?.lockedUntil) return false;
+  const lockedUntilMs = Date.parse(state.lockedUntil);
+  return Number.isFinite(lockedUntilMs) && lockedUntilMs > nowMs;
+}
+
+async function saveOwnerMfaLockoutState(db, state) {
+  if (!db) return;
+  await db.prepare(`
+    INSERT INTO aep_settings (key, value, updated_at)
+    VALUES (?, ?, CURRENT_TIMESTAMP)
+    ON CONFLICT(key) DO UPDATE SET
+      value = excluded.value,
+      updated_at = CURRENT_TIMESTAMP
+  `).bind(OWNER_MFA_LOCKOUT_KEY, JSON.stringify(state)).run();
+}
+
+async function recordOwnerMfaFailure(db) {
+  const now = Date.now();
+  const state = await getOwnerMfaLockoutState(db);
+  if (isOwnerMfaLocked(state, now)) return state;
+
+  const failedCount = state.failedCount + 1;
+  const nextState = {
+    failedCount,
+    lockedUntil: failedCount >= OWNER_MFA_LOCK_THRESHOLD
+      ? new Date(now + OWNER_MFA_LOCK_MS).toISOString()
+      : null
+  };
+  await saveOwnerMfaLockoutState(db, nextState);
+  return nextState;
+}
+
+async function clearOwnerMfaFailures(db) {
+  await saveOwnerMfaLockoutState(db, { failedCount: 0, lockedUntil: null });
+}
+
 export async function onRequestPost({ request, env }) {
   const db = env.DB;
   let body;
@@ -38,22 +97,34 @@ export async function onRequestPost({ request, env }) {
 
   // 1. Check if login matches Owner ENV Account
   const envAdminUser = env.AEP_ADMIN_USERNAME || "admin";
+  const isOwnerUsername = username.toLowerCase() === envAdminUser.toLowerCase();
 
-  if (env.AEP_ADMIN_PASSCODE_HASH && (username.toLowerCase() === envAdminUser.toLowerCase())) {
+  if (env.AEP_ADMIN_PASSCODE_HASH && isOwnerUsername) {
     const adminAuthResult = await loginAdmin(env, password);
     if (adminAuthResult.ok) {
       // If Owner MFA secret exists, TOTP is required for Owner login
       if (env.AEP_ADMIN_TOTP_SECRET) {
+        const ownerMfaState = await getOwnerMfaLockoutState(db);
+        if (isOwnerMfaLocked(ownerMfaState)) {
+          return errorJson("STAFF_USER_LOCKED", 429);
+        }
+
         if (!totpCode) {
+          await recordOwnerMfaFailure(db);
           return errorJson("Código de autenticación requerido (MFA)", 401, "MFA_REQUIRED");
         }
         const totpRes = await verifyTotpCodeWithReplay(db, "env:admin", env.AEP_ADMIN_TOTP_SECRET, totpCode);
         if (!totpRes.valid) {
+          await recordOwnerMfaFailure(db);
           if (totpRes.code === "MFA_REPLAYED") {
             return errorJson("Código MFA ya ha sido utilizado", 401, "MFA_REPLAYED");
           }
+          if (totpRes.code === "MFA_REPLAY_STATE_UNAVAILABLE") {
+            return errorJson("MFA_REPLAY_STATE_UNAVAILABLE", 503);
+          }
           return errorJson("Código de autenticación inválido", 401, "MFA_INVALID");
         }
+        await clearOwnerMfaFailures(db);
       }
 
       // Owner authenticated: Create Admin Session & Cookie
@@ -87,6 +158,8 @@ export async function onRequestPost({ request, env }) {
         }
       }, { status: 200, headers });
     }
+
+    return errorJson("STAFF_AUTH_INVALID", 401);
   }
 
   // 2. Check DB users (aep_users)

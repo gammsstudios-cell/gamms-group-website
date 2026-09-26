@@ -9,6 +9,7 @@ import {
   verifyPassword,
   needsPasswordRehash,
   parseStoredHash,
+  parseIterationCount,
   PBKDF2_TARGET_ITERATIONS,
   MAX_ACCEPTED_ITERATIONS
 } from "./passwords.js";
@@ -116,6 +117,21 @@ test("Migration 013 creates the TOTP replay table with atomic monotonic state", 
   assert.equal(next.matchedStep, step + 1);
 });
 
+test("TOTP replay verification fails closed without durable replay state", async () => {
+  const db = createFreshDb("013");
+  const secret = generateTotpSecret();
+  const timestampSec = 1_800_000_000;
+  const otp = await generateTotpCode(secret, timestampSec);
+
+  const noDb = await verifyTotpCodeWithReplay(null, "staff:7", secret, otp, 1, timestampSec);
+  assert.equal(noDb.valid, false);
+  assert.equal(noDb.code, "MFA_REPLAY_STATE_UNAVAILABLE");
+
+  const noPrincipal = await verifyTotpCodeWithReplay(db, "", secret, otp, 1, timestampSec);
+  assert.equal(noPrincipal.valid, false);
+  assert.equal(noPrincipal.code, "MFA_REPLAY_STATE_UNAVAILABLE");
+});
+
 test("Password hardening accepts legacy formats and upgrades only when needed", async () => {
   const modern = await hashPasswordPbkdf2("ModernPass1");
   assert.equal(modern.iterations, PBKDF2_TARGET_ITERATIONS);
@@ -138,6 +154,28 @@ test("Malformed password hashes are rejected before unsafe crypto", async () => 
   assert.equal(parseStoredHash("pbkdf2:" + "a".repeat(32) + ":" + (MAX_ACCEPTED_ITERATIONS + 1) + ":" + "b".repeat(64)).valid, false);
   assert.equal(parseStoredHash("pbkdf2:" + "a".repeat(32) + ":600000:not-hex").valid, false);
   assert.equal(await verifyPassword("x".repeat(300), "a".repeat(64), "sha256"), false);
+});
+
+test("PBKDF2 verification rejects a short wrong password without throwing", async () => {
+  const stored = await hashPasswordPbkdf2("CorrectPass1");
+  assert.equal(
+    await verifyPassword("abc", stored.hash, "pbkdf2-sha256", stored.salt, stored.iterations),
+    false
+  );
+});
+
+test("PBKDF2 iteration parsing is strict for DB and stored-hash values", async () => {
+  assert.equal(parseIterationCount(600000), 600000);
+  assert.equal(parseIterationCount("600000"), 600000);
+
+  for (const value of ["600000garbage", "600000.5", "+600000", "6e5", " 600000 ", NaN, Infinity]) {
+    assert.equal(parseIterationCount(value), null);
+  }
+
+  for (const value of ["600000garbage", "600000.5", "+600000", "6e5", " 600000 "]) {
+    const parsed = parseStoredHash(`pbkdf2:${"a".repeat(32)}:${value}:${"b".repeat(64)}`);
+    assert.equal(parsed.valid, false);
+  }
 });
 
 test("TOTP encryption fails closed and validates strict ciphertext/key formats", async () => {
@@ -211,4 +249,95 @@ test("Owner ENV login creates an Admin cookie, no staff session, and clears Staf
   assert.match(setCookie, /GAMMS-AEP-Admin=/);
   assert.match(setCookie, /GAMMS-AEP-Staff=;/);
   assert.match(setCookie, /GAMMS-AEP-Seller=;/);
+});
+
+test("Staff login rejects short wrong PBKDF2 password with 401 instead of throwing", async () => {
+  const db = createFreshDb("013");
+  const stored = await hashPasswordPbkdf2("CorrectPass1");
+  await db.prepare(`
+    INSERT INTO aep_users (
+      id, username, username_normalized, display_name,
+      password_algo, password_hash, password_salt, password_iterations
+    )
+    VALUES (101, 'short-test', 'short-test', 'Short Test', 'pbkdf2-sha256', ?, ?, ?)
+  `).bind(stored.hash, stored.salt, stored.iterations).run();
+
+  const response = await loginPost({
+    request: new Request("https://example.com/aep/api/staff/login", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ username: "short-test", password: "abc" })
+    }),
+    env: { DB: db }
+  });
+
+  assert.equal(response.status, 401);
+});
+
+test("Owner username is reserved and cannot fall through to DB staff users", async () => {
+  const db = createFreshDb("013");
+  const staffHash = await hashPasswordPbkdf2("StaffSecret1");
+  await db.prepare(`
+    INSERT INTO aep_users (
+      id, username, username_normalized, display_name,
+      password_algo, password_hash, password_salt, password_iterations
+    )
+    VALUES (102, 'owner', 'owner', 'Owner DB User', 'pbkdf2-sha256', ?, ?, ?)
+  `).bind(staffHash.hash, staffHash.salt, staffHash.iterations).run();
+
+  const response = await loginPost({
+    request: new Request("https://example.com/aep/api/staff/login", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ username: "owner", password: "StaffSecret1" })
+    }),
+    env: {
+      DB: db,
+      AEP_ADMIN_USERNAME: "owner",
+      AEP_ADMIN_PASSCODE_HASH: await sha256Hex("OwnerOnlySecret1"),
+      AEP_ADMIN_SESSION_SECRET: "owner-session-secret"
+    }
+  });
+
+  assert.equal(response.status, 401);
+  assert.equal((await db.prepare("SELECT COUNT(*) AS total FROM aep_staff_sessions").first()).total, 0);
+});
+
+test("Owner MFA failures are rate-limited before creating an Admin session", async () => {
+  const db = createFreshDb("013");
+  const secret = generateTotpSecret();
+  const env = {
+    DB: db,
+    AEP_ADMIN_USERNAME: "owner",
+    AEP_ADMIN_PASSCODE_HASH: await sha256Hex("OwnerSecretPass123"),
+    AEP_ADMIN_SESSION_SECRET: "owner-session-secret",
+    AEP_ADMIN_TOTP_SECRET: secret
+  };
+
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const response = await loginPost({
+      request: new Request("https://example.com/aep/api/staff/login", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ username: "owner", password: "OwnerSecretPass123", totpCode: "000000" })
+      }),
+      env
+    });
+    assert.equal(response.status, 401);
+  }
+
+  const locked = await loginPost({
+    request: new Request("https://example.com/aep/api/staff/login", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ username: "owner", password: "OwnerSecretPass123", totpCode: "000000" })
+    }),
+    env
+  });
+
+  assert.equal(locked.status, 429);
+  const setCookie = locked.headers.getSetCookie
+    ? locked.headers.getSetCookie().join("; ")
+    : (locked.headers.get("set-cookie") ?? "");
+  assert.doesNotMatch(setCookie, /GAMMS-AEP-Admin=/);
 });

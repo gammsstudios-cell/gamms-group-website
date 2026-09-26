@@ -13,6 +13,17 @@ function bufferToHex(buffer) {
     .join("");
 }
 
+function timingSafeEqualString(left, right) {
+  if (typeof left !== "string" || typeof right !== "string" || left.length !== right.length) {
+    return false;
+  }
+  let diff = 0;
+  for (let index = 0; index < left.length; index += 1) {
+    diff |= left.charCodeAt(index) ^ right.charCodeAt(index);
+  }
+  return diff === 0;
+}
+
 export function base32Encode(buffer) {
   const bytes = new Uint8Array(buffer);
   let bits = 0;
@@ -240,7 +251,7 @@ export async function verifyTotpCode(secret, userCode, windowTolerance = 1, cust
     const step = currentStep + window;
     if (step < 0) continue;
     const validCode = await generateTotpCodeForCounter(secret, step);
-    if (validCode === cleanCode) {
+    if (timingSafeEqualString(validCode, cleanCode)) {
       return { valid: true, matchedStep: step };
     }
   }
@@ -257,8 +268,8 @@ export async function verifyTotpCodeWithReplay(db, principalRef, secret, userCod
     return { valid: false, code: "MFA_INVALID" };
   }
 
-  if (!db || !principalRef) {
-    return { valid: true, matchedStep: result.matchedStep };
+  if (!db || typeof principalRef !== "string" || principalRef.trim().length === 0) {
+    return { valid: false, code: "MFA_REPLAY_STATE_UNAVAILABLE" };
   }
 
   try {
