@@ -312,7 +312,7 @@ export async function redeemClaim(db, rawCode, options = {}) {
            action,
            entity_type,
            entity_identifier,
-           metadata,
+           metadata_json,
            created_at
          ) VALUES (?, ?, 'reward_redeemed', 'reward', ?, ?, CURRENT_TIMESTAMP)`
       ).bind(

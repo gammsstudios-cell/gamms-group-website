@@ -150,12 +150,13 @@ export function onRequestGet() {
 
     /* Print Label Stylesheet */
     @media print {
+      @page { size: Letter; margin: 0; }
       body * { visibility: hidden; }
       #printable-labels, #printable-labels * { visibility: visible; }
-      #printable-labels { position: absolute; left: 0; top: 0; width: 100%; }
-      .qr-label-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; page-break-inside: avoid; }
-      .qr-label-card { border: 2px dashed #000; padding: 12px; text-align: center; page-break-inside: avoid; background: #FFF !important; color: #000 !important; }
-      .qr-label-card svg { width: 140px; height: 140px; margin: 8px 0; }
+      #printable-labels { position: absolute; left: 0; top: 0; width: 8.5in; min-height: 11in; display: grid; grid-template-columns: repeat(5, 1.5in); grid-auto-rows: 1in; gap: 0; padding: 0.5in; background: #FFF; }
+      .qr-label-card { border: none; border-radius: 0; padding: 0.05in; width: 1.5in; height: 1in; text-align: left; page-break-inside: avoid; background: #FFF !important; color: #000 !important; box-shadow: none; overflow: hidden; }
+      .qr-label-card svg { width: 0.62in; height: 0.62in; margin: 0.14in 0.04in 0 0; float: left; }
+      .print-guidance { display: block !important; visibility: visible !important; position: fixed; bottom: 0.1in; left: 0.5in; font-size: 8pt; color: #000; }
     }
     
     .qr-label-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; margin-top: 16px; }
@@ -1111,6 +1112,7 @@ export function onRequestGet() {
           <span class="badge badge-success">\${batch.count} etiquetas</span>
         </div>
         <div id="printable-labels" class="qr-label-grid">
+          <div class="print-guidance" style="display:none;">Imprimir a Tamaño real / 100%. Desactivar Ajustar a pagina.</div>
           \${batch.items.map(item => \`<div class="qr-label-card"><div class="qr-label-title">GAMMS AEP</div><div class="qr-label-product">\${item.product.name}</div>\${item.svg}<div class="qr-label-num">#\${item.publicNumber}</div></div>\`).join('')}
         </div>
       \`;
@@ -1123,9 +1125,10 @@ export function onRequestGet() {
         credentials: "same-origin",
         headers: { "Content-Type": "application/json", "Accept": "application/pdf" },
         body: JSON.stringify({
+          batchId: currentPrintBatch.batchId,
           printProfileId: currentPrintBatch.printProfile?.id,
           startSlot: currentPrintBatch.startSlot,
-          items: currentPrintBatch.items.map(item => ({ publicNumber: item.publicNumber, url: item.url, productName: item.product.name }))
+          items: currentPrintBatch.items.map(item => ({ token: item.token }))
         })
       });
       if (!res.ok) return showToast("No se pudo generar PDF.", true);

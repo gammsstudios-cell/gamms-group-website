@@ -20,7 +20,10 @@ import { createProduct, getProductById, listProducts, updateProduct } from "./pr
 import { listInventoryMovements, recordInventoryMovement } from "./inventory.js";
 import { disableQr, generateQrBatch, getQrByPublicNumber, listQrCodes, reactivateQr } from "./adminQr.js";
 import { generateLabelsPdf } from "./printPdf.js";
-import { getPrintProfile, getSlotPosition, paginateLabels, profileCapacity, updatePrintProfile } from "./printProfiles.js";
+import { getQuietQrDrawPlan } from "./printPdf.js";
+import { buildLabelsPdfFilename, validateBatchPdfLabels } from "./printPdfSecurity.js";
+import { getPrintProfile, getSlotPosition, paginateLabels, profileCapacity, updatePrintProfile, validateProfileInput } from "./printProfiles.js";
+import { onRequestPost as pdfPost } from "../api/admin/print/pdf.js";
 import { formatFriendlyCustomerId, listSales } from "./sales.js";
 import { getDashboardStats } from "./dashboard.js";
 import { cancelReward, listRewards } from "./rewardsAdmin.js";
@@ -373,6 +376,13 @@ test("MACO ML-5000 profile geometry, pagination, and PDF generation are determin
   assert.equal(slot6.column, 1);
   assert.equal(slot50.row, 10);
   assert.equal(slot50.column, 5);
+  assert.ok(Math.abs(slot1.x - 36) < 0.0001);
+  assert.ok(Math.abs((792 - slot1.y - slot1.height) - 36) < 0.0001);
+  assert.ok(Math.abs(slot1.width - 108) < 0.0001);
+  assert.ok(Math.abs(slot1.height - 72) < 0.0001);
+  assert.ok(Math.abs(slot5.x - 468) < 0.0001);
+  assert.ok(Math.abs(slot50.x + slot50.width - (612 - 36)) < 0.0001);
+  assert.ok(Math.abs(slot50.y - 36) < 0.0001);
 
   const labels = Array.from({ length: 75 }, (_, index) => ({
     publicNumber: 300 + index,
@@ -409,6 +419,200 @@ test("print profile calibration offsets and scales alter slot boxes without chan
   assert.ok(slot.x > 36);
   assert.ok(slot.width < 108);
   assert.ok(slot.height > 72);
+
+  const slot1 = getSlotPosition(original, 1);
+  const slot2 = getSlotPosition(original, 2);
+  const slot6 = getSlotPosition(original, 6);
+  assert.ok((slot2.x - slot1.x) < 108);
+  assert.ok((slot1.y - slot6.y) > 72);
+});
+
+test("quiet QR draw plan reserves four white modules and remains square", () => {
+  const plan = getQuietQrDrawPlan("https://example.com/aep/promo/r/ABCDEFGHIJKL", 72);
+  assert.equal(plan.quietModules, 4);
+  assert.equal(plan.totalModules, plan.matrixCount + 8);
+  assert.equal(plan.offset, plan.cell * 4);
+  assert.ok(plan.modules.every((module) => module.x >= plan.offset));
+  assert.ok(plan.modules.every((module) => module.y >= plan.offset));
+  assert.ok(plan.modules.every((module) => module.x + module.width < 72));
+  assert.ok(plan.modules.every((module) => module.y + module.height < 72));
+  assert.ok(plan.modules.every((module) => Math.abs(module.width - module.height) < 0.001));
+});
+
+test("print profile validation rejects unsafe or impossible profiles", async () => {
+  const db = await createTestDb();
+  assert.equal(await getPrintProfile(db, 999), null);
+  assert.equal(validateProfileInput({ ...MACO_FOR_TEST(), pageWidthUm: 900000 }).code, "INVALID_PROFILE_DIMENSIONS");
+  assert.equal(validateProfileInput({ ...MACO_FOR_TEST(), offsetXUm: 100000 }).code, "INVALID_PROFILE_OFFSET");
+  assert.equal(validateProfileInput({ ...MACO_FOR_TEST(), columns: 6 }).code, "PROFILE_OUT_OF_BOUNDS");
+  assert.equal(validateProfileInput(MACO_FOR_TEST()).ok, true);
+});
+
+function MACO_FOR_TEST() {
+  return {
+    name: "MACO Test",
+    pageWidthUm: 215900,
+    pageHeightUm: 279400,
+    labelWidthUm: 38100,
+    labelHeightUm: 25400,
+    columns: 5,
+    rows: 10,
+    marginTopUm: 12700,
+    marginRightUm: 12700,
+    marginBottomUm: 12700,
+    marginLeftUm: 12700,
+    gapXUm: 0,
+    gapYUm: 0,
+    offsetXUm: 0,
+    offsetYUm: 0,
+    scaleXBp: 10000,
+    scaleYBp: 10000,
+    active: true,
+    isDefault: false
+  };
+}
+
+async function makeBatch(db, count, startNumber = 1001) {
+  const product = await createProduct(db, { name: "Coca-Cola 500ml", priceCents: 4000, stockQuantity: 1000 });
+  return generateQrBatch(db, { productId: product.product.id, count, startNumber, startSlot: 1 });
+}
+
+test("PDF generation supports 1, 50, 51, 75 startSlot 13, and 500 labels", async () => {
+  const db = await createTestDb();
+  const profile = await getPrintProfile(db);
+  for (const [count, startSlot, expectedPages] of [[1, 1, 1], [50, 1, 1], [51, 1, 2], [75, 13, 2], [500, 1, 10]]) {
+    const labels = Array.from({ length: count }, (_, index) => ({
+      publicNumber: 2000 + index,
+      url: `https://example.com/aep/promo/r/${"A".repeat(12)}${index}`,
+      productName: "Coca-Cola 500ml"
+    }));
+    const pdf = await generateLabelsPdf({ labels, profile, startSlot });
+    assert.equal(pdf.ok, true);
+    assert.equal(pdf.pageCount, expectedPages);
+    assert.equal(Buffer.from(pdf.bytes).subarray(0, 4).toString(), "%PDF");
+    const loaded = await PDFDocument.load(pdf.bytes);
+    assert.equal(loaded.getPageCount(), expectedPages);
+    const { width, height } = loaded.getPage(0).getSize();
+    assert.equal(Math.round(width), 612);
+    assert.equal(Math.round(height), 792);
+  }
+
+  const pages = paginateLabels(Array.from({ length: 75 }, (_, i) => i), profile, 13);
+  assert.deepEqual(pages.pages.map((page) => page.length), [38, 37]);
+});
+
+test("batch PDF validation rejects manipulated labels and does not persist plaintext tokens", async () => {
+  const db = await createTestDb();
+  const batch = await makeBatch(db, 3, 101);
+  assert.equal(batch.ok, true);
+
+  const validation = await validateBatchPdfLabels(db, "https://example.com/aep/controlcenter/print", {
+    batchId: batch.batchId,
+    items: batch.items.map((item) => ({ token: item.token, url: "https://evil.example/" }))
+  });
+  assert.equal(validation.ok, true);
+  assert.ok(validation.labels.every((label) => label.url.startsWith("https://example.com/aep/promo/r/")));
+  assert.equal(validation.labels[0].productName, "Coca-Cola 500ml");
+  assert.equal(validation.labels[0].publicNumber, 101);
+
+  const duplicate = await validateBatchPdfLabels(db, "https://example.com", {
+    batchId: batch.batchId,
+    items: [{ token: batch.items[0].token }, { token: batch.items[0].token }, { token: batch.items[2].token }]
+  });
+  assert.equal(duplicate.code, "DUPLICATE_PRINT_ITEM");
+
+  const invalidBatch = await validateBatchPdfLabels(db, "https://example.com", {
+    batchId: "missing",
+    items: batch.items.map((item) => ({ token: item.token }))
+  });
+  assert.equal(invalidBatch.code, "INVALID_BATCH");
+
+  const malformed = await validateBatchPdfLabels(db, "https://example.com", {
+    batchId: batch.batchId,
+    items: [{ token: "bad" }, { token: batch.items[1].token }, { token: batch.items[2].token }]
+  });
+  assert.equal(malformed.code, "INVALID_QR_TOKEN");
+
+  const leakChecks = [
+    "SELECT COUNT(*) AS total FROM qr_codes WHERE token_hash IN (?, ?, ?)",
+    "SELECT COUNT(*) AS total FROM qr_batches WHERE id IN (?, ?, ?)",
+    "SELECT COUNT(*) AS total FROM qr_batch_items WHERE batch_id IN (?, ?, ?)",
+    "SELECT COUNT(*) AS total FROM audit_events WHERE metadata_json IN (?, ?, ?)"
+  ];
+  for (const sql of leakChecks) {
+    const row = await db.prepare(sql).bind(...batch.items.map((item) => item.token)).first();
+    assert.equal(row.total, 0);
+  }
+});
+
+test("admin PDF endpoint requires admin/CSRF and emits safe filename plus audit", async () => {
+  const db = await createTestDb();
+  const batch = await makeBatch(db, 1, 151);
+  const env = {
+    DB: db,
+    AEP_ADMIN_PASSCODE_HASH: "unused",
+    AEP_ADMIN_SESSION_SECRET: "secret-for-test"
+  };
+  const session = await createAdminSession(env, "admin_pdf");
+  const cookie = buildAdminCookie(session, { url: "https://example.com/aep/controlcenter" });
+
+  const noAuth = await pdfPost({
+    request: new Request("https://example.com/aep/api/admin/print/pdf", {
+      method: "POST",
+      headers: { "content-type": "application/json", host: "example.com" },
+      body: JSON.stringify({ batchId: batch.batchId, items: [{ token: batch.items[0].token }] })
+    }),
+    env
+  });
+  assert.equal(noAuth.status, 401);
+
+  const sellerCookie = await pdfPost({
+    request: new Request("https://example.com/aep/api/admin/print/pdf", {
+      method: "POST",
+      headers: { "content-type": "application/json", host: "example.com", cookie: "GAMMS-AEP-Seller=x" },
+      body: "{}"
+    }),
+    env
+  });
+  assert.equal(sellerCookie.status, 401);
+
+  const badCsrf = await pdfPost({
+    request: new Request("https://example.com/aep/api/admin/print/pdf", {
+      method: "POST",
+      headers: { "content-type": "text/plain", host: "example.com", cookie },
+      body: "{}"
+    }),
+    env
+  });
+  assert.equal(badCsrf.status, 415);
+
+  const ok = await pdfPost({
+    request: new Request("https://example.com/aep/api/admin/print/pdf", {
+      method: "POST",
+      headers: { "content-type": "application/json", host: "example.com", origin: "https://example.com", cookie },
+      body: JSON.stringify({ batchId: batch.batchId, items: [{ token: batch.items[0].token }], startSlot: 1 })
+    }),
+    env
+  });
+  assert.equal(ok.status, 200);
+  assert.equal(ok.headers.get("content-type"), "application/pdf");
+  assert.match(ok.headers.get("content-disposition"), /^attachment; filename="GAMMS-AEP_Coca-Cola-500ml_QR-0151-0151_MACO-ML-5000-50-etiquetas\.pdf"$/);
+  assert.equal(ok.headers.get("x-content-type-options"), "nosniff");
+
+  const audit = await db.prepare("SELECT action, metadata_json FROM audit_events WHERE action = 'label.pdf.generated' LIMIT 1").first();
+  assert.equal(audit.action, "label.pdf.generated");
+  assert.equal(JSON.parse(audit.metadata_json).batchId, batch.batchId);
+  assert.equal(audit.metadata_json.includes(batch.items[0].token), false);
+
+  const filename = buildLabelsPdfFilename({
+    productName: "Coca\"/Bad\r\n☃",
+    firstPublicNumber: 1,
+    lastPublicNumber: 2,
+    profileName: "MACO/ML\\5000"
+  });
+  assert.equal(filename.includes("\""), false);
+  assert.equal(filename.includes("/"), false);
+  assert.equal(filename.includes("\n"), false);
 });
 
 test("cannot reactivate a used QR code", async () => {

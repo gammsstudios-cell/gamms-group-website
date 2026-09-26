@@ -178,6 +178,9 @@ export async function generateQrBatch(
   }
 
   const profile = await getPrintProfile(db, printProfileId);
+  if (!profile) {
+    return { ok: false, code: "PROFILE_NOT_FOUND", message: "Print profile was not found." };
+  }
   const safeStartSlot = Number.parseInt(startSlot, 10) || 1;
   if (safeStartSlot < 1 || safeStartSlot > profileCapacity(profile)) {
     return { ok: false, code: "INVALID_START_SLOT", message: "Start slot is outside the selected profile." };

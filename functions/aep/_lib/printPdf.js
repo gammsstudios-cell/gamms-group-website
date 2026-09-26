@@ -8,10 +8,12 @@ function asString(value) {
 
 function truncate(text, maxLength) {
   const value = asString(text).trim();
-  return value.length <= maxLength ? value : `${value.slice(0, Math.max(0, maxLength - 1))}...`;
+  if (value.length <= maxLength) return value;
+  if (maxLength <= 3) return ".".repeat(Math.max(0, maxLength));
+  return `${value.slice(0, maxLength - 3)}...`;
 }
 
-function qrModules(value) {
+export function qrModules(value) {
   const qr = qrcode(0, "M");
   qr.addData(value);
   qr.make();
@@ -25,16 +27,37 @@ function qrModules(value) {
   return { count, modules };
 }
 
-function drawQr(page, value, x, y, size) {
+export function getQuietQrDrawPlan(value, size, quietModules = 4) {
   const matrix = qrModules(value);
-  const cell = size / matrix.count;
-  page.drawRectangle({ x, y, width: size, height: size, color: rgb(1, 1, 1) });
-  for (const module of matrix.modules) {
-    page.drawRectangle({
-      x: x + module.col * cell,
-      y: y + size - (module.row + 1) * cell,
+  const totalModules = matrix.count + quietModules * 2;
+  const cell = size / totalModules;
+  const offset = quietModules * cell;
+  return {
+    matrixCount: matrix.count,
+    quietModules,
+    totalModules,
+    cell,
+    offset,
+    modules: matrix.modules.map((module) => ({
+      row: module.row,
+      col: module.col,
+      x: offset + module.col * cell,
+      y: offset + (matrix.count - module.row - 1) * cell,
       width: Math.ceil(cell * 1000) / 1000,
-      height: Math.ceil(cell * 1000) / 1000,
+      height: Math.ceil(cell * 1000) / 1000
+    }))
+  };
+}
+
+function drawQr(page, value, x, y, size) {
+  const plan = getQuietQrDrawPlan(value, size);
+  page.drawRectangle({ x, y, width: size, height: size, color: rgb(1, 1, 1) });
+  for (const module of plan.modules) {
+    page.drawRectangle({
+      x: x + module.x,
+      y: y + module.y,
+      width: module.width,
+      height: module.height,
       color: rgb(0, 0, 0)
     });
   }
@@ -76,16 +99,17 @@ function drawLabel(page, fonts, slotBox, label) {
 }
 
 export function normalizePdfLabels(items = []) {
+  if (!Array.isArray(items)) return [];
   return items.map((item) => ({
     publicNumber: item.publicNumber ?? item.public_number,
     url: item.url,
     productName: item.productName ?? item.product_name ?? item.product?.name
-  })).filter((item) => item.publicNumber && item.url);
+  }));
 }
 
 export async function generateLabelsPdf({ labels, profile, startSlot = 1, drawGuides = false }) {
   const safeLabels = normalizePdfLabels(labels);
-  if (safeLabels.length < 1 || safeLabels.length > 500) {
+  if (safeLabels.length < 1 || safeLabels.length > 500 || safeLabels.some((item) => !item.publicNumber || !item.url)) {
     return { ok: false, code: "INVALID_LABEL_COUNT" };
   }
 
