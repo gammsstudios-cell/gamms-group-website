@@ -1,9 +1,11 @@
 // GAMMS AEP Staff Password Hashing & Verification (Web Crypto API)
 import { sha256Hex } from "./crypto.js";
 
-export const PBKDF2_TARGET_ITERATIONS = 600000;
+// Cloudflare Workers Web Crypto currently rejects PBKDF2 iteration counts > 100000.
+// Verified against the deployed GAMMS PBKDF2 probe on 2026-09-26.
+export const PBKDF2_TARGET_ITERATIONS = 100000;
 export const MIN_ACCEPTED_ITERATIONS = 1000;
-export const MAX_ACCEPTED_ITERATIONS = 1000000;
+export const MAX_ACCEPTED_ITERATIONS = 100000;
 export const MIN_PASSWORD_LENGTH = 8;
 export const MAX_PASSWORD_LENGTH = 256;
 

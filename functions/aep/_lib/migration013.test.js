@@ -184,13 +184,15 @@ test("TOTP replay verification fails closed without durable replay state", async
 test("Password hardening accepts legacy formats and upgrades only when needed", async () => {
   const modern = await hashPasswordPbkdf2("ModernPass1");
   assert.equal(modern.iterations, PBKDF2_TARGET_ITERATIONS);
-  assert.equal(PBKDF2_TARGET_ITERATIONS, 600000);
+  assert.equal(PBKDF2_TARGET_ITERATIONS, 100000);
   assert.equal(await verifyPassword("ModernPass1", modern.hash, "pbkdf2-sha256", modern.salt, modern.iterations), true);
   assert.equal(needsPasswordRehash(modern.hash, "pbkdf2-sha256", modern.iterations), false);
 
   const legacyPbkdf2 = await hashPasswordPbkdf2("LegacyPass1", "0123456789abcdef0123456789abcdef", 10000);
   assert.equal(await verifyPassword("LegacyPass1", legacyPbkdf2.hash, "pbkdf2-sha256", legacyPbkdf2.salt, legacyPbkdf2.iterations), true);
   assert.equal(needsPasswordRehash(legacyPbkdf2.hash, "pbkdf2-sha256", legacyPbkdf2.iterations), true);
+  assert.equal(await verifyPassword("ModernPass1", modern.hash, "pbkdf2-sha256", modern.salt, 100000), true);
+  assert.equal(needsPasswordRehash(modern.hash, "pbkdf2-sha256", 100000), false);
 
   const sha = await legacySha256Hash("ShaLegacy1");
   assert.equal(await verifyPassword("ShaLegacy1", sha, "sha256"), true);
@@ -202,6 +204,10 @@ test("Malformed password hashes are rejected before unsafe crypto", async () => 
   assert.equal(parseStoredHash("pbkdf2:" + "a".repeat(32) + ":NaN:" + "b".repeat(64)).valid, false);
   assert.equal(parseStoredHash("pbkdf2:" + "a".repeat(32) + ":" + (MAX_ACCEPTED_ITERATIONS + 1) + ":" + "b".repeat(64)).valid, false);
   assert.equal(parseStoredHash("pbkdf2:" + "a".repeat(32) + ":600000:not-hex").valid, false);
+  assert.equal(parseStoredHash("pbkdf2:" + "a".repeat(32) + ":100001:" + "b".repeat(64)).valid, false);
+  assert.equal(parseStoredHash("pbkdf2:" + "a".repeat(32) + ":600000:" + "b".repeat(64)).valid, false);
+  assert.equal(await verifyPassword("NoCryptoCall1", "b".repeat(64), "pbkdf2-sha256", "a".repeat(32), 100001), false);
+  assert.equal(await verifyPassword("NoCryptoCall1", "b".repeat(64), "pbkdf2-sha256", "a".repeat(32), 600000), false);
   assert.equal(await verifyPassword("x".repeat(300), "a".repeat(64), "sha256"), false);
 });
 
@@ -214,8 +220,8 @@ test("PBKDF2 verification rejects a short wrong password without throwing", asyn
 });
 
 test("PBKDF2 iteration parsing is strict for DB and stored-hash values", async () => {
-  assert.equal(parseIterationCount(600000), 600000);
-  assert.equal(parseIterationCount("600000"), 600000);
+  assert.equal(parseIterationCount(100000), 100000);
+  assert.equal(parseIterationCount("100000"), 100000);
 
   for (const value of ["600000garbage", "600000.5", "+600000", "6e5", " 600000 ", NaN, Infinity]) {
     assert.equal(parseIterationCount(value), null);
