@@ -115,13 +115,17 @@ export async function previewClaim(db, rawCode) {
   };
 }
 
-export async function redeemClaim(db, rawCode) {
+export async function redeemClaim(db, rawCode, options = {}) {
   const code = normalizeClaimCode(rawCode);
   if (!isValidClaimCode(code)) return { ok: false, code: "CLAIM_INVALID" };
 
   const claimHash = await hashClaimCode(code);
 
   try {
+    const actorType = String(options.actorType ?? "seller").slice(0, 40);
+    const actorIdentifier = String(options.actorIdentifier ?? actorType).slice(0, 120);
+    const movementReason = String(options.movementReason ?? "Canje vendedor 50% reward").slice(0, 240);
+
     const [insertResult, qrResult, rewardResult, claimResult, stockResult, inventoryResult] = await db.batch([
       db
         .prepare(
@@ -259,17 +263,17 @@ export async function redeemClaim(db, rawCode) {
              p.product_id,
              'sale',
              -1,
-             'Canje vendedor 50% reward',
+             ?,
              p.id,
-             'seller',
-             'seller',
+             ?,
+             ?,
              CURRENT_TIMESTAMP
            FROM reward_claims c
            JOIN purchases p ON p.qr_code_id = c.qr_code_id
            WHERE c.token_hash = ?
            LIMIT 1`
         )
-        .bind(claimHash)
+        .bind(movementReason, actorType, actorIdentifier, claimHash)
     ]);
 
     const purchase = firstRow(insertResult);
@@ -299,6 +303,32 @@ export async function redeemClaim(db, rawCode) {
       .prepare("SELECT COUNT(*) AS purchase_count FROM purchases WHERE customer_id = ?")
       .bind(purchase.customer_id)
       .first();
+
+    if (options.audit === true) {
+      await db.prepare(
+        `INSERT INTO audit_events (
+           actor_type,
+           actor_identifier,
+           action,
+           entity_type,
+           entity_identifier,
+           metadata,
+           created_at
+         ) VALUES (?, ?, 'reward_redeemed', 'reward', ?, ?, CURRENT_TIMESTAMP)`
+      ).bind(
+        actorType,
+        actorIdentifier,
+        String(reward.cycle_number),
+        JSON.stringify({
+          purchaseId: purchase.id,
+          qrPublicNumber: qr.public_number,
+          productId: purchase.product_id,
+          regularPriceCents: purchase.regular_price_cents,
+          discountPercent: purchase.discount_percent,
+          finalPriceCents: purchase.final_price_cents
+        })
+      ).run();
+    }
 
     return {
       ok: true,

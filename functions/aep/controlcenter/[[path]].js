@@ -191,6 +191,10 @@ export function onRequestGet() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
           Overview
         </a>
+        <a class="nav-item" data-route="pos">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="2" y="4" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 18v3"/><path d="M6 8h12"/><path d="M7 12h3M12 12h5"/></svg>
+          POS
+        </a>
         <a class="nav-item" data-route="sales">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
           Ventas
@@ -199,9 +203,17 @@ export function onRequestGet() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
           Productos
         </a>
+        <a class="nav-item" data-route="inventory">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="M3.3 7 12 12l8.7-5"/><path d="M12 22V12"/></svg>
+          Inventario
+        </a>
         <a class="nav-item" data-route="qr">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3z"/><path d="M17 17h4v4h-4z"/><path d="M14 19h2v2h-2z"/></svg>
           Códigos QR
+        </a>
+        <a class="nav-item" data-route="print">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+          Print Center
         </a>
         <a class="nav-item" data-route="rewards">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>
@@ -407,9 +419,9 @@ export function onRequestGet() {
       }
 
       const titles = {
-        overview: "Overview", sales: "Ventas Históricas", products: "Catálogo de Productos",
-        qr: "Gestión de Códigos QR", rewards: "Rewards & Canjes", customers: "Clientes Anónimos",
-        sellers: "Vendedores", activity: "Registro de Auditoría", settings: "Configuración AEP", system: "Diagnóstico del Sistema"
+        overview: "Overview", pos: "POS Operativo", sales: "Ventas Historicas", products: "Catalogo de Productos",
+        inventory: "Inventario", qr: "Gestion de Codigos QR", print: "Print Center", rewards: "Rewards & Canjes", customers: "Clientes Anonimos",
+        sellers: "Vendedores", activity: "Registro de Auditoria", settings: "Configuracion AEP", system: "Diagnostico del Sistema"
       };
       pageTitle.textContent = titles[route] || "Overview";
 
@@ -473,9 +485,12 @@ export function onRequestGet() {
 
       switch (route) {
         case "overview": return renderOverview();
+        case "pos": return renderPos();
         case "sales": return renderSales();
         case "products": return renderProducts();
+        case "inventory": return renderInventory();
         case "qr": return renderQr();
+        case "print": return renderPrintCenter();
         case "rewards": return renderRewards();
         case "customers": return renderCustomers();
         case "sellers": return renderSellers();
@@ -580,6 +595,83 @@ export function onRequestGet() {
           </div>
         </div>
       \`;
+    }
+
+    // POS
+    async function renderPos() {
+      const recent = await apiFetch("/sales?limit=10");
+      contentArea.innerHTML = \`
+        <div style="display:grid; grid-template-columns:minmax(320px, 1fr) minmax(320px, 1fr); gap:24px;">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Canje POS 50%</div>
+              <span class="badge badge-success">ONLINE</span>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Codigo de claim o lectura de scanner</label>
+              <input id="posClaimInput" class="form-control" placeholder="GAMMS-AEP-CLAIM:ABCD-EFGH-23" autofocus>
+            </div>
+            <div class="filter-bar">
+              <button class="btn-secondary" onclick="previewPosClaim()">Previsualizar</button>
+              <button class="btn-primary" onclick="redeemPosClaim()">Canjear 50%</button>
+            </div>
+            <div id="posPreview" style="margin-top:18px;"></div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Ultimas ventas</div>
+              <button class="btn-secondary" onclick="renderSales()">Ver ventas</button>
+            </div>
+            <div class="table-container">
+              <table>
+                <thead><tr><th>Producto</th><th>QR</th><th>Total</th><th>Desc.</th></tr></thead>
+                <tbody>
+                  \${(recent.items || []).map(s => \`
+                    <tr><td><strong>\${s.productName}</strong></td><td>#\${s.qrPublicNumber}</td><td>\${formatMoney(s.finalPriceCents)}</td><td>\${s.discountPercent}%</td></tr>
+                  \`).join('') || '<tr><td colspan="4" style="text-align:center">Sin ventas recientes</td></tr>'}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      \`;
+      document.getElementById("posClaimInput").addEventListener("keydown", (event) => {
+        if (event.key === "Enter") previewPosClaim();
+      });
+    }
+
+    function normalizeClaimInput(value) {
+      return String(value || "").trim().replace(/^GAMMS-AEP-CLAIM:/i, "").trim();
+    }
+
+    async function previewPosClaim() {
+      const input = document.getElementById("posClaimInput");
+      const code = normalizeClaimInput(input.value);
+      const box = document.getElementById("posPreview");
+      if (!code) return showToast("Ingresa un claim.", true);
+      const res = await apiFetch("/pos/claims/" + encodeURIComponent(code));
+      if (!res.ok) {
+        box.innerHTML = \`<div class="badge badge-danger">\${res.code || "CLAIM_INVALID"}</div>\`;
+        return;
+      }
+      box.innerHTML = \`
+        <div class="card" style="margin:0; box-shadow:none;">
+          <div class="card-title">\${res.product.name}</div>
+          <p style="margin-top:8px;">QR #\${res.qr.number}</p>
+          <p style="margin-top:8px;">Precio normal: <strong>\${formatMoney(res.pricing.regularPriceCents)}</strong></p>
+          <p>Descuento: <strong>\${res.pricing.discountPercent}%</strong></p>
+          <p>Total POS: <strong>\${formatMoney(res.pricing.finalPriceCents)}</strong></p>
+        </div>
+      \`;
+    }
+
+    async function redeemPosClaim() {
+      const code = normalizeClaimInput(document.getElementById("posClaimInput").value);
+      if (!code) return showToast("Ingresa un claim.", true);
+      const res = await apiFetch("/pos/redeem", { method: "POST", body: JSON.stringify({ code }) });
+      if (!res.ok) return showToast(res.code || "No se pudo canjear.", true);
+      showToast("Canje registrado: " + formatMoney(res.purchase.finalPriceCents));
+      renderPos();
     }
 
     // 2. SALES
@@ -793,6 +885,45 @@ export function onRequestGet() {
       });
     }
 
+    async function renderInventory(page = 1) {
+      const res = await apiFetch(\`/inventory?page=\${page}\`);
+      if (!res.ok) return;
+      contentArea.innerHTML = \`
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Ledger de Inventario</div>
+            <button class="btn-secondary" onclick="exportCsv('inventory')">Exportar CSV</button>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead><tr><th>ID</th><th>Fecha</th><th>Producto</th><th>Tipo</th><th>Cambio</th><th>Purchase</th><th>Razon</th><th>Actor</th></tr></thead>
+              <tbody>
+                \${res.items.map(m => \`
+                  <tr>
+                    <td>#\${m.id}</td>
+                    <td>\${m.createdAt}</td>
+                    <td><strong>\${m.productName}</strong></td>
+                    <td><span class="badge \${m.movementType === 'sale' ? 'badge-warning' : 'badge-success'}">\${m.movementType}</span></td>
+                    <td><strong>\${m.quantityDelta}</strong></td>
+                    <td>\${m.purchaseId ? '#' + m.purchaseId : '-'}</td>
+                    <td>\${m.reason}</td>
+                    <td>\${m.actorType}:\${m.actorIdentifier || ''}</td>
+                  </tr>
+                \`).join('') || '<tr><td colspan="8" style="text-align:center">Sin movimientos</td></tr>'}
+              </tbody>
+            </table>
+          </div>
+          <div class="pagination-bar">
+            <span>Pagina \${res.pagination.page} de \${res.pagination.totalPages}</span>
+            <div>
+              <button class="pagination-btn" \${res.pagination.page <= 1 ? 'disabled' : ''} onclick="renderInventory(\${res.pagination.page - 1})">Anterior</button>
+              <button class="pagination-btn" \${res.pagination.page >= res.pagination.totalPages ? 'disabled' : ''} onclick="renderInventory(\${res.pagination.page + 1})">Siguiente</button>
+            </div>
+          </div>
+        </div>
+      \`;
+    }
+
     // 4. QR MANAGEMENT
     async function renderQr(page = 1) {
       const res = await apiFetch(\`/qr?page=\${page}\`);
@@ -897,6 +1028,130 @@ export function onRequestGet() {
             </div>
           \`).join('')}
         </div>
+      \`);
+    }
+
+    let currentPrintBatch = null;
+
+    async function renderPrintCenter() {
+      const [productsRes, profilesRes, batchesRes] = await Promise.all([
+        apiFetch("/products"),
+        apiFetch("/print/profiles"),
+        apiFetch("/qr/batches?limit=10")
+      ]);
+      const products = productsRes.items || [];
+      const profiles = profilesRes.profiles || [];
+      contentArea.innerHTML = \`
+        <div style="display:grid; grid-template-columns:minmax(320px, 420px) 1fr; gap:24px;">
+          <div class="card">
+            <div class="card-header"><div class="card-title">Studio MACO ML-5000</div></div>
+            <form id="printGenerateForm">
+              <div class="form-group">
+                <label class="form-label">Producto</label>
+                <select name="productId" class="form-control" required>
+                  \${products.map(p => \`<option value="\${p.id}">\${p.name} - \${formatMoney(p.priceCents)}</option>\`).join('')}
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Perfil</label>
+                <select name="printProfileId" id="printProfileId" class="form-control" required>
+                  \${profiles.map(p => \`<option value="\${p.id}">\${p.name}</option>\`).join('')}
+                </select>
+              </div>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                <div class="form-group"><label class="form-label">Cantidad</label><input name="count" type="number" min="1" max="500" value="50" class="form-control" required></div>
+                <div class="form-group"><label class="form-label">Numero inicial</label><input name="startNumber" type="number" min="1" class="form-control" placeholder="Auto"></div>
+              </div>
+              <div class="form-group"><label class="form-label">Primer slot de hoja parcial</label><input name="startSlot" type="number" min="1" max="50" value="1" class="form-control"></div>
+              <div class="filter-bar">
+                <button type="submit" class="btn-primary">Generar lote</button>
+                <button type="button" class="btn-secondary" onclick="loadCalibration()">Calibrar</button>
+              </div>
+            </form>
+          </div>
+          <div>
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">Preview seguro</div>
+                <div class="filter-bar">
+                  <button class="btn-secondary" onclick="printCurrentBatch()">Imprimir</button>
+                  <button class="btn-primary" onclick="downloadCurrentPdf()">PDF</button>
+                </div>
+              </div>
+              <p style="color:var(--text-muted); font-size:13px; margin-bottom:12px;">Los tokens aparecen solo en esta sesion de creacion. No se guardan en historial ni en base de datos.</p>
+              <div id="printPreview"><p style="color:var(--text-muted)">Genera un lote para ver la hoja.</p></div>
+            </div>
+            <div class="card">
+              <div class="card-header"><div class="card-title">Ultimos batches</div></div>
+              <div class="table-container">
+                <table><thead><tr><th>Batch</th><th>Producto</th><th>Rango</th><th>Cantidad</th><th>Perfil</th></tr></thead><tbody>
+                  \${(batchesRes.items || []).map(b => \`<tr><td><small>\${b.id}</small></td><td>\${b.productName}</td><td>#\${b.firstPublicNumber}-#\${b.lastPublicNumber}</td><td>\${b.quantity}</td><td>\${b.printProfileName || '-'}</td></tr>\`).join('') || '<tr><td colspan="5" style="text-align:center">Sin batches</td></tr>'}
+                </tbody></table>
+              </div>
+            </div>
+          </div>
+        </div>
+      \`;
+      document.getElementById("printGenerateForm").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const payload = Object.fromEntries(new FormData(event.target).entries());
+        const res = await apiFetch("/qr/generate", { method: "POST", body: JSON.stringify(payload) });
+        if (!res.ok) return showToast(res.message || res.code || "Error generando lote", true);
+        currentPrintBatch = res;
+        renderPrintPreview(res);
+        showToast("Batch " + res.batchId + " generado.");
+      });
+    }
+
+    function renderPrintPreview(batch) {
+      document.getElementById("printPreview").innerHTML = \`
+        <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:12px;">
+          <span class="badge badge-success">Batch \${batch.batchId}</span>
+          <span class="badge badge-warning">Slot inicial \${batch.startSlot}</span>
+          <span class="badge badge-success">\${batch.count} etiquetas</span>
+        </div>
+        <div id="printable-labels" class="qr-label-grid">
+          \${batch.items.map(item => \`<div class="qr-label-card"><div class="qr-label-title">GAMMS AEP</div><div class="qr-label-product">\${item.product.name}</div>\${item.svg}<div class="qr-label-num">#\${item.publicNumber}</div></div>\`).join('')}
+        </div>
+      \`;
+    }
+
+    async function downloadCurrentPdf() {
+      if (!currentPrintBatch) return showToast("Genera un batch primero.", true);
+      const res = await fetch(API_BASE + "/print/pdf", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json", "Accept": "application/pdf" },
+        body: JSON.stringify({
+          printProfileId: currentPrintBatch.printProfile?.id,
+          startSlot: currentPrintBatch.startSlot,
+          items: currentPrintBatch.items.map(item => ({ publicNumber: item.publicNumber, url: item.url, productName: item.product.name }))
+        })
+      });
+      if (!res.ok) return showToast("No se pudo generar PDF.", true);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "gamms-aep-labels-" + currentPrintBatch.batchId + ".pdf";
+      link.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function printCurrentBatch() {
+      if (!currentPrintBatch) return showToast("Genera un batch primero.", true);
+      window.print();
+    }
+
+    async function loadCalibration() {
+      const profileId = document.getElementById("printProfileId")?.value;
+      const res = await apiFetch("/print/calibration", { method: "POST", body: JSON.stringify({ printProfileId: profileId }) });
+      if (!res.ok) return showToast(res.code || "Error de calibracion", true);
+      openModal("Calibracion " + res.profile.name, \`
+        <p style="font-size:13px; color:var(--text-muted); margin-bottom:12px;">Slots detectados: \${res.slots.length}. Usa offset/scale del perfil si la impresora desplaza la hoja.</p>
+        <div class="table-container"><table><thead><tr><th>Slot</th><th>Fila</th><th>Col</th><th>X pt</th><th>Y pt</th></tr></thead><tbody>
+          \${res.slots.slice(0, 10).map(s => \`<tr><td>\${s.slot}</td><td>\${s.row}</td><td>\${s.column}</td><td>\${s.x.toFixed(2)}</td><td>\${s.y.toFixed(2)}</td></tr>\`).join('')}
+        </tbody></table></div>
       \`);
     }
 

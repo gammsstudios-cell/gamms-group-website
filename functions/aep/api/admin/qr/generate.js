@@ -25,7 +25,10 @@ export async function onRequestPost(context) {
     count: body?.count ?? 50,
     startNumber: body?.start_number ?? body?.startNumber,
     tokenLength: body?.token_length ?? body?.tokenLength ?? 12,
-    baseUrl
+    baseUrl,
+    printProfileId: body?.print_profile_id ?? body?.printProfileId,
+    startSlot: body?.start_slot ?? body?.startSlot ?? 1,
+    createdBy: auth.payload.sub ?? "admin"
   });
 
   if (!result.ok) {
@@ -42,15 +45,21 @@ export async function onRequestPost(context) {
       productId: body?.product_id ?? body?.productId,
       count: result.count,
       startNumber: result.startNumber,
-      endNumber: result.endNumber
+      endNumber: result.endNumber,
+      batchId: result.batchId,
+      printProfileId: result.printProfile?.id,
+      startSlot: result.startSlot
     }
   });
 
   return adminJson({
     ok: true,
+    batchId: result.batchId,
     count: result.count,
     startNumber: result.startNumber,
     endNumber: result.endNumber,
+    printProfile: result.printProfile,
+    startSlot: result.startSlot,
     items: result.items
   }, { status: 201 });
 }

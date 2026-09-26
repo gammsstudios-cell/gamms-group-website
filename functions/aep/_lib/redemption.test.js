@@ -290,7 +290,8 @@ class FakeStatement {
 
     if (this.sql.includes("INSERT INTO inventory_movements")) {
       if (this.db.fail === "inventory") throw new Error("inventory failed");
-      const claim = this.db.claims.find((item) => item.token_hash === this.params[0]);
+      const claimHash = this.params[this.params.length - 1];
+      const claim = this.db.claims.find((item) => item.token_hash === claimHash);
       const purchase = this.db.purchases.find((item) => item.qr_code_id === claim.qr_code_id);
       if (!purchase) return { meta: { changes: 0 }, results: [] };
       if (this.db.inventoryMovements.some((movement) => movement.purchase_id === purchase.id && movement.movement_type === "sale")) {
@@ -301,7 +302,10 @@ class FakeStatement {
         product_id: purchase.product_id,
         movement_type: "sale",
         quantity_delta: -1,
-        purchase_id: purchase.id
+        purchase_id: purchase.id,
+        reason: this.params[0],
+        actor_type: this.params[1],
+        actor_identifier: this.params[2]
       });
       return { meta: { changes: 1 }, results: [] };
     }

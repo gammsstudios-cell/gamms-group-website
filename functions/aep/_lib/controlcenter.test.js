@@ -3,6 +3,7 @@ import test from "node:test";
 import { DatabaseSync } from "node:sqlite";
 import { readFileSync, readdirSync } from "node:fs";
 import { resolve, join } from "node:path";
+import { PDFDocument } from "pdf-lib";
 
 import {
   buildAdminCookie,
@@ -18,6 +19,8 @@ import { DEFAULT_SETTINGS, getSettings, updateSettings } from "./settings.js";
 import { createProduct, getProductById, listProducts, updateProduct } from "./products.js";
 import { listInventoryMovements, recordInventoryMovement } from "./inventory.js";
 import { disableQr, generateQrBatch, getQrByPublicNumber, listQrCodes, reactivateQr } from "./adminQr.js";
+import { generateLabelsPdf } from "./printPdf.js";
+import { getPrintProfile, getSlotPosition, paginateLabels, profileCapacity, updatePrintProfile } from "./printProfiles.js";
 import { formatFriendlyCustomerId, listSales } from "./sales.js";
 import { getDashboardStats } from "./dashboard.js";
 import { cancelReward, listRewards } from "./rewardsAdmin.js";
@@ -113,7 +116,7 @@ async function createTestDb() {
 // ----------------------------------------------------
 // MIGRATION & SCHEMA VALIDATION TEST (Section 35)
 // ----------------------------------------------------
-test("Database migrations 001 to 007 apply cleanly to fresh SQLite database", async () => {
+test("Database migrations 001 to 008 apply cleanly to fresh SQLite database", async () => {
   const db = await createTestDb();
   const tables = await db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all();
   const tableNames = (tables?.results ?? []).map((t) => t.name);
@@ -124,6 +127,9 @@ test("Database migrations 001 to 007 apply cleanly to fresh SQLite database", as
   assert.ok(tableNames.includes("seller_sessions"));
   assert.ok(tableNames.includes("audit_events"));
   assert.ok(tableNames.includes("aep_settings"));
+  assert.ok(tableNames.includes("print_profiles"));
+  assert.ok(tableNames.includes("qr_batches"));
+  assert.ok(tableNames.includes("qr_batch_items"));
 });
 
 // ----------------------------------------------------
@@ -314,6 +320,7 @@ test("generateQrBatch creates unique tokens, hashes, and SVG label material", as
 
   assert.equal(batchRes.ok, true);
   assert.equal(batchRes.count, 10);
+  assert.ok(batchRes.batchId.startsWith("qrb_"));
   assert.equal(batchRes.startNumber, 201);
   assert.equal(batchRes.endNumber, 210);
   assert.equal(batchRes.items.length, 10);
@@ -327,6 +334,15 @@ test("generateQrBatch creates unique tokens, hashes, and SVG label material", as
   const qrList = await listQrCodes(db, { productId: prod.product.id });
   assert.equal(qrList.items.length, 10);
 
+  const batchRow = await db.prepare("SELECT id, quantity FROM qr_batches WHERE id = ?").bind(batchRes.batchId).first();
+  assert.equal(batchRow.quantity, 10);
+  const batchItems = await db.prepare("SELECT COUNT(*) AS total FROM qr_batch_items WHERE batch_id = ?").bind(batchRes.batchId).first();
+  assert.equal(batchItems.total, 10);
+  const plaintextTokenLeak = await db.prepare(
+    "SELECT COUNT(*) AS total FROM qr_codes WHERE token_hash = ?"
+  ).bind(firstItem.token).first();
+  assert.equal(plaintextTokenLeak.total, 0);
+
   // Disable QR #201
   const disableRes = await disableQr(db, 201);
   assert.equal(disableRes.ok, true);
@@ -336,6 +352,63 @@ test("generateQrBatch creates unique tokens, hashes, and SVG label material", as
   const reactivateRes = await reactivateQr(db, 201);
   assert.equal(reactivateRes.ok, true);
   assert.equal(reactivateRes.qr.status, "available");
+});
+
+test("MACO ML-5000 profile geometry, pagination, and PDF generation are deterministic", async () => {
+  const db = await createTestDb();
+  const profile = await getPrintProfile(db);
+
+  assert.equal(profile.name, "MACO ML-5000 - 50 etiquetas");
+  assert.equal(profileCapacity(profile), 50);
+
+  const slot1 = getSlotPosition(profile, 1);
+  const slot5 = getSlotPosition(profile, 5);
+  const slot6 = getSlotPosition(profile, 6);
+  const slot50 = getSlotPosition(profile, 50);
+  assert.equal(slot1.row, 1);
+  assert.equal(slot1.column, 1);
+  assert.equal(slot5.row, 1);
+  assert.equal(slot5.column, 5);
+  assert.equal(slot6.row, 2);
+  assert.equal(slot6.column, 1);
+  assert.equal(slot50.row, 10);
+  assert.equal(slot50.column, 5);
+
+  const labels = Array.from({ length: 75 }, (_, index) => ({
+    publicNumber: 300 + index,
+    url: `https://example.com/aep/promo/r/token${index}`,
+    productName: "Bebida"
+  }));
+  const pages = paginateLabels(labels, profile, 13);
+  assert.equal(pages.ok, true);
+  assert.deepEqual(pages.pages.map((page) => page.length), [38, 37]);
+
+  const pdf = await generateLabelsPdf({ labels, profile, startSlot: 13 });
+  assert.equal(pdf.ok, true);
+  assert.equal(pdf.pageCount, 2);
+  const loaded = await PDFDocument.load(pdf.bytes);
+  assert.equal(loaded.getPageCount(), 2);
+  const { width, height } = loaded.getPage(0).getSize();
+  assert.equal(Math.round(width), 612);
+  assert.equal(Math.round(height), 792);
+});
+
+test("print profile calibration offsets and scales alter slot boxes without changing capacity", async () => {
+  const db = await createTestDb();
+  const updated = await updatePrintProfile(db, 1, {
+    offsetXUm: 1000,
+    offsetYUm: -500,
+    scaleXBp: 9800,
+    scaleYBp: 10200
+  });
+  assert.equal(updated.ok, true);
+  assert.equal(profileCapacity(updated.profile), 50);
+
+  const original = await getPrintProfile(db);
+  const slot = getSlotPosition(original, 1);
+  assert.ok(slot.x > 36);
+  assert.ok(slot.width < 108);
+  assert.ok(slot.height > 72);
 });
 
 test("cannot reactivate a used QR code", async () => {

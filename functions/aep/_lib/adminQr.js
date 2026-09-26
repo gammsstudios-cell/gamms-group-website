@@ -1,5 +1,12 @@
 import { generateQrToken, hashQrToken } from "./crypto.js";
 import { renderQrSvg } from "./qrSvg.js";
+import { getPrintProfile, profileCapacity } from "./printProfiles.js";
+
+function randomBatchId() {
+  const bytes = new Uint8Array(12);
+  crypto.getRandomValues(bytes);
+  return `qrb_${Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("")}`;
+}
 
 export async function listQrCodes(db, { query = "", status = "", productId = null, page = 1, limit = 50 } = {}) {
   const safePage = Math.max(1, Number.parseInt(page, 10) || 1);
@@ -132,7 +139,16 @@ export async function getQrByPublicNumber(db, publicNumber) {
 
 export async function generateQrBatch(
   db,
-  { productId, count, startNumber = null, tokenLength = 12, baseUrl = "https://gammsgroup.pages.dev" }
+  {
+    productId,
+    count,
+    startNumber = null,
+    tokenLength = 12,
+    baseUrl = "https://gammsgroup.pages.dev",
+    printProfileId = null,
+    startSlot = 1,
+    createdBy = "admin"
+  }
 ) {
   const pId = Number.parseInt(productId, 10);
   if (!Number.isInteger(pId) || pId < 1) {
@@ -161,10 +177,41 @@ export async function generateQrBatch(
     currentStart = (maxRow?.max_num ?? 0) + 1;
   }
 
+  const profile = await getPrintProfile(db, printProfileId);
+  const safeStartSlot = Number.parseInt(startSlot, 10) || 1;
+  if (safeStartSlot < 1 || safeStartSlot > profileCapacity(profile)) {
+    return { ok: false, code: "INVALID_START_SLOT", message: "Start slot is outside the selected profile." };
+  }
+
   const cleanBaseUrl = String(baseUrl ?? "https://gammsgroup.pages.dev").replace(/\/+$/, "");
+  const batchId = randomBatchId();
 
   const batchItems = [];
-  const dbStatements = [];
+  const dbStatements = [
+    db
+      .prepare(
+        `INSERT INTO qr_batches (
+           id,
+           product_id,
+           quantity,
+           first_public_number,
+           last_public_number,
+           print_profile_id,
+           start_slot,
+           created_by
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+      )
+      .bind(
+        batchId,
+        pId,
+        batchCount,
+        currentStart,
+        currentStart + batchCount - 1,
+        profile.id ?? null,
+        safeStartSlot,
+        String(createdBy ?? "admin").slice(0, 120)
+      )
+  ];
 
   for (let i = 0; i < batchCount; i += 1) {
     const publicNumber = currentStart + i;
@@ -180,6 +227,17 @@ export async function generateQrBatch(
            VALUES (?, ?, ?, 'available', CURRENT_TIMESTAMP)`
         )
         .bind(publicNumber, tokenHash, pId)
+    );
+    dbStatements.push(
+      db
+        .prepare(
+          `INSERT INTO qr_batch_items (batch_id, qr_code_id, sequence_number)
+           SELECT ?, id, ?
+           FROM qr_codes
+           WHERE token_hash = ?
+           LIMIT 1`
+        )
+        .bind(batchId, i + 1, tokenHash)
     );
 
     batchItems.push({
@@ -201,9 +259,12 @@ export async function generateQrBatch(
 
     return {
       ok: true,
+      batchId,
       count: batchCount,
       startNumber: currentStart,
       endNumber: currentStart + batchCount - 1,
+      printProfile: profile,
+      startSlot: safeStartSlot,
       items: batchItems
     };
   } catch (error) {
@@ -216,6 +277,105 @@ export async function generateQrBatch(
     }
     return { ok: false, code: "DATABASE_ERROR", message: error.message };
   }
+}
+
+export async function listQrBatches(db, { page = 1, limit = 25 } = {}) {
+  const safePage = Math.max(1, Number.parseInt(page, 10) || 1);
+  const safeLimit = Math.min(100, Math.max(1, Number.parseInt(limit, 10) || 25));
+  const offset = (safePage - 1) * safeLimit;
+  const countRow = await db.prepare("SELECT COUNT(*) AS total FROM qr_batches").first();
+  const rows = await db
+    .prepare(
+      `SELECT
+         b.id,
+         b.quantity,
+         b.first_public_number,
+         b.last_public_number,
+         b.start_slot,
+         b.created_by,
+         b.created_at,
+         p.name AS product_name,
+         pp.name AS print_profile_name
+       FROM qr_batches b
+       JOIN products p ON p.id = b.product_id
+       LEFT JOIN print_profiles pp ON pp.id = b.print_profile_id
+       ORDER BY b.created_at DESC, b.id DESC
+       LIMIT ? OFFSET ?`
+    )
+    .bind(safeLimit, offset)
+    .all();
+
+  return {
+    items: (rows?.results ?? []).map((row) => ({
+      id: row.id,
+      quantity: row.quantity,
+      firstPublicNumber: row.first_public_number,
+      lastPublicNumber: row.last_public_number,
+      startSlot: row.start_slot,
+      createdBy: row.created_by,
+      createdAt: row.created_at,
+      productName: row.product_name,
+      printProfileName: row.print_profile_name
+    })),
+    pagination: {
+      page: safePage,
+      pageSize: safeLimit,
+      total: countRow?.total ?? 0,
+      totalPages: Math.ceil((countRow?.total ?? 0) / safeLimit) || 1
+    }
+  };
+}
+
+export async function getQrBatch(db, batchId) {
+  const id = String(batchId ?? "").trim();
+  if (!id) return null;
+  const batch = await db
+    .prepare(
+      `SELECT
+         b.*,
+         p.name AS product_name,
+         pp.name AS print_profile_name
+       FROM qr_batches b
+       JOIN products p ON p.id = b.product_id
+       LEFT JOIN print_profiles pp ON pp.id = b.print_profile_id
+       WHERE b.id = ?
+       LIMIT 1`
+    )
+    .bind(id)
+    .first();
+  if (!batch) return null;
+  const rows = await db
+    .prepare(
+      `SELECT
+         i.sequence_number,
+         q.public_number,
+         q.status,
+         q.created_at
+       FROM qr_batch_items i
+       JOIN qr_codes q ON q.id = i.qr_code_id
+       WHERE i.batch_id = ?
+       ORDER BY i.sequence_number ASC`
+    )
+    .bind(id)
+    .all();
+
+  return {
+    id: batch.id,
+    quantity: batch.quantity,
+    firstPublicNumber: batch.first_public_number,
+    lastPublicNumber: batch.last_public_number,
+    startSlot: batch.start_slot,
+    createdBy: batch.created_by,
+    createdAt: batch.created_at,
+    productName: batch.product_name,
+    printProfileName: batch.print_profile_name,
+    items: (rows?.results ?? []).map((row) => ({
+      sequenceNumber: row.sequence_number,
+      publicNumber: row.public_number,
+      status: row.status,
+      createdAt: row.created_at
+    }))
+  };
 }
 
 export async function disableQr(db, publicNumber) {

@@ -23,6 +23,7 @@
     "wrangler": "^4.139.0"
   },
   "dependencies": {
+    "pdf-lib": "^1.17.1",
     "qrcode-generator": "^2.0.4"
   }
 }
