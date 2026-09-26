@@ -10,7 +10,9 @@ class FakeD1 {
     this.customers = new Map();
     this.qrCodes = new Map();
     this.purchases = [];
+    this.rewards = [];
     this.failNextPurchaseInsert = false;
+    this.failNextRewardInsert = false;
   }
 
   prepare(sql) {
@@ -20,7 +22,8 @@ class FakeD1 {
   async batch(statements) {
     const snapshot = {
       qrCodes: new Map(Array.from(this.qrCodes, ([key, value]) => [key, { ...value }])),
-      purchases: this.purchases.map((purchase) => ({ ...purchase }))
+      purchases: this.purchases.map((purchase) => ({ ...purchase })),
+      rewards: this.rewards.map((reward) => ({ ...reward }))
     };
 
     try {
@@ -32,6 +35,7 @@ class FakeD1 {
     } catch (error) {
       this.qrCodes = snapshot.qrCodes;
       this.purchases = snapshot.purchases;
+      this.rewards = snapshot.rewards;
       throw error;
     }
   }
@@ -71,6 +75,17 @@ class FakeStatement {
   }
 
   async first() {
+    if (this.sql.includes("FROM rewards")) {
+      const [customerId, rewardType] = this.params;
+      return this.db.rewards
+        .filter((reward) =>
+          reward.customer_id === customerId &&
+          reward.reward_type === rewardType &&
+          reward.status === "available"
+        )
+        .sort((a, b) => a.cycle_number - b.cycle_number)[0] ?? null;
+    }
+
     if (this.sql.includes("FROM qr_codes q")) {
       const [tokenHash] = this.params;
       const qr = this.db.qrCodes.get(tokenHash);
@@ -108,11 +123,16 @@ class FakeStatement {
         throw new Error("artificial purchase insert failure");
       }
 
-      const [customerId, tokenHash] = this.params;
+      const [customerId, tokenHash, rewardCustomerId, rewardType] = this.params;
       const qr = this.db.qrCodes.get(tokenHash);
       const product = qr ? this.db.products.get(qr.product_id) : null;
+      const hasAvailableReward = this.db.rewards.some((reward) =>
+        reward.customer_id === rewardCustomerId &&
+        reward.reward_type === rewardType &&
+        reward.status === "available"
+      );
 
-      if (!qr || qr.status !== "available" || !product || product.active !== 1) {
+      if (!qr || qr.status !== "available" || !product || product.active !== 1 || hasAvailableReward) {
         return { meta: { changes: 0 }, results: [] };
       }
 
@@ -153,6 +173,62 @@ class FakeStatement {
           id: qr.id,
           product_id: qr.product_id,
           public_number: qr.public_number
+        }]
+      };
+    }
+
+    if (this.sql.includes("INSERT INTO rewards")) {
+      if (this.db.failNextRewardInsert) {
+        this.db.failNextRewardInsert = false;
+        throw new Error("artificial reward insert failure");
+      }
+
+      const [
+        customerId,
+        rewardType,
+        discountPercent,
+        purchaseCustomerId,
+        uniqueCustomerId,
+        uniqueRewardType
+      ] = this.params;
+      assert.equal(customerId, purchaseCustomerId);
+      assert.equal(customerId, uniqueCustomerId);
+      assert.equal(rewardType, uniqueRewardType);
+
+      const purchaseCount = this.db.purchases
+        .filter((purchase) => purchase.customer_id === customerId).length;
+
+      if (purchaseCount <= 0 || purchaseCount % 3 !== 2) {
+        return { meta: { changes: 0 }, results: [] };
+      }
+
+      const cycleNumber = Math.floor((purchaseCount - 1) / 3) + 1;
+      const duplicate = this.db.rewards.some((reward) =>
+        reward.customer_id === customerId &&
+        reward.reward_type === rewardType &&
+        reward.cycle_number === cycleNumber
+      );
+
+      if (duplicate) {
+        return { meta: { changes: 0 }, results: [] };
+      }
+
+      const reward = {
+        id: this.db.rewards.length + 1,
+        customer_id: customerId,
+        reward_type: rewardType,
+        discount_percent: discountPercent,
+        status: "available",
+        cycle_number: cycleNumber
+      };
+      this.db.rewards.push(reward);
+
+      return {
+        meta: { changes: 1 },
+        results: [{
+          reward_type: reward.reward_type,
+          discount_percent: reward.discount_percent,
+          cycle_number: reward.cycle_number
         }]
       };
     }
@@ -220,6 +296,11 @@ test("available QR registers a purchase with product price", async () => {
     discountPercent: 0,
     finalPriceCents: 4000
   });
+  assert.deepEqual(result.progress, {
+    purchaseCount: 1,
+    cyclePosition: 1,
+    reward: { available: false }
+  });
 });
 
 test("used, disabled, invalid, and productless QR requests are rejected safely", async () => {
@@ -257,7 +338,12 @@ test("purchase progress counts valid customer purchases and cycles every three",
   assert.equal(result.ok, true);
   assert.deepEqual(result.progress, {
     purchaseCount: 2,
-    cyclePosition: 2
+    cyclePosition: 2,
+    reward: {
+      available: true,
+      type: "third_drink_50",
+      discountPercent: 50
+    }
   });
 });
 
@@ -294,4 +380,162 @@ test("purchase insert failure rolls back without consuming the QR", async () => 
   assert.equal(result.code, "PURCHASE_CONFLICT");
   assert.equal(db.purchases.length, 0);
   assert.equal(db.qrCodes.get(await hashQrToken("IIIIIIIIIIII")).status, "available");
+});
+
+test("second normal purchase creates a 50 percent reward once for cycle one", async () => {
+  const db = new FakeD1();
+  await addQr(db, "JJJJJJJJJJJJ", { id: 10, publicNumber: 108 });
+  db.purchases.push({
+    id: 1,
+    customer_id: "cust_reward",
+    product_id: 1,
+    qr_code_id: 91,
+    regular_price_cents: 4000,
+    discount_percent: 0,
+    final_price_cents: 4000
+  });
+
+  const result = await registerPurchase(
+    db,
+    purchaseRequest("GAMMS-AEP-Customer=cust_reward"),
+    "JJJJJJJJJJJJ"
+  );
+
+  assert.equal(result.ok, true);
+  assert.deepEqual(result.progress, {
+    purchaseCount: 2,
+    cyclePosition: 2,
+    reward: {
+      available: true,
+      type: "third_drink_50",
+      discountPercent: 50
+    }
+  });
+  assert.equal(db.rewards.length, 1);
+  assert.equal(db.rewards[0].cycle_number, 1);
+  assert.equal(db.rewards[0].status, "available");
+});
+
+test("reward creation is idempotent and does not duplicate the same cycle", async () => {
+  const db = new FakeD1();
+  await addQr(db, "KKKKKKKKKKKK", { id: 11, publicNumber: 109 });
+  db.purchases.push({
+    id: 1,
+    customer_id: "cust_duplicate_reward",
+    product_id: 1,
+    qr_code_id: 92,
+    regular_price_cents: 4000,
+    discount_percent: 0,
+    final_price_cents: 4000
+  });
+  db.rewards.push({
+    id: 1,
+    customer_id: "cust_duplicate_reward",
+    reward_type: "third_drink_50",
+    discount_percent: 50,
+    status: "redeemed",
+    cycle_number: 1
+  });
+
+  const result = await registerPurchase(
+    db,
+    purchaseRequest("GAMMS-AEP-Customer=cust_duplicate_reward"),
+    "KKKKKKKKKKKK"
+  );
+
+  assert.equal(result.ok, true);
+  assert.equal(db.rewards.filter((reward) => reward.cycle_number === 1).length, 1);
+});
+
+test("available reward blocks the customer from consuming a third QR", async () => {
+  const db = new FakeD1();
+  await addQr(db, "LLLLLLLLLLLL", { id: 12, publicNumber: 110 });
+  db.rewards.push({
+    id: 1,
+    customer_id: "cust_blocked",
+    reward_type: "third_drink_50",
+    discount_percent: 50,
+    status: "available",
+    cycle_number: 1
+  });
+
+  const result = await registerPurchase(
+    db,
+    purchaseRequest("GAMMS-AEP-Customer=cust_blocked"),
+    "LLLLLLLLLLLL"
+  );
+
+  assert.equal(result.ok, false);
+  assert.equal(result.code, "REWARD_REQUIRES_SELLER");
+  assert.deepEqual(result.reward, {
+    available: true,
+    type: "third_drink_50",
+    discountPercent: 50
+  });
+  assert.equal(db.qrCodes.get(await hashQrToken("LLLLLLLLLLLL")).status, "available");
+  assert.equal(db.purchases.length, 0);
+  assert.equal(db.rewards[0].status, "available");
+});
+
+test("cycle two fifth purchase creates a distinct second reward", async () => {
+  const db = new FakeD1();
+  await addQr(db, "MMMMMMMMMMMM", { id: 13, publicNumber: 111 });
+  for (let index = 1; index <= 4; index += 1) {
+    db.purchases.push({
+      id: index,
+      customer_id: "cust_cycle_two",
+      product_id: 1,
+      qr_code_id: 100 + index,
+      regular_price_cents: 4000,
+      discount_percent: 0,
+      final_price_cents: 4000
+    });
+  }
+  db.rewards.push({
+    id: 1,
+    customer_id: "cust_cycle_two",
+    reward_type: "third_drink_50",
+    discount_percent: 50,
+    status: "redeemed",
+    cycle_number: 1
+  });
+
+  const result = await registerPurchase(
+    db,
+    purchaseRequest("GAMMS-AEP-Customer=cust_cycle_two"),
+    "MMMMMMMMMMMM"
+  );
+
+  assert.equal(result.ok, true);
+  assert.equal(result.progress.purchaseCount, 5);
+  assert.equal(result.progress.cyclePosition, 2);
+  assert.deepEqual(db.rewards.map((reward) => reward.cycle_number), [1, 2]);
+  assert.equal(db.rewards.filter((reward) => reward.cycle_number === 2).length, 1);
+});
+
+test("reward insert failure rolls back purchase and QR consumption", async () => {
+  const db = new FakeD1();
+  await addQr(db, "NNNNNNNNNNNN", { id: 14, publicNumber: 112 });
+  db.purchases.push({
+    id: 1,
+    customer_id: "cust_reward_fail",
+    product_id: 1,
+    qr_code_id: 120,
+    regular_price_cents: 4000,
+    discount_percent: 0,
+    final_price_cents: 4000
+  });
+  db.failNextRewardInsert = true;
+
+  const result = await registerPurchase(
+    db,
+    purchaseRequest("GAMMS-AEP-Customer=cust_reward_fail"),
+    "NNNNNNNNNNNN"
+  );
+
+  assert.equal(result.ok, false);
+  assert.equal(result.code, "PURCHASE_CONFLICT");
+  assert.equal(db.purchases.length, 1);
+  assert.equal(db.rewards.length, 0);
+  assert.equal(db.qrCodes.get(await hashQrToken("NNNNNNNNNNNN")).status, "available");
 });

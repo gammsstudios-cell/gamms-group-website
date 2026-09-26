@@ -15,6 +15,20 @@ export async function onRequestPost(context) {
     const headers = result.customerCookie ? { "set-cookie": result.customerCookie } : {};
 
     if (!result.ok) {
+      if (result.code === "REWARD_REQUIRES_SELLER") {
+        return json(
+          {
+            ok: false,
+            code: result.code,
+            reward: {
+              type: result.reward.type,
+              discountPercent: result.reward.discountPercent
+            }
+          },
+          { headers }
+        );
+      }
+
       return safeError(sanitizePurchaseError(result.code), 200, headers);
     }
 

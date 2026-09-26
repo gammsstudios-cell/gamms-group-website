@@ -51,6 +51,8 @@ export function onRequestGet(context) {
     h1 { margin: 0 0 12px; font-size: 28px; line-height: 1.1; }
     p { margin: 0; color: #424245; line-height: 1.5; }
     .state { margin-top: 18px; padding: 14px; border-radius: 10px; background: #f5f5f7; }
+    .progress { margin-top: 18px; font-size: 20px; letter-spacing: .12em; }
+    .progress-copy { margin-top: 8px; color: #424245; }
     .actions { margin-top: 18px; }
     button {
       width: 100%;
@@ -69,7 +71,7 @@ export function onRequestGet(context) {
     @media (prefers-color-scheme: dark) {
       body { background: #1d1d1f; color: #f5f5f7; }
       main { background: #2c2c2e; border-color: #3a3a3c; }
-      p, .label, .mono { color: #aaaaaa; }
+      p, .label, .mono, .progress-copy { color: #aaaaaa; }
       .state { background: #1d1d1f; }
       button { background: #f5f5f7; color: #1d1d1f; }
     }
@@ -81,6 +83,8 @@ export function onRequestGet(context) {
     <h1 id="title">Validando QR...</h1>
     <p id="message">Estamos revisando el codigo de esta bebida.</p>
     <div class="state" id="state">Consultando servidor...</div>
+    <div class="progress" id="progress" hidden></div>
+    <p class="progress-copy" id="progressCopy" hidden></p>
     <div class="actions">
       <button id="register" type="button" hidden>Registrar compra</button>
     </div>
@@ -91,6 +95,8 @@ export function onRequestGet(context) {
     const title = document.getElementById("title");
     const message = document.getElementById("message");
     const state = document.getElementById("state");
+    const progress = document.getElementById("progress");
+    const progressCopy = document.getElementById("progressCopy");
     const registerButton = document.getElementById("register");
 
     const labels = {
@@ -99,9 +105,30 @@ export function onRequestGet(context) {
       QR_INVALID: ["QR invalido", "No encontramos este codigo.", "bad"],
       PRODUCT_NOT_FOUND: ["Producto no disponible", "Este codigo no tiene un producto valido asociado.", "bad"],
       PURCHASE_CONFLICT: ["Compra no registrada", "Este codigo ya fue consumido.", "bad"],
+      REWARD_REQUIRES_SELLER: ["Beneficio disponible", "Esta compra debe ser validada por un vendedor.", "ok"],
       INTERNAL_ERROR: ["No pudimos registrar", "Intentalo nuevamente en unos segundos.", "bad"],
       QR_LOOKUP_FAILED: ["No pudimos validar", "Intentalo nuevamente en unos segundos.", "bad"]
     };
+
+    function hideProgress() {
+      progress.hidden = true;
+      progressCopy.hidden = true;
+    }
+
+    function showProgress(data) {
+      const rewardAvailable = data.reward?.available === true;
+      const position = Number(data.cyclePosition ?? 0);
+      progress.hidden = false;
+      progressCopy.hidden = false;
+      progress.textContent = (position >= 1 ? "●" : "○") + " " + (position >= 2 ? "●" : "○") + " 🎁";
+
+      if (rewardAvailable) {
+        progressCopy.textContent = "¡50% desbloqueado! Tu proxima bebida tiene 50% de descuento. Muestrale este beneficio al vendedor.";
+        return;
+      }
+
+      progressCopy.textContent = Math.min(position, 2) + " de 2 compras completadas";
+    }
 
     function showError(code) {
       const [heading, copy, className] = labels[code] ?? labels.QR_INVALID;
@@ -110,6 +137,7 @@ export function onRequestGet(context) {
       state.className = "state " + className;
       state.textContent = code ?? "QR_INVALID";
       registerButton.hidden = true;
+      hideProgress();
     }
 
     fetch("/aep/api/qr/" + encodeURIComponent(token), { headers: { accept: "application/json" } })
@@ -123,6 +151,7 @@ export function onRequestGet(context) {
           state.className = "state ok";
           state.textContent = "QR #" + data.qr.number + " - " + data.qr.status;
           registerButton.hidden = false;
+          hideProgress();
           return;
         }
 
@@ -134,6 +163,7 @@ export function onRequestGet(context) {
         state.className = "state bad";
         state.textContent = "NETWORK_ERROR";
         registerButton.hidden = true;
+        hideProgress();
       });
 
     registerButton.addEventListener("click", () => {
@@ -152,6 +182,16 @@ export function onRequestGet(context) {
         .then((response) => response.json())
         .then((data) => {
           if (!data.ok) {
+            if (data.code === "REWARD_REQUIRES_SELLER") {
+              title.textContent = "Beneficio disponible";
+              message.textContent = "50% OFF";
+              state.className = "state ok";
+              state.textContent = "Esta compra debe ser validada por un vendedor.";
+              registerButton.hidden = true;
+              hideProgress();
+              return;
+            }
+
             showError(data.code);
             return;
           }
@@ -161,7 +201,10 @@ export function onRequestGet(context) {
             ? "Producto: " + data.purchase.product.name
             : "Tu compra fue registrada.";
           state.className = "state ok";
-          state.textContent = "Progreso " + data.progress.cyclePosition + "/3";
+          state.textContent = data.progress.reward?.available
+            ? "50% desbloqueado"
+            : "Compra registrada";
+          showProgress(data.progress);
           registerButton.hidden = true;
         })
         .catch(() => {
@@ -171,6 +214,7 @@ export function onRequestGet(context) {
           state.textContent = "NETWORK_ERROR";
           registerButton.disabled = false;
           registerButton.textContent = "Registrar compra";
+          hideProgress();
         });
     });
   </script>

@@ -6,12 +6,16 @@ import {
 } from "./cookies.js";
 import { calculateProgress } from "./progress.js";
 
+const REWARD_TYPE = "third_drink_50";
+const REWARD_DISCOUNT_PERCENT = 50;
+
 const EXPECTED_PURCHASE_ERRORS = new Set([
   "QR_INVALID",
   "QR_ALREADY_USED",
   "QR_DISABLED",
   "PRODUCT_NOT_FOUND",
-  "PURCHASE_CONFLICT"
+  "PURCHASE_CONFLICT",
+  "REWARD_REQUIRES_SELLER"
 ]);
 
 export async function getOrCreateCustomer(db, request, options = {}) {
@@ -68,8 +72,33 @@ function getBatchChanges(result) {
   return Number(result?.meta?.changes ?? 0);
 }
 
+function publicReward(reward) {
+  if (!reward) return { available: false };
+
+  return {
+    available: true,
+    type: reward.reward_type,
+    discountPercent: reward.discount_percent
+  };
+}
+
+async function lookupAvailableReward(db, customerId) {
+  return db
+    .prepare(
+      `SELECT reward_type, discount_percent, cycle_number
+       FROM rewards
+       WHERE customer_id = ?
+         AND reward_type = ?
+         AND status = 'available'
+       ORDER BY cycle_number ASC
+       LIMIT 1`
+    )
+    .bind(customerId, REWARD_TYPE)
+    .first();
+}
+
 async function createPurchaseAndConsumeQr(db, tokenHash, customerId) {
-  const [insertResult, updateResult] = await db.batch([
+  const [insertResult, updateResult, rewardResult] = await db.batch([
     db
       .prepare(
         `INSERT INTO purchases (
@@ -90,9 +119,16 @@ async function createPurchaseAndConsumeQr(db, tokenHash, customerId) {
          FROM qr_codes q
          JOIN products p ON p.id = q.product_id AND p.active = 1
          WHERE q.token_hash = ?
-           AND q.status = 'available'`
+           AND q.status = 'available'
+           AND NOT EXISTS (
+             SELECT 1
+             FROM rewards
+             WHERE rewards.customer_id = ?
+               AND rewards.reward_type = ?
+               AND rewards.status = 'available'
+           )`
       )
-      .bind(customerId, tokenHash),
+      .bind(customerId, tokenHash, customerId, REWARD_TYPE),
     db
       .prepare(
         `UPDATE qr_codes
@@ -107,7 +143,48 @@ async function createPurchaseAndConsumeQr(db, tokenHash, customerId) {
            )
          RETURNING id, product_id, public_number`
       )
-      .bind(tokenHash)
+      .bind(tokenHash),
+    db
+      .prepare(
+        `INSERT INTO rewards (
+           customer_id,
+           reward_type,
+           discount_percent,
+           status,
+           cycle_number
+         )
+         SELECT
+           ?,
+           ?,
+           ?,
+           'available',
+           totals.cycle_number
+         FROM (
+           SELECT
+             COUNT(*) AS purchase_count,
+             CAST(((COUNT(*) - 1) / 3) + 1 AS INTEGER) AS cycle_number
+           FROM purchases
+           WHERE customer_id = ?
+         ) totals
+         WHERE totals.purchase_count > 0
+            AND totals.purchase_count % 3 = 2
+            AND NOT EXISTS (
+              SELECT 1
+              FROM rewards
+              WHERE rewards.customer_id = ?
+                AND rewards.reward_type = ?
+                AND rewards.cycle_number = totals.cycle_number
+            )
+         RETURNING reward_type, discount_percent, cycle_number`
+      )
+      .bind(
+        customerId,
+        REWARD_TYPE,
+        REWARD_DISCOUNT_PERCENT,
+        customerId,
+        customerId,
+        REWARD_TYPE
+      )
   ]);
 
   const consumedQr = getFirstBatchRow(updateResult);
@@ -116,7 +193,10 @@ async function createPurchaseAndConsumeQr(db, tokenHash, customerId) {
     return null;
   }
 
-  return consumedQr;
+  return {
+    consumedQr,
+    unlockedReward: getFirstBatchRow(rewardResult)
+  };
 }
 
 async function lookupProduct(db, productId) {
@@ -140,10 +220,21 @@ export async function registerPurchase(db, request, rawToken, options = {}) {
 
   const tokenHash = await hashQrToken(token);
   const customer = await getOrCreateCustomer(db, request, options);
-  let consumedQr;
+  const availableReward = await lookupAvailableReward(db, customer.customerId);
+
+  if (availableReward) {
+    return {
+      ok: false,
+      code: "REWARD_REQUIRES_SELLER",
+      customerCookie: customer.cookie,
+      reward: publicReward(availableReward)
+    };
+  }
+
+  let purchaseTransaction;
 
   try {
-    consumedQr = await createPurchaseAndConsumeQr(db, tokenHash, customer.customerId);
+    purchaseTransaction = await createPurchaseAndConsumeQr(db, tokenHash, customer.customerId);
   } catch {
     return {
       ok: false,
@@ -152,7 +243,18 @@ export async function registerPurchase(db, request, rawToken, options = {}) {
     };
   }
 
-  if (!consumedQr) {
+  if (!purchaseTransaction) {
+    const currentReward = await lookupAvailableReward(db, customer.customerId);
+
+    if (currentReward) {
+      return {
+        ok: false,
+        code: "REWARD_REQUIRES_SELLER",
+        customerCookie: customer.cookie,
+        reward: publicReward(currentReward)
+      };
+    }
+
     return {
       ok: false,
       code: await classifyQrFailure(db, tokenHash),
@@ -160,6 +262,7 @@ export async function registerPurchase(db, request, rawToken, options = {}) {
     };
   }
 
+  const { consumedQr, unlockedReward } = purchaseTransaction;
   const product = await lookupProduct(db, consumedQr.product_id);
 
   if (!product) {
@@ -179,6 +282,7 @@ export async function registerPurchase(db, request, rawToken, options = {}) {
     .bind(customer.customerId)
     .first();
   const progress = calculateProgress(countRow?.purchase_count ?? 0);
+  const currentReward = unlockedReward ?? await lookupAvailableReward(db, customer.customerId);
 
   return {
     ok: true,
@@ -193,7 +297,10 @@ export async function registerPurchase(db, request, rawToken, options = {}) {
       discountPercent: 0,
       finalPriceCents: product.price_cents
     },
-    progress
+    progress: {
+      ...progress,
+      reward: publicReward(currentReward)
+    }
   };
 }
 
