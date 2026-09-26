@@ -211,13 +211,22 @@ class FakeStatement {
       }
 
       const cycleNumber = Math.floor((purchaseCount - 1) / 3) + 1;
-      const duplicate = this.db.rewards.some((reward) =>
+      const existing = this.db.rewards.find((reward) =>
         reward.customer_id === customerId &&
         reward.reward_type === rewardType &&
         reward.cycle_number === cycleNumber
       );
 
-      if (duplicate) {
+      if (existing) {
+        if (existing.status === "cancelled") {
+          existing.status = "available";
+          existing.redeemed_at = null;
+          existing.redeemed_purchase_id = null;
+          return {
+            meta: { changes: 1 },
+            results: [{ reward_type: rewardType, discount_percent: discountPercent, cycle_number: cycleNumber }]
+          };
+        }
         return { meta: { changes: 0 }, results: [] };
       }
 

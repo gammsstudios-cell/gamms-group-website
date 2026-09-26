@@ -14,7 +14,7 @@ export async function authenticateStaff(request, env, db) {
   const cookies = parseCookies(request.headers.get("Cookie"));
 
   // 1. Try unified GAMMS-AEP-Staff cookie
-  const staffToken = cookies[STAFF_COOKIE_NAME];
+  const staffToken = cookies.get(STAFF_COOKIE_NAME);
   if (staffToken) {
     const staffSession = await verifyStaffSessionToken(db, staffToken);
     if (staffSession) {
@@ -34,7 +34,7 @@ export async function authenticateStaff(request, env, db) {
   }
 
   // 2. Try legacy Owner ENV / Admin session
-  const adminToken = cookies[ADMIN_COOKIE_NAME];
+  const adminToken = cookies.get(ADMIN_COOKIE_NAME);
   const adminResult = await verifyAdminSession(env, adminToken);
   if (adminResult.ok) {
     const username = env?.AEP_ADMIN_USERNAME || "admin";
@@ -62,7 +62,7 @@ export async function authenticateStaff(request, env, db) {
   }
 
   // 3. Try legacy seller session
-  const sellerToken = cookies[SELLER_COOKIE_NAME];
+  const sellerToken = cookies.get(SELLER_COOKIE_NAME);
   const sellerResult = await verifySellerSession(env, sellerToken);
   if (sellerResult.ok) {
     const sellerPerms = ["pos.access", "pos.redeem", "sales.read_own", "shifts.use", "sessions.read"];

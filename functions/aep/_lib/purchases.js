@@ -169,6 +169,9 @@ async function createPurchaseAndConsumeQr(db, tokenHash, customerId) {
              CAST(((COUNT(*) - 1) / 3) + 1 AS INTEGER) AS cycle_number
            FROM purchases
            WHERE customer_id = ?
+             AND NOT EXISTS (
+               SELECT 1 FROM purchase_voids pv WHERE pv.purchase_id = purchases.id
+             )
          ) totals
          WHERE totals.purchase_count > 0
             AND totals.purchase_count % 3 = 2
@@ -178,7 +181,13 @@ async function createPurchaseAndConsumeQr(db, tokenHash, customerId) {
               WHERE rewards.customer_id = ?
                 AND rewards.reward_type = ?
                 AND rewards.cycle_number = totals.cycle_number
+                AND rewards.status = 'available'
             )
+         ON CONFLICT (customer_id, reward_type, cycle_number) DO UPDATE
+         SET status = 'available',
+             redeemed_at = NULL,
+             redeemed_purchase_id = NULL
+         WHERE rewards.status = 'cancelled'
          RETURNING reward_type, discount_percent, cycle_number`
       )
       .bind(
@@ -331,7 +340,10 @@ export async function registerPurchase(db, request, rawToken, options = {}) {
     .prepare(
       `SELECT COUNT(*) AS purchase_count
        FROM purchases
-       WHERE customer_id = ?`
+       WHERE customer_id = ?
+         AND NOT EXISTS (
+           SELECT 1 FROM purchase_voids pv WHERE pv.purchase_id = purchases.id
+         )`
     )
     .bind(customer.customerId)
     .first();

@@ -447,7 +447,7 @@ export async function redeemClaim(db, rawCode, options = {}) {
     );
 
     const product = await db.prepare("SELECT name FROM products WHERE id = ? LIMIT 1").bind(purchase.product_id).first();
-    const countRow = await db.prepare("SELECT COUNT(*) AS purchase_count FROM purchases WHERE customer_id = ?").bind(purchase.customer_id).first();
+    const countRow = await db.prepare("SELECT COUNT(*) AS purchase_count FROM purchases WHERE customer_id = ? AND NOT EXISTS (SELECT 1 FROM purchase_voids pv WHERE pv.purchase_id = purchases.id)").bind(purchase.customer_id).first();
 
     if (options.audit === true) {
       await db.prepare(

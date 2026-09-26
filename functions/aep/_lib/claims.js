@@ -114,6 +114,7 @@ export async function createRewardClaim(db, request, qrToken = null, options = {
              SELECT CAST(((COUNT(*) - 1) / 3) + 1 AS INTEGER)
              FROM purchases
              WHERE customer_id = ?
+               AND NOT EXISTS (SELECT 1 FROM purchase_voids pv WHERE pv.purchase_id = purchases.id)
            )
          ORDER BY r.cycle_number ASC
          LIMIT 1`
@@ -163,6 +164,7 @@ export async function createRewardClaim(db, request, qrToken = null, options = {
                SELECT CAST(((COUNT(*) - 1) / 3) + 1 AS INTEGER)
                FROM purchases
                WHERE customer_id = ?
+                 AND NOT EXISTS (SELECT 1 FROM purchase_voids pv WHERE pv.purchase_id = purchases.id)
              )
            RETURNING expires_at`
         ).bind(customerId, codeHash, qrTokenHash, customerId, customerId)

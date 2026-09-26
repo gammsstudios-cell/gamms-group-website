@@ -60,7 +60,7 @@ export async function getCustomerProfile(db, customerId) {
   if (!customer) return null;
 
   const purchaseCount = await db.prepare(`
-    SELECT COUNT(*) as count FROM purchases WHERE customer_id = ?
+    SELECT COUNT(*) as count FROM purchases WHERE customer_id = ? AND NOT EXISTS (SELECT 1 FROM purchase_voids pv WHERE pv.purchase_id = purchases.id)
   `).bind(customerId).first();
 
   const rewardStats = await db.prepare(`
