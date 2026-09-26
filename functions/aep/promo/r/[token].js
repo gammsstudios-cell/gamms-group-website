@@ -53,6 +53,10 @@ export function onRequestGet(context) {
     .state { margin-top: 18px; padding: 14px; border-radius: 10px; background: #f5f5f7; }
     .progress { margin-top: 18px; font-size: 20px; letter-spacing: .12em; }
     .progress-copy { margin-top: 8px; color: #424245; }
+    .claim { margin-top: 18px; text-align: center; }
+    .claim svg { width: min(100%, 220px); height: auto; background: #fff; border-radius: 8px; }
+    .claim-code { margin-top: 12px; font: 800 22px ui-monospace, SFMono-Regular, Consolas, monospace; letter-spacing: .04em; }
+    .countdown { margin-top: 8px; color: #6e6e73; }
     .actions { margin-top: 18px; }
     button {
       width: 100%;
@@ -71,7 +75,7 @@ export function onRequestGet(context) {
     @media (prefers-color-scheme: dark) {
       body { background: #1d1d1f; color: #f5f5f7; }
       main { background: #2c2c2e; border-color: #3a3a3c; }
-      p, .label, .mono, .progress-copy { color: #aaaaaa; }
+      p, .label, .mono, .progress-copy, .countdown { color: #aaaaaa; }
       .state { background: #1d1d1f; }
       button { background: #f5f5f7; color: #1d1d1f; }
     }
@@ -85,8 +89,14 @@ export function onRequestGet(context) {
     <div class="state" id="state">Consultando servidor...</div>
     <div class="progress" id="progress" hidden></div>
     <p class="progress-copy" id="progressCopy" hidden></p>
+    <div class="claim" id="claim" hidden>
+      <div id="claimQr"></div>
+      <div class="claim-code" id="claimCode"></div>
+      <div class="countdown" id="countdown"></div>
+    </div>
     <div class="actions">
       <button id="register" type="button" hidden>Registrar compra</button>
+      <button id="claimButton" type="button" hidden>Mostrar al vendedor</button>
     </div>
     <div class="mono">Token: ${escapeHtml(token)}</div>
   </main>
@@ -97,7 +107,13 @@ export function onRequestGet(context) {
     const state = document.getElementById("state");
     const progress = document.getElementById("progress");
     const progressCopy = document.getElementById("progressCopy");
+    const claim = document.getElementById("claim");
+    const claimQr = document.getElementById("claimQr");
+    const claimCode = document.getElementById("claimCode");
+    const countdown = document.getElementById("countdown");
     const registerButton = document.getElementById("register");
+    const claimButton = document.getElementById("claimButton");
+    let countdownTimer;
 
     const labels = {
       QR_ALREADY_USED: ["QR usado", "Este codigo ya fue utilizado.", "bad"],
@@ -113,6 +129,31 @@ export function onRequestGet(context) {
     function hideProgress() {
       progress.hidden = true;
       progressCopy.hidden = true;
+    }
+
+    function hideClaim() {
+      claim.hidden = true;
+      claimButton.hidden = true;
+      if (countdownTimer) clearInterval(countdownTimer);
+    }
+
+    function showClaim(data) {
+      claim.hidden = false;
+      claimQr.innerHTML = data.qrSvg;
+      claimCode.textContent = data.code;
+      const expiresAt = new Date(data.expiresAt).getTime();
+      if (countdownTimer) clearInterval(countdownTimer);
+      countdownTimer = setInterval(() => {
+        const seconds = Math.max(0, Math.floor((expiresAt - Date.now()) / 1000));
+        const minutes = String(Math.floor(seconds / 60)).padStart(2, "0");
+        const rest = String(seconds % 60).padStart(2, "0");
+        countdown.textContent = seconds > 0 ? "Expira en " + minutes + ":" + rest : "Este codigo expiro";
+        if (seconds === 0) {
+          clearInterval(countdownTimer);
+          claimButton.hidden = false;
+          claimButton.textContent = "Generar uno nuevo";
+        }
+      }, 500);
     }
 
     function showProgress(data) {
@@ -137,6 +178,7 @@ export function onRequestGet(context) {
       state.className = "state " + className;
       state.textContent = code ?? "QR_INVALID";
       registerButton.hidden = true;
+      claimButton.hidden = true;
       hideProgress();
     }
 
@@ -151,6 +193,8 @@ export function onRequestGet(context) {
           state.className = "state ok";
           state.textContent = "QR #" + data.qr.number + " - " + data.qr.status;
           registerButton.hidden = false;
+          claimButton.hidden = true;
+          hideClaim();
           hideProgress();
           return;
         }
@@ -163,6 +207,8 @@ export function onRequestGet(context) {
         state.className = "state bad";
         state.textContent = "NETWORK_ERROR";
         registerButton.hidden = true;
+        claimButton.hidden = true;
+        hideClaim();
         hideProgress();
       });
 
@@ -188,6 +234,8 @@ export function onRequestGet(context) {
               state.className = "state ok";
               state.textContent = "Esta compra debe ser validada por un vendedor.";
               registerButton.hidden = true;
+              claimButton.hidden = false;
+              claimButton.textContent = "Mostrar al vendedor";
               hideProgress();
               return;
             }
@@ -206,6 +254,8 @@ export function onRequestGet(context) {
             : "Compra registrada";
           showProgress(data.progress);
           registerButton.hidden = true;
+          claimButton.hidden = true;
+          hideClaim();
         })
         .catch(() => {
           title.textContent = "No pudimos registrar";
@@ -214,7 +264,44 @@ export function onRequestGet(context) {
           state.textContent = "NETWORK_ERROR";
           registerButton.disabled = false;
           registerButton.textContent = "Registrar compra";
+          hideClaim();
           hideProgress();
+        });
+    });
+
+    claimButton.addEventListener("click", () => {
+      claimButton.disabled = true;
+      claimButton.textContent = "Generando...";
+
+      fetch("/aep/api/rewards/claim", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: {
+          accept: "application/json",
+          "content-type": "application/json"
+        },
+        body: JSON.stringify({ token })
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          claimButton.disabled = false;
+          if (!data.ok) {
+            showError(data.code);
+            return;
+          }
+
+          title.textContent = "50% DESBLOQUEADO";
+          message.textContent = "Tu proxima bebida tiene 50% de descuento.";
+          state.className = "state ok";
+          state.textContent = "Muestralo al vendedor.";
+          claimButton.hidden = true;
+          showClaim(data.claim);
+        })
+        .catch(() => {
+          claimButton.disabled = false;
+          claimButton.textContent = "Mostrar al vendedor";
+          state.className = "state bad";
+          state.textContent = "NETWORK_ERROR";
         });
     });
   </script>
