@@ -33,9 +33,13 @@ WHERE is_default = 1;
 CREATE TABLE IF NOT EXISTS qr_batches (
   id TEXT PRIMARY KEY,
   product_id INTEGER NOT NULL,
-  quantity INTEGER NOT NULL CHECK (quantity > 0),
+  quantity INTEGER NOT NULL CHECK (quantity BETWEEN 1 AND 500),
   first_public_number INTEGER NOT NULL CHECK (first_public_number > 0),
-  last_public_number INTEGER NOT NULL CHECK (last_public_number >= first_public_number),
+  last_public_number INTEGER NOT NULL
+    CHECK (
+      last_public_number >= first_public_number
+      AND (last_public_number - first_public_number + 1) = quantity
+    ),
   print_profile_id INTEGER,
   start_slot INTEGER NOT NULL DEFAULT 1 CHECK (start_slot > 0),
   created_by TEXT,
@@ -57,7 +61,6 @@ CREATE TABLE IF NOT EXISTS qr_batch_items (
 
 CREATE INDEX IF NOT EXISTS idx_qr_batches_created_at ON qr_batches(created_at);
 CREATE INDEX IF NOT EXISTS idx_qr_batches_product ON qr_batches(product_id);
-CREATE INDEX IF NOT EXISTS idx_qr_batch_items_qr ON qr_batch_items(qr_code_id);
 
 INSERT OR IGNORE INTO print_profiles (
   name,
