@@ -682,6 +682,7 @@ test("Control Center browser print uses exact Letter sheets without printable in
   assert.match(source, /\.print-slot \{ position: absolute;/);
   assert.match(source, /\.print-sheet:last-child \{ break-after: auto; page-break-after: auto; \}/);
   assert.match(source, /\.print-instructions \{ display: none !important; \}/);
+  assert.match(source, /\.sidebar, \.top-header, #toast-container, \.modal-overlay, \.mobile-menu-btn, \.print-instructions, #printPreview > :not\(#printable-labels\) \{ display: none !important; \}/);
   assert.match(source, /function renderBrowserPrintSheets\(batch\)/);
   assert.match(source, /function getOrderedBrowserSlots\(profile\)/);
   assert.match(source, /\.print-sheet-frame \{ width: 8\.5in; height: 11in;/);
@@ -689,7 +690,10 @@ test("Control Center browser print uses exact Letter sheets without printable in
   assert.match(source, /transform: none !important; box-shadow: none !important;/);
   assert.match(source, /window\.addEventListener\("resize", fitPrintPreview\)/);
   assert.match(source, /transform: scale\(var\(--preview-scale, 1\)\)/);
-  assert.match(source, /\.print-slot \.qr-label-card svg \{ position: absolute; left: 0\.04in; top: 0\.20in; width: 0\.56in; height: 0\.56in;/);
+  assert.match(source, /\.print-slot \.qr-label-card svg \{ position: absolute; left: 0\.04in; top: 0\.14in; width: 0\.72in; height: 0\.72in;/);
+  assert.match(source, /function renderPrintLabel\(item\)/);
+  assert.match(source, /function escapePrintText\(value\)/);
+  assert.match(source, /shape-rendering: crispEdges/);
   assert.doesNotMatch(source, /name="printOrder"/);
   assert.doesNotMatch(source, /#printable-labels \{[^}]*min-height: 11in/);
   assert.doesNotMatch(source, /grid-template-columns: repeat\(5, 1\.5in\)/);

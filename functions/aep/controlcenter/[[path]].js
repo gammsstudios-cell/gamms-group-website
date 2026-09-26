@@ -153,6 +153,7 @@ export function onRequestGet() {
       @page { size: Letter; margin: 0; }
       html, body { width: 8.5in; margin: 0 !important; padding: 0 !important; background: #FFF !important; overflow: visible; }
       body * { visibility: hidden; box-sizing: border-box; }
+      .sidebar, .top-header, #toast-container, .modal-overlay, .mobile-menu-btn, .print-instructions, #printPreview > :not(#printable-labels) { display: none !important; }
       #printable-labels, #printable-labels * { visibility: visible; }
       #app, .main-wrapper, .content-area, #printPreview { display: block !important; margin: 0 !important; padding: 0 !important; width: 8.5in !important; max-width: 8.5in !important; background: #FFF !important; overflow: visible !important; }
       #printable-labels { position: absolute; left: 0; top: 0; width: 8.5in; margin: 0; padding: 0; background: #FFF; display: block; overflow: visible; }
@@ -161,10 +162,12 @@ export function onRequestGet() {
       .print-sheet-frame { display: contents !important; width: auto !important; height: auto !important; }
       .print-slot { position: absolute; margin: 0; padding: 0; overflow: visible; background: #FFF; border: none; outline: none; }
       .print-slot .qr-label-card { position: relative; box-sizing: border-box; border: none !important; outline: none !important; border-radius: 0 !important; padding: 0; width: 100%; height: 100%; text-align: left; page-break-inside: avoid; break-inside: avoid; background: #FFF !important; color: #000 !important; box-shadow: none !important; overflow: visible; }
-      .print-slot .qr-label-card svg { position: absolute; left: 0.04in; top: 0.20in; width: 0.56in; height: 0.56in; margin: 0; display: block; }
-      .print-slot .qr-label-title { position: absolute; left: 0.66in; top: 0.10in; right: 0.04in; font-size: 6.5pt; font-weight: 800; line-height: 1.05; margin: 0; }
-      .print-slot .qr-label-product { position: absolute; left: 0.66in; top: 0.23in; right: 0.04in; font-size: 5.8pt; font-weight: 700; line-height: 1.05; margin: 0; color: #000 !important; overflow-wrap: anywhere; }
-      .print-slot .qr-label-num { position: absolute; left: 0.66in; right: 0.04in; bottom: 0.10in; font-size: 7.5pt; font-weight: 900; line-height: 1.05; margin: 0; }
+      .print-slot .qr-label-card svg { position: absolute; left: 0.04in; top: 0.14in; width: 0.72in; height: 0.72in; margin: 0; display: block; }
+      .print-slot .qr-label-card svg rect { shape-rendering: crispEdges; }
+      .print-slot .qr-label-card svg rect[fill="#1D1D1F"] { fill: #000 !important; }
+      .print-slot .qr-label-title { position: absolute; left: 0.80in; top: 0.08in; right: 0.03in; font-size: 6.3pt; font-weight: 800; line-height: 1.05; margin: 0; }
+      .print-slot .qr-label-product { position: absolute; left: 0.80in; top: 0.23in; right: 0.03in; max-height: 0.36in; font-size: 5.3pt; font-weight: 700; line-height: 1.1; margin: 0; color: #000 !important; overflow: hidden; overflow-wrap: anywhere; }
+      .print-slot .qr-label-num { position: absolute; left: 0.80in; right: 0.03in; bottom: 0.08in; font-size: 8pt; font-weight: 900; line-height: 1.05; margin: 0; }
       .print-instructions { display: none !important; }
     }
     
@@ -180,10 +183,12 @@ export function onRequestGet() {
     .print-sheet { position: relative; width: 8.5in; height: 11in; max-width: none; box-sizing: border-box; background: #FFF; overflow: hidden; box-shadow: var(--card-shadow); margin: 0; transform: scale(var(--preview-scale, 1)); transform-origin: top left; }
     .print-slot { position: absolute; overflow: visible; background: #FFF; }
     .print-slot .qr-label-card { position: relative; box-sizing: border-box; border: none; border-radius: 0; padding: 0; width: 100%; height: 100%; text-align: left; background: #FFF; color: #1D1D1F; box-shadow: none; overflow: visible; }
-    .print-slot .qr-label-card svg { position: absolute; left: 0.04in; top: 0.20in; width: 0.56in; height: 0.56in; margin: 0; display: block; }
-    .print-slot .qr-label-title { position: absolute; left: 0.66in; top: 0.10in; right: 0.04in; font-size: 6.5pt; font-weight: 800; line-height: 1.05; letter-spacing: 0; margin: 0; }
-    .print-slot .qr-label-product { position: absolute; left: 0.66in; top: 0.23in; right: 0.04in; font-size: 5.8pt; font-weight: 700; line-height: 1.05; color: #007AFF; margin: 0; overflow-wrap: anywhere; }
-    .print-slot .qr-label-num { position: absolute; left: 0.66in; right: 0.04in; bottom: 0.10in; font-size: 7.5pt; font-weight: 900; line-height: 1.05; margin: 0; }
+    .print-slot .qr-label-card svg { position: absolute; left: 0.04in; top: 0.14in; width: 0.72in; height: 0.72in; margin: 0; display: block; }
+    .print-slot .qr-label-card svg rect { shape-rendering: crispEdges; }
+    .print-slot .qr-label-card svg rect[fill="#1D1D1F"] { fill: #000; }
+    .print-slot .qr-label-title { position: absolute; left: 0.80in; top: 0.08in; right: 0.03in; font-size: 6.3pt; font-weight: 800; line-height: 1.05; letter-spacing: 0; margin: 0; }
+    .print-slot .qr-label-product { position: absolute; left: 0.80in; top: 0.23in; right: 0.03in; max-height: 0.36in; font-size: 5.3pt; font-weight: 700; line-height: 1.1; color: #007AFF; margin: 0; overflow: hidden; overflow-wrap: anywhere; }
+    .print-slot .qr-label-num { position: absolute; left: 0.80in; right: 0.03in; bottom: 0.08in; font-size: 8pt; font-weight: 900; line-height: 1.05; margin: 0; }
     .print-slot-empty { display: none; }
 
     /* Responsive */
@@ -1131,7 +1136,7 @@ export function onRequestGet() {
           <span class="badge badge-warning">Slot inicial \${batch.startSlot}</span>
           <span class="badge badge-success">\${batch.count} etiquetas</span>
         </div>
-        <div class="print-instructions">Imprimir a Tamaño real / 100%. Desactivar Ajustar a pagina.</div>
+        <div class="print-instructions">Imprimir a tamaño real / 100%. Desactivar Ajustar a página.</div>
         <div id="printable-labels" class="qr-label-grid">
           \${renderBrowserPrintSheets(batch)}
         </div>
@@ -1163,12 +1168,29 @@ export function onRequestGet() {
             const style = \`left:\${slot.leftIn}in; top:\${slot.topIn}in; width:\${slot.widthIn}in; height:\${slot.heightIn}in;\`;
             return cell.empty
               ? \`<div class="print-slot print-slot-empty" style="\${style}"></div>\`
-              : \`<div class="print-slot" style="\${style}"><div class="qr-label-card"><div class="qr-label-title">GAMMS AEP</div><div class="qr-label-product">\${cell.item.product.name}</div>\${cell.item.svg}<div class="qr-label-num">#\${cell.item.publicNumber}</div></div></div>\`;
+              : \`<div class="print-slot" style="\${style}">\${renderPrintLabel(cell.item)}</div>\`;
           }
           ).join('')}
           </div>
         </div>
       \`).join('');
+    }
+
+    function renderPrintLabel(item) {
+      const productName = escapePrintText(item?.product?.name || "Producto");
+      const publicNumber = Number.parseInt(item?.publicNumber, 10);
+      const numberText = Number.isSafeInteger(publicNumber) && publicNumber > 0 ? publicNumber : "-";
+      return \`<div class="qr-label-card"><div class="qr-label-title">GAMMS AEP</div><div class="qr-label-product">\${productName}</div>\${item.svg}<div class="qr-label-num">#\${numberText}</div></div>\`;
+    }
+
+    function escapePrintText(value) {
+      return String(value).replace(/[&<>"']/g, character => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+      })[character]);
     }
 
     function getOrderedBrowserSlots(profile) {
