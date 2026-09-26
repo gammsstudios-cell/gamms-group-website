@@ -9,15 +9,18 @@ const CLAIM_ERRORS = new Set([
 ]);
 
 export async function onRequestPost(context) {
-  let body;
+  let body = {};
   try {
-    body = await context.request.json();
+    const text = await context.request.text();
+    if (text && text.trim()) {
+      body = JSON.parse(text);
+    }
   } catch {
-    return safeError("CLAIM_INVALID", 400);
+    // Empty body is allowed in Reward V2
   }
 
   try {
-    const result = await createRewardClaim(context.env.DB, context.request, body?.token);
+    const result = await createRewardClaim(context.env.DB, context.request, body?.token || null);
     if (!result.ok) {
       return safeError(CLAIM_ERRORS.has(result.code) ? result.code : "INTERNAL_ERROR", 200);
     }

@@ -5,7 +5,7 @@ export function onRequestGet() {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex, nofollow">
-  <title>GAMMS AEP Control Center</title>
+  <title>GAMMS AEP Control Center · By GAMMS GROUP</title>
   <style>
     :root {
       --bg-page: #F5F5F7;
@@ -56,26 +56,29 @@ export function onRequestGet() {
     .sidebar { width: var(--sidebar-width); background: var(--bg-sidebar); color: var(--text-sidebar); display: flex; flex-direction: column; flex-shrink: 0; transition: transform 0.3s ease; position: fixed; top: 0; bottom: 0; left: 0; z-index: 100; }
     .sidebar-header { padding: 24px 20px; border-bottom: 1px solid rgba(255,255,255,0.1); }
     .brand-title { font-size: 18px; font-weight: 800; letter-spacing: 0.5px; display: flex; align-items: center; gap: 8px; }
-    .brand-subtitle { font-size: 11px; text-transform: uppercase; color: #8E8E93; font-weight: 600; margin-top: 4px; letter-spacing: 1px; }
+    .brand-subtitle { font-size: 11px; text-transform: uppercase; color: #8E8E93; font-weight: 600; margin-top: 2px; letter-spacing: 1px; }
+    .gamms-byline { font-size: 11px; color: #86868b; margin-top: 4px; }
+    .gamms-byline strong { color: #f5f5f7; font-weight: 700; }
 
     .nav-menu { flex: 1; padding: 16px 12px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
-    .nav-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; color: #A1A1A6; text-decoration: none; border-radius: 10px; font-size: 14px; font-weight: 600; transition: all 0.2s ease; cursor: pointer; }
+    .nav-item { display: flex; align-items: center; gap: 12px; padding: 10px 14px; color: #A1A1A6; text-decoration: none; border-radius: 10px; font-size: 13.5px; font-weight: 600; transition: all 0.2s ease; cursor: pointer; }
     .nav-item:hover, .nav-item.active { color: #FFFFFF; background: rgba(255,255,255,0.1); }
     .nav-item.active { background: var(--accent); color: #FFFFFF; }
-    .nav-item svg { width: 18px; height: 18px; stroke-width: 2.2; }
+    .nav-item svg { width: 18px; height: 18px; stroke-width: 2.2; flex-shrink: 0; }
 
-    .sidebar-footer { padding: 16px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 12px; color: #8E8E93; text-align: center; }
+    .sidebar-footer { padding: 16px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 11.5px; color: #8E8E93; text-align: center; line-height: 1.4; }
 
     /* Main Container */
     .main-wrapper { flex: 1; margin-left: var(--sidebar-width); display: flex; flex-direction: column; min-width: 0; transition: margin 0.3s ease; }
     
     /* Top Header */
-    .top-header { height: 68px; background: var(--bg-surface); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; padding: 0 28px; sticky: top; position: sticky; top: 0; z-index: 90; }
+    .top-header { height: 68px; background: var(--bg-surface); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; padding: 0 28px; position: sticky; top: 0; z-index: 90; }
     .header-left { display: flex; align-items: center; gap: 16px; }
     .mobile-menu-btn { display: none; background: none; border: none; color: var(--text-main); cursor: pointer; padding: 8px; }
     .header-title { font-size: 18px; font-weight: 700; }
 
     .header-right { display: flex; align-items: center; gap: 16px; }
+    .user-profile-tag { font-size: 13px; font-weight: 600; color: var(--text-muted); background: var(--bg-page); padding: 6px 12px; border-radius: 20px; border: 1px solid var(--border-color); }
     .event-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; background: var(--badge-green-bg); color: var(--badge-green-text); }
     .event-badge .pulse-dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; animation: pulse 1.8s infinite; }
     @keyframes pulse { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(1.3); } 100% { opacity: 1; transform: scale(1); } }
@@ -88,9 +91,9 @@ export function onRequestGet() {
     .content-area { padding: 28px; flex: 1; max-width: 1400px; margin: 0 auto; width: 100%; }
 
     /* Components & Cards */
-    .grid-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-bottom: 28px; }
+    .grid-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 28px; }
     .stat-card { background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 16px; padding: 22px; box-shadow: var(--card-shadow); display: flex; flex-direction: column; justify-content: space-between; }
-    .stat-header { display: flex; justify-content: space-between; align-items: center; color: var(--text-muted); font-size: 13px; font-weight: 600; }
+    .stat-header { display: flex; justify-content: space-between; align-items: center; color: var(--text-muted); font-size: 12.5px; font-weight: 700; letter-spacing: 0.5px; }
     .stat-icon { width: 36px; height: 36px; border-radius: 10px; background: rgba(0, 122, 255, 0.1); color: var(--accent); display: flex; align-items: center; justify-content: center; }
     .stat-value { font-size: 28px; font-weight: 800; margin-top: 14px; letter-spacing: -0.5px; }
     .stat-sub { font-size: 12px; color: var(--text-muted); margin-top: 6px; font-weight: 500; }
@@ -99,88 +102,63 @@ export function onRequestGet() {
     .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
     .card-title { font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
 
-    /* Controls & Filters */
-    .filter-bar { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
-    .input-search, .select-filter { background: var(--bg-page); border: 1px solid var(--border-color); color: var(--text-main); padding: 10px 14px; border-radius: 10px; font-size: 14px; outline: none; }
-    .input-search { min-width: 240px; flex: 1; }
-    .btn-primary { background: var(--accent); color: #FFF; border: none; border-radius: 10px; padding: 10px 18px; font-size: 14px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: background 0.2s; }
-    .btn-primary:hover { background: var(--accent-hover); }
-    .btn-secondary { background: var(--bg-page); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 10px; padding: 10px 18px; font-size: 14px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
+    .alert-banner { padding: 16px; border-radius: 12px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; font-size: 14px; font-weight: 600; }
+    .alert-banner.warning { background: var(--badge-amber-bg); color: var(--badge-amber-text); border: 1px solid rgba(180, 109, 0, 0.3); }
 
     /* Tables */
-    .table-container { width: 100%; overflow-x: auto; border-radius: 12px; border: 1px solid var(--border-color); }
-    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
-    th { background: var(--bg-page); color: var(--text-muted); font-weight: 700; font-size: 12px; text-transform: uppercase; padding: 14px 16px; border-bottom: 1px solid var(--border-color); }
-    td { padding: 16px; border-bottom: 1px solid var(--border-color); color: var(--text-main); }
+    .table-container { overflow-x: auto; margin-top: 10px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13.5px; text-align: left; }
+    th { padding: 12px 16px; color: var(--text-muted); font-weight: 700; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border-color); }
+    td { padding: 14px 16px; border-bottom: 1px solid var(--border-color); color: var(--text-main); vertical-align: middle; }
     tr:last-child td { border-bottom: none; }
-    tr:hover td { background: rgba(0, 0, 0, 0.015); }
-    [data-theme="dark"] tr:hover td { background: rgba(255, 255, 255, 0.02); }
+    tr:hover td { background: rgba(0,0,0,0.015); }
 
-    .badge { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 700; text-transform: uppercase; }
+    /* Forms & Controls */
+    .form-group { margin-bottom: 18px; }
+    .form-label { display: block; font-size: 13px; font-weight: 700; margin-bottom: 6px; color: var(--text-main); }
+    .form-control { width: 100%; padding: 11px 14px; border: 1px solid var(--border-color); border-radius: 10px; background: var(--bg-surface); color: var(--text-main); font-size: 14px; transition: border-color 0.2s; }
+    .form-control:focus { outline: none; border-color: var(--accent); }
+    .input-search { width: 280px; padding: 10px 14px; border: 1px solid var(--border-color); border-radius: 10px; background: var(--bg-surface); color: var(--text-main); font-size: 13.5px; }
+
+    /* Buttons */
+    .btn-primary { background: var(--accent); color: #FFFFFF; border: none; padding: 10px 18px; border-radius: 10px; font-weight: 600; font-size: 13.5px; cursor: pointer; transition: background 0.2s; display: inline-flex; align-items: center; gap: 8px; }
+    .btn-primary:hover { background: var(--accent-hover); }
+    .btn-secondary { background: var(--bg-page); color: var(--text-main); border: 1px solid var(--border-color); padding: 9px 16px; border-radius: 10px; font-weight: 600; font-size: 13.5px; cursor: pointer; transition: background 0.2s; display: inline-flex; align-items: center; gap: 8px; }
+    .btn-secondary:hover { background: var(--border-color); }
+    .btn-danger { background: var(--badge-red-bg); color: var(--badge-red-text); border: none; padding: 8px 14px; border-radius: 8px; font-weight: 600; font-size: 12.5px; cursor: pointer; }
+
+    /* Badges */
+    .badge { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 12px; font-size: 11.5px; font-weight: 700; letter-spacing: 0.2px; }
     .badge-success { background: var(--badge-green-bg); color: var(--badge-green-text); }
     .badge-warning { background: var(--badge-amber-bg); color: var(--badge-amber-text); }
     .badge-danger { background: var(--badge-red-bg); color: var(--badge-red-text); }
+    .badge-neutral { background: var(--bg-page); color: var(--text-muted); border: 1px solid var(--border-color); }
 
-    /* Pagination */
-    .pagination-bar { display: flex; justify-content: space-between; align-items: center; margin-top: 18px; font-size: 13px; color: var(--text-muted); }
-    .pagination-btn { padding: 6px 12px; border: 1px solid var(--border-color); background: var(--bg-surface); color: var(--text-main); border-radius: 8px; cursor: pointer; }
-    .pagination-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    /* Print Center Physical Mapping CSS */
+    #printable-labels { display: none !important; }
+    .print-sheet-frame { width: 8.5in; height: 11in; transform: scale(var(--preview-scale, 1)); position: relative; background: #fff; margin: 0 auto; box-shadow: 0 4px 12px rgba(0,0,0,0.15); border-radius: 4px; overflow: hidden; }
+    .print-slot { position: absolute; border: 1px dashed #ccc; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2px; text-align: center; }
+    .print-slot .qr-label-card svg { position: absolute; left: 0.04in; top: 0.14in; width: 0.72in; height: 0.72in; shape-rendering: crispEdges; }
 
-    /* Skeleton Loading */
-    .skeleton { background: linear-gradient(90deg, var(--border-color) 25%, var(--bg-page) 50%, var(--border-color) 75%); background-size: 200% 100%; animation: loading 1.5s infinite; border-radius: 8px; }
-    @keyframes loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 
-    /* Modals & Dialogs */
-    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 200; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.2s ease; }
+    /* Modal */
+    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 200; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.25s ease; backdrop-filter: blur(4px); }
     .modal-overlay.open { opacity: 1; pointer-events: auto; }
-    .modal-box { background: var(--bg-surface); border-radius: 20px; border: 1px solid var(--border-color); width: min(90%, 540px); max-height: 85vh; overflow-y: auto; padding: 28px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); transform: scale(0.95); transition: transform 0.2s ease; }
-    .modal-overlay.open .modal-box { transform: scale(1); }
+    .modal-card { background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 18px; width: min(90%, 540px); max-height: 85vh; overflow-y: auto; padding: 28px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); transform: translateY(20px); transition: transform 0.25s ease; }
+    .modal-overlay.open .modal-card { transform: translateY(0); }
     .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-    .modal-title { font-size: 18px; font-weight: 800; }
-    .btn-close { background: none; border: none; font-size: 20px; color: var(--text-muted); cursor: pointer; }
+    .modal-close { background: none; border: none; font-size: 20px; color: var(--text-muted); cursor: pointer; }
 
-    .form-group { margin-bottom: 16px; }
-    .form-label { display: block; font-size: 13px; font-weight: 700; margin-bottom: 6px; color: var(--text-muted); }
-    .form-control { width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 10px; background: var(--bg-page); color: var(--text-main); font-size: 14px; outline: none; }
+    /* Toast */
+    .toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 300; display: flex; flex-direction: column; gap: 8px; }
+    .toast { background: var(--bg-sidebar); color: var(--text-sidebar); padding: 12px 20px; border-radius: 10px; font-size: 13.5px; font-weight: 600; box-shadow: 0 8px 24px rgba(0,0,0,0.2); animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-    /* Toast Container */
-    #toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 300; display: flex; flex-direction: column; gap: 10px; }
-    .toast { background: var(--bg-sidebar); color: var(--text-sidebar); padding: 14px 20px; border-radius: 12px; font-size: 14px; font-weight: 600; box-shadow: 0 10px 30px rgba(0,0,0,0.2); display: flex; align-items: center; gap: 10px; animation: slideIn 0.3s ease; }
-    @keyframes slideIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-
-    /* Browser print is not a production label engine. Physical labels are printed from the generated PDF only. */
-    @media print {
-      #printable-labels { display: none !important; }
-      .print-instructions::after { content: " Usa el boton Imprimir del Print Center para abrir el PDF fisico."; display: block; margin-top: 6px; }
-    }
-    
-    .qr-label-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; margin-top: 16px; }
-    .qr-label-card { border: 1px solid var(--border-color); border-radius: 12px; padding: 14px; text-align: center; background: #FFF; color: #1D1D1F; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-    .qr-label-card svg { width: 120px; height: 120px; margin: 6px auto; display: block; }
-    .qr-label-title { font-size: 12px; font-weight: 800; letter-spacing: 0.5px; }
-    .qr-label-product { font-size: 13px; font-weight: 700; color: #007AFF; margin-top: 2px; }
-    .qr-label-num { font-size: 15px; font-weight: 900; margin-top: 4px; }
-    .print-instructions { margin: 12px 0; padding: 10px 12px; border-radius: 8px; background: var(--badge-amber-bg); color: var(--badge-amber-text); font-size: 13px; font-weight: 700; }
-    .print-preview-sheets { display: block; margin-top: 16px; }
-    .print-sheet-frame { width: 8.5in; height: 11in; margin: 12px 0; }
-    .print-sheet { position: relative; width: 8.5in; height: 11in; max-width: none; box-sizing: border-box; background: #FFF; overflow: hidden; box-shadow: var(--card-shadow); margin: 0; transform: scale(var(--preview-scale, 1)); transform-origin: top left; }
-    .print-slot { position: absolute; overflow: visible; background: #FFF; }
-    .print-slot .qr-label-card { position: relative; box-sizing: border-box; border: none; border-radius: 0; padding: 0; width: 100%; height: 100%; text-align: left; background: #FFF; color: #1D1D1F; box-shadow: none; overflow: visible; }
-    .print-slot .qr-label-card svg { position: absolute; left: 0.04in; top: 0.14in; width: 0.72in; height: 0.72in; margin: 0; display: block; }
-    .print-slot .qr-label-card svg rect { shape-rendering: crispEdges; }
-    .print-slot .qr-label-card svg rect[fill="#1D1D1F"] { fill: #000; }
-    .print-slot .qr-label-title { position: absolute; left: 0.80in; top: 0.08in; right: 0.03in; font-size: 6.3pt; font-weight: 800; line-height: 1.05; letter-spacing: 0; margin: 0; }
-    .print-slot .qr-label-product { position: absolute; left: 0.80in; top: 0.23in; right: 0.03in; max-height: 0.36in; font-size: 5.3pt; font-weight: 700; line-height: 1.1; color: #007AFF; margin: 0; overflow: hidden; overflow-wrap: anywhere; }
-    .print-slot .qr-label-num { position: absolute; left: 0.80in; right: 0.03in; bottom: 0.08in; font-size: 8pt; font-weight: 900; line-height: 1.05; margin: 0; }
-    .print-slot-empty { display: none; }
-
-    /* Responsive */
     @media (max-width: 900px) {
       .sidebar { transform: translateX(-100%); }
       .sidebar.mobile-open { transform: translateX(0); }
       .main-wrapper { margin-left: 0; }
       .mobile-menu-btn { display: block; }
-      .content-area { padding: 16px; }
     }
   </style>
 </head>
@@ -190,123 +168,90 @@ export function onRequestGet() {
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-header">
         <div class="brand-title">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
           GAMMS AEP
         </div>
         <div class="brand-subtitle">Control Center</div>
+        <div class="gamms-byline">By <strong>GAMMS GROUP</strong></div>
       </div>
-      <nav class="nav-menu">
-        <a class="nav-item" data-route="overview">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-          Overview
-        </a>
-        <a class="nav-item" data-route="pos">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="2" y="4" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 18v3"/><path d="M6 8h12"/><path d="M7 12h3M12 12h5"/></svg>
-          POS
-        </a>
-        <a class="nav-item" data-route="sales">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
-          Ventas
-        </a>
-        <a class="nav-item" data-route="products">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
-          Productos
-        </a>
-        <a class="nav-item" data-route="inventory">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="M3.3 7 12 12l8.7-5"/><path d="M12 22V12"/></svg>
-          Inventario
-        </a>
-        <a class="nav-item" data-route="qr">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3z"/><path d="M17 17h4v4h-4z"/><path d="M14 19h2v2h-2z"/></svg>
-          Códigos QR
-        </a>
-        <a class="nav-item" data-route="print">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-          Print Center
-        </a>
-        <a class="nav-item" data-route="rewards">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>
-          Rewards
-        </a>
-        <a class="nav-item" data-route="customers">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-          Clientes
-        </a>
-        <a class="nav-item" data-route="sellers">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg>
-          Vendedores
-        </a>
-        <a class="nav-item" data-route="activity">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          Auditoría
-        </a>
-        <a class="nav-item" data-route="settings">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-          Configuración
-        </a>
-        <a class="nav-item" data-route="system">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="15" x2="23" y2="15"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="15" x2="4" y2="15"/></svg>
-          Sistema
-        </a>
-      </nav>
+      <nav class="nav-menu" id="navMenu"></nav>
       <div class="sidebar-footer">
-        GAMMS Group &copy; 2026<br>Multiplatform Systems
+        GAMMS AEP<br>
+        By <strong>GAMMS GROUP</strong><br>
+        © 2026
       </div>
     </aside>
 
-    <!-- Main Section -->
+    <!-- Main Content Area -->
     <div class="main-wrapper">
       <header class="top-header">
         <div class="header-left">
           <button class="mobile-menu-btn" id="mobileMenuToggle">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
           </button>
           <div class="header-title" id="pageTitle">Overview</div>
         </div>
         <div class="header-right">
-          <div class="event-badge">
-            <span class="pulse-dot"></span>
-            EVENTO ACTIVO
+          <div class="user-profile-tag" id="userProfileTag" hidden></div>
+          <div class="event-badge" id="eventStatusBadge">
+            <span class="pulse-dot"></span> <span id="eventStatusText">EVENTO ACTIVO</span>
           </div>
-          <button class="theme-toggle" id="themeToggle" title="Cambiar Tema">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-          </button>
-          <button class="btn-logout" id="logoutBtn">Salir</button>
+          <button class="theme-toggle" id="themeToggle" title="Cambiar Tema">🌙</button>
+          <button class="btn-logout" id="logoutBtn" hidden>Salir</button>
         </div>
       </header>
 
       <main class="content-area" id="contentArea">
-        <!-- Rendered view injected here -->
+        <div class="card"><div style="height: 120px;">Cargando sistema...</div></div>
       </main>
     </div>
   </div>
 
-  <!-- Modal Component -->
   <div class="modal-overlay" id="modalOverlay">
-    <div class="modal-box">
+    <div class="modal-card">
       <div class="modal-header">
-        <div class="modal-title" id="modalTitle">Modal</div>
-        <button class="btn-close" id="modalClose">&times;</button>
+        <h3 class="card-title" id="modalTitle">Modal</h3>
+        <button class="modal-close" id="modalClose">✕</button>
       </div>
       <div id="modalBody"></div>
     </div>
   </div>
 
-  <!-- Toast Container -->
-  <div id="toast-container"></div>
+  <div class="toast-container" id="toast-container"></div>
 
-  <!-- Client-Side App Logic -->
   <script>
-    const API_BASE = "/aep/api/admin";
+    const API_BASE = "/aep/api";
     let currentRoute = "overview";
+    let currentPrintBatch = null;
     let state = {
       theme: localStorage.getItem("gamms_theme") || "system",
       authenticated: false,
-      user: null
+      user: null,
+      permissions: []
     };
 
-    // DOM Selectors
+    const NAV_ITEMS = [
+      { id: "overview", label: "Overview", perm: "dashboard.read", icon: '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>' },
+      { id: "pos", label: "POS Operativo", perm: "pos.access", icon: '<rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/>' },
+      { id: "my-sales", label: "Mis Ventas", perm: "sales.read_own", icon: '<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>' },
+      { id: "sales", label: "Ventas", perm: "sales.read", icon: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>' },
+      { id: "products", label: "Productos", perm: "products.read", icon: '<path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/>' },
+      { id: "inventory", label: "Inventario", perm: "inventory.read", icon: '<line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>' },
+      { id: "qr", label: "Códigos QR", perm: "qr.read", icon: '<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>' },
+      { id: "print", label: "Print Studio", perm: "print.use", icon: '<polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>' },
+      { id: "rewards", label: "Rewards & Canjes", perm: "rewards.read", icon: '<polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/>' },
+      { id: "customers", label: "Clientes", perm: "customers.read", icon: '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>' },
+      { id: "users", label: "Usuarios", perm: "users.read", icon: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>' },
+      { id: "roles", label: "Roles y Permisos", perm: "roles.read", icon: '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>' },
+      { id: "shifts", label: "Turnos", perm: "shifts.use", icon: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>' },
+      { id: "reports", label: "Reportes", perm: "reports.read", icon: '<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>' },
+      { id: "audit", label: "Auditoría", perm: "audit.read", icon: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>' },
+      { id: "settings", label: "Configuración", perm: "settings.read", icon: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>' },
+      { id: "system", label: "Sistema", perm: "system.read", icon: '<rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>' }
+    ];
+
     const sidebar = document.getElementById("sidebar");
+    const navMenu = document.getElementById("navMenu");
     const mobileMenuToggle = document.getElementById("mobileMenuToggle");
     const themeToggle = document.getElementById("themeToggle");
     const logoutBtn = document.getElementById("logoutBtn");
@@ -316,32 +261,25 @@ export function onRequestGet() {
     const modalTitle = document.getElementById("modalTitle");
     const modalBody = document.getElementById("modalBody");
     const modalClose = document.getElementById("modalClose");
+    const userProfileTag = document.getElementById("userProfileTag");
 
-    // Helper functions
-    function formatMoney(cents) {
-      return "C$ " + ((cents || 0) / 100).toFixed(2);
-    }
-
+    function formatMoney(cents) { return "C$ " + ((cents || 0) / 100).toFixed(2); }
     function showToast(msg, isError = false) {
       const toast = document.createElement("div");
       toast.className = "toast";
-      toast.textContent = (isError ? "Error: " : "Correcto: ") + msg;
+      toast.textContent = (isError ? "⚠️ " : "✓ ") + msg;
       document.getElementById("toast-container").appendChild(toast);
       setTimeout(() => toast.remove(), 4000);
     }
 
-    function closeModal() {
-      modalOverlay.classList.remove("open");
-    }
+    function closeModal() { modalOverlay.classList.remove("open"); }
     modalClose.addEventListener("click", closeModal);
-
     function openModal(title, contentHtml) {
       modalTitle.textContent = title;
       modalBody.innerHTML = contentHtml;
       modalOverlay.classList.add("open");
     }
 
-    // Theme Manager
     function applyTheme(theme) {
       state.theme = theme;
       localStorage.setItem("gamms_theme", theme);
@@ -352,29 +290,21 @@ export function onRequestGet() {
         document.documentElement.setAttribute("data-theme", theme);
       }
     }
-
     themeToggle.addEventListener("click", () => {
       const nextTheme = state.theme === "light" ? "dark" : (state.theme === "dark" ? "system" : "light");
       applyTheme(nextTheme);
-      showToast("Tema: " + nextTheme.toUpperCase());
     });
 
-    // API Wrapper
     async function apiFetch(endpoint, options = {}) {
       try {
-        const res = await fetch(API_BASE + endpoint, {
+        const res = await fetch(API_BASE + (endpoint.startsWith("/") ? endpoint : "/admin" + endpoint), {
           credentials: "same-origin",
-          headers: {
-            "Accept": "application/json",
-            "Content-Type": "application/json",
-            ...(options.headers || {})
-          },
+          headers: { "Accept": "application/json", "Content-Type": "application/json", ...(options.headers || {}) },
           ...options
         });
-        
-        if (res.status === 401 && endpoint !== "/login") {
+        if (res.status === 401 && !endpoint.includes("/login")) {
           renderLogin();
-          return { ok: false, code: "ADMIN_AUTH_REQUIRED" };
+          return { ok: false, code: "SELLER_AUTH_REQUIRED" };
         }
         return res.json();
       } catch (err) {
@@ -382,39 +312,58 @@ export function onRequestGet() {
       }
     }
 
-    // Check Session
+    function userHasPerm(permissionKey) {
+      if (!permissionKey) return true;
+      if (state.permissions.includes("*")) return true;
+      return state.permissions.includes(permissionKey);
+    }
+
+    function renderNavMenu() {
+      navMenu.innerHTML = NAV_ITEMS
+        .filter(item => userHasPerm(item.perm))
+        .map(item => \`
+          <a class="nav-item \${currentRoute === item.id ? 'active' : ''}" data-route="\${item.id}" onclick="navigate('\${item.id}')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">\${item.icon}</svg>
+            <span>\${item.label}</span>
+          </a>
+        \`).join("");
+    }
+
     async function checkAuth() {
-      const res = await apiFetch("/session");
+      const res = await apiFetch("/staff/session");
       if (res.authenticated) {
         state.authenticated = true;
         state.user = res.user;
-        navigate(getRouteFromUrl());
+        state.permissions = res.user.permissions || [];
+        
+        userProfileTag.hidden = false;
+        userProfileTag.textContent = (res.user.displayName || res.user.username) + " (" + (res.user.roles?.[0]?.name || "Staff") + ")";
+        logoutBtn.hidden = false;
+        
+        renderNavMenu();
+        const availableRoutes = NAV_ITEMS.filter(item => userHasPerm(item.perm)).map(item => item.id);
+        const targetRoute = getRouteFromUrl();
+        navigate(availableRoutes.includes(targetRoute) ? targetRoute : availableRoutes[0] || "overview");
       } else {
         renderLogin();
       }
     }
 
     logoutBtn.addEventListener("click", async () => {
-      await apiFetch("/logout", { method: "POST", body: "{}" });
+      await apiFetch("/staff/logout", { method: "POST", body: "{}" });
       state.authenticated = false;
       renderLogin();
     });
 
-    mobileMenuToggle.addEventListener("click", () => {
-      sidebar.classList.toggle("mobile-open");
-    });
+    mobileMenuToggle.addEventListener("click", () => sidebar.classList.toggle("mobile-open"));
 
-    // Navigation Router
     function getRouteFromUrl() {
       const path = window.location.pathname.replace(/^\\/aep\\/controlcenter\\/?/, "");
       return path || "overview";
     }
 
     function navigate(route, pushState = true) {
-      if (!state.authenticated) {
-        renderLogin();
-        return;
-      }
+      if (!state.authenticated) { renderLogin(); return; }
       currentRoute = route;
       sidebar.classList.remove("mobile-open");
 
@@ -427,45 +376,41 @@ export function onRequestGet() {
         window.history.pushState({}, "", newPath);
       }
 
-      const titles = {
-        overview: "Overview", pos: "POS Operativo", sales: "Ventas Historicas", products: "Catalogo de Productos",
-        inventory: "Inventario", qr: "Gestion de Codigos QR", print: "Print Center", rewards: "Rewards & Canjes", customers: "Clientes Anonimos",
-        sellers: "Vendedores", activity: "Registro de Auditoria", settings: "Configuracion AEP", system: "Diagnostico del Sistema"
-      };
-      pageTitle.textContent = titles[route] || "Overview";
-
+      const navObj = NAV_ITEMS.find(n => n.id === route);
+      pageTitle.textContent = navObj ? navObj.label : "Control Center";
       renderRoute(route);
     }
 
     window.addEventListener("popstate", () => navigate(getRouteFromUrl(), false));
 
-    document.querySelectorAll(".nav-item").forEach(el => {
-      el.addEventListener("click", (e) => {
-        e.preventDefault();
-        navigate(el.getAttribute("data-route"));
-      });
-    });
-
-    // ----------------------------------------------------
-    // VIEWS RENDERERS
-    // ----------------------------------------------------
-
+    // LOGIN VIEW
     function renderLogin() {
-      pageTitle.textContent = "Iniciar Sesión Administrador";
+      pageTitle.textContent = "Control Center Login";
+      userProfileTag.hidden = true;
+      logoutBtn.hidden = true;
       contentArea.innerHTML = \`
-        <div style="max-width: 420px; margin: 40px auto;">
-          <div class="card">
+        <div style="max-width: 440px; margin: 40px auto;">
+          <div class="card" style="box-shadow: 0 12px 36px rgba(0,0,0,0.12);">
             <div class="card-header" style="justify-content:center; flex-direction:column; text-align:center;">
-              <div class="brand-title" style="font-size:22px;">GAMMS AEP</div>
-              <div class="brand-subtitle">Control Center Login</div>
+              <div class="brand-title" style="font-size:24px;">GAMMS AEP</div>
+              <div class="brand-subtitle">CONTROL CENTER</div>
+              <div class="gamms-byline" style="margin-top:6px;">By <strong>GAMMS GROUP</strong></div>
             </div>
-            <form id="loginForm">
+            <form id="loginForm" style="margin-top:12px;">
               <div class="form-group">
-                <label class="form-label">Passcode de Administrador</label>
-                <input id="adminPasscode" type="password" class="form-control" placeholder="••••••••" required autofocus>
+                <label class="form-label">Usuario</label>
+                <input id="staffUsername" type="text" class="form-control" placeholder="admin / tu usuario" required autofocus>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Contraseña</label>
+                <input id="staffPassword" type="password" class="form-control" placeholder="••••••••" required>
+              </div>
+              <div class="form-group" id="totpGroup" hidden>
+                <label class="form-label">Código de Autenticación 2FA (MFA)</label>
+                <input id="staffTotp" type="text" class="form-control" placeholder="123456" maxlength="8">
               </div>
               <button type="submit" class="btn-primary" style="width:100%; justify-content:center; margin-top:8px;">
-                Ingresar al Panel
+                Iniciar sesión
               </button>
             </form>
           </div>
@@ -474,27 +419,46 @@ export function onRequestGet() {
 
       document.getElementById("loginForm").addEventListener("submit", async (e) => {
         e.preventDefault();
-        const passcode = document.getElementById("adminPasscode").value;
-        const res = await apiFetch("/login", {
+        const username = document.getElementById("staffUsername").value.trim();
+        const password = document.getElementById("staffPassword").value;
+        const totpCode = document.getElementById("staffTotp")?.value.trim() || "";
+
+        let res = await apiFetch("/staff/login", {
           method: "POST",
-          body: JSON.stringify({ passcode })
+          body: JSON.stringify({ username, password, totpCode })
         });
+
+        if (!res.ok && res.code === "MFA_REQUIRED") {
+          document.getElementById("totpGroup").hidden = false;
+          showToast("Introduce tu código MFA de 6 dígitos", true);
+          return;
+        }
+
         if (res.ok) {
-          showToast("Sesión de administrador iniciada.");
+          showToast("Bienvenido " + (res.user.displayName || res.user.username));
           state.authenticated = true;
+          state.user = res.user;
+          state.permissions = res.user.permissions || [];
+
+          userProfileTag.hidden = false;
+          userProfileTag.textContent = (res.user.displayName || res.user.username) + " (" + (res.user.roles?.[0]?.name || "Staff") + ")";
+          logoutBtn.hidden = false;
+
+          renderNavMenu();
           navigate("overview");
         } else {
-          showToast(res.code || "Credenciales inválidas", true);
+          showToast(res.error || res.code || "Usuario o contraseña incorrectos", true);
         }
       });
     }
 
     async function renderRoute(route) {
-      contentArea.innerHTML = \`<div class="card"><div class="skeleton" style="height: 200px;"></div></div>\`;
+      contentArea.innerHTML = \`<div class="card"><div style="height: 140px; display:flex; align-items:center; justify-content:center; color:var(--text-muted);">Cargando...</div></div>\`;
 
       switch (route) {
         case "overview": return renderOverview();
         case "pos": return renderPos();
+        case "my-sales": return renderMySales();
         case "sales": return renderSales();
         case "products": return renderProducts();
         case "inventory": return renderInventory();
@@ -502,8 +466,11 @@ export function onRequestGet() {
         case "print": return renderPrintCenter();
         case "rewards": return renderRewards();
         case "customers": return renderCustomers();
-        case "sellers": return renderSellers();
-        case "activity": return renderActivity();
+        case "users": return renderUsers();
+        case "roles": return renderRoles();
+        case "shifts": return renderShifts();
+        case "reports": return renderReports();
+        case "audit": return renderActivity();
         case "settings": return renderSettings();
         case "system": return renderSystem();
         default: return renderOverview();
@@ -512,44 +479,45 @@ export function onRequestGet() {
 
     // 1. OVERVIEW
     async function renderOverview() {
-      const res = await apiFetch("/dashboard");
+      const res = await apiFetch("/admin/dashboard");
       if (!res.ok) {
         contentArea.innerHTML = \`<div class="card">Error cargando dashboard</div>\`;
         return;
       }
       const { overview, recentSales, topProducts, lowStockProducts } = res.stats;
 
+      let lowStockAlert = "";
+      if (lowStockProducts && lowStockProducts.length > 0) {
+        lowStockAlert = \`
+          <div class="alert-banner warning">
+            <div>
+              ⚠️ <strong>Stock bajo detectado:</strong> \${lowStockProducts.map(p => p.name + ' (' + p.stock_quantity + ' rest.)').join(', ')}
+            </div>
+            <button class="btn-secondary" onclick="navigate('inventory')">Añadir Stock</button>
+          </div>
+        \`;
+      }
+
       contentArea.innerHTML = \`
+        \${lowStockAlert}
         <div class="grid-stats">
           <div class="stat-card">
-            <div class="stat-header">
-              <span>REVENUE HOY</span>
-              <div class="stat-icon">$</div>
-            </div>
+            <div class="stat-header"><span>REVENUE HOY</span><div class="stat-icon">$</div></div>
             <div class="stat-value">\${formatMoney(overview.todayRevenueCents)}</div>
-            <div class="stat-sub">Total histórico: \${formatMoney(overview.totalRevenueCents)}</div>
+            <div class="stat-sub">Total acumulado: \${formatMoney(overview.totalRevenueCents)}</div>
           </div>
           <div class="stat-card">
-            <div class="stat-header">
-              <span>BEBIDAS VENDIDAS</span>
-              <div class="stat-icon">🥤</div>
-            </div>
+            <div class="stat-header"><span>BEBIDAS VENDIDAS</span><div class="stat-icon">🥤</div></div>
             <div class="stat-value">\${overview.todaySalesCount}</div>
             <div class="stat-sub">Ventas totales: \${overview.totalSalesCount}</div>
           </div>
           <div class="stat-card">
-            <div class="stat-header">
-              <span>REWARDS CANJEADOS</span>
-              <div class="stat-icon">🎁</div>
-            </div>
+            <div class="stat-header"><span>REWARDS CANJEADOS</span><div class="stat-icon">🎁</div></div>
             <div class="stat-value">\${overview.redeemedRewardsCount}</div>
             <div class="stat-sub">Disponibles: \${overview.availableRewardsCount} | Claims: \${overview.activeClaimsCount}</div>
           </div>
           <div class="stat-card">
-            <div class="stat-header">
-              <span>QR DISPONIBLES</span>
-              <div class="stat-icon">🏷️</div>
-            </div>
+            <div class="stat-header"><span>QR DISPONIBLES</span><div class="stat-icon">🏷️</div></div>
             <div class="stat-value">\${overview.availableQrCount}</div>
             <div class="stat-sub">Usados: \${overview.usedQrCount} | Total: \${overview.totalQrCount}</div>
           </div>
@@ -563,11 +531,9 @@ export function onRequestGet() {
             </div>
             <div class="table-container">
               <table>
-                <thead>
-                  <tr><th>Producto</th><th>QR #</th><th>Monto</th><th>Descuento</th></tr>
-                </thead>
+                <thead><tr><th>Producto</th><th>QR #</th><th>Monto</th><th>Descuento</th></tr></thead>
                 <tbody>
-                  \${recentSales.map(s => \`
+                  \${(recentSales || []).map(s => \`
                     <tr>
                       <td><strong>\${s.productName}</strong><br><small style="color:var(--text-muted)">\${s.customerLabel}</small></td>
                       <td>#\${s.qrNumber}</td>
@@ -587,11 +553,9 @@ export function onRequestGet() {
             </div>
             <div class="table-container">
               <table>
-                <thead>
-                  <tr><th>Producto</th><th>Ventas</th><th>Revenue</th></tr>
-                </thead>
+                <thead><tr><th>Producto</th><th>Ventas</th><th>Revenue</th></tr></thead>
                 <tbody>
-                  \${topProducts.map(p => \`
+                  \${(topProducts || []).map(p => \`
                     <tr>
                       <td><strong>\${p.name}</strong></td>
                       <td>\${p.salesCount} ud.</td>
@@ -606,30 +570,36 @@ export function onRequestGet() {
       \`;
     }
 
-    // POS
+    // POS CONTROL CENTER
     async function renderPos() {
-      const recent = await apiFetch("/sales?limit=10");
+      const recent = await apiFetch("/admin/sales?limit=10");
       contentArea.innerHTML = \`
-        <div style="display:grid; grid-template-columns:minmax(320px, 1fr) minmax(320px, 1fr); gap:24px;">
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(340px, 1fr)); gap:24px;">
           <div class="card">
             <div class="card-header">
               <div class="card-title">Canje POS 50%</div>
-              <span class="badge badge-success">ONLINE</span>
+              <span class="badge badge-success">POS ONLINE</span>
             </div>
             <div class="form-group">
-              <label class="form-label">Codigo de claim o lectura de scanner</label>
-              <input id="posClaimInput" class="form-control" placeholder="GAMMS-AEP-CLAIM:ABCD-EFGH-23" autofocus>
+              <label class="form-label">1. Código de Claim o QR del cliente</label>
+              <input id="posClaimInput" class="form-control" placeholder="T3X8-5OHC-EW" autofocus>
             </div>
             <div class="filter-bar">
-              <button class="btn-secondary" onclick="previewPosClaim()">Previsualizar</button>
-              <button class="btn-primary" onclick="redeemPosClaim()">Canjear 50%</button>
+              <button class="btn-secondary" onclick="previewPosClaim()">1. Validar Premio</button>
+            </div>
+            <div id="posStep2Box" style="margin-top:18px;" hidden>
+              <div class="form-group">
+                <label class="form-label">2. Escanear Bebida (QR Físico)</label>
+                <input id="posPhysicalQrInput" class="form-control" placeholder="Escanear token de la bebida">
+              </div>
+              <button class="btn-primary" onclick="redeemPosClaim()" style="width:100%; justify-content:center;">Confirmar Canje 50%</button>
             </div>
             <div id="posPreview" style="margin-top:18px;"></div>
           </div>
           <div class="card">
             <div class="card-header">
-              <div class="card-title">Ultimas ventas</div>
-              <button class="btn-secondary" onclick="renderSales()">Ver ventas</button>
+              <div class="card-title">Últimas Ventas</div>
+              <button class="btn-secondary" onclick="navigate('sales')">Ver todas</button>
             </div>
             <div class="table-container">
               <table>
@@ -644,50 +614,77 @@ export function onRequestGet() {
           </div>
         </div>
       \`;
-      document.getElementById("posClaimInput").addEventListener("keydown", (event) => {
-        if (event.key === "Enter") previewPosClaim();
-      });
     }
 
-    function normalizeClaimInput(value) {
-      return String(value || "").trim().replace(/^GAMMS-AEP-CLAIM:/i, "").trim();
-    }
+    function normalizeClaimInput(value) { return String(value || "").trim().replace(/^GAMMS-AEP-CLAIM:/i, "").trim(); }
 
     async function previewPosClaim() {
       const input = document.getElementById("posClaimInput");
       const code = normalizeClaimInput(input.value);
       const box = document.getElementById("posPreview");
-      if (!code) return showToast("Ingresa un claim.", true);
-      const res = await apiFetch("/pos/claims/" + encodeURIComponent(code));
+      const step2Box = document.getElementById("posStep2Box");
+      if (!code) return showToast("Ingresa un código de premio.", true);
+      const res = await apiFetch("/seller/claims/" + encodeURIComponent(code));
       if (!res.ok) {
-        box.innerHTML = \`<div class="badge badge-danger">\${res.code || "CLAIM_INVALID"}</div>\`;
+        box.innerHTML = \`<div class="badge badge-danger">\${res.error || res.code || "CLAIM_INVALID"}</div>\`;
+        step2Box.hidden = true;
         return;
       }
+      step2Box.hidden = false;
       box.innerHTML = \`
-        <div class="card" style="margin:0; box-shadow:none;">
-          <div class="card-title">\${res.product.name}</div>
-          <p style="margin-top:8px;">QR #\${res.qr.number}</p>
-          <p style="margin-top:8px;">Precio normal: <strong>\${formatMoney(res.pricing.regularPriceCents)}</strong></p>
-          <p>Descuento: <strong>\${res.pricing.discountPercent}%</strong></p>
-          <p>Total POS: <strong>\${formatMoney(res.pricing.finalPriceCents)}</strong></p>
+        <div class="card" style="margin:0; box-shadow:none; background:var(--bg-page);">
+          <div class="card-title">\${res.customer?.displayName || 'Cliente'} (\${res.customer?.customerLabel || ''})</div>
+          <p style="margin-top:8px;">Estado: <strong>\${res.claim.status}</strong> · Descuento: <strong>50% OFF</strong></p>
         </div>
       \`;
     }
 
     async function redeemPosClaim() {
       const code = normalizeClaimInput(document.getElementById("posClaimInput").value);
-      if (!code) return showToast("Ingresa un claim.", true);
-      const res = await apiFetch("/pos/redeem", { method: "POST", body: JSON.stringify({ code }) });
-      if (!res.ok) return showToast(res.code || "No se pudo canjear.", true);
+      const physicalQrToken = document.getElementById("posPhysicalQrInput").value.trim();
+      if (!code) return showToast("Ingresa el premio.", true);
+      const res = await apiFetch("/seller/redeem", { method: "POST", body: JSON.stringify({ code, physicalQrToken }) });
+      if (!res.ok) return showToast(res.error || res.code || "No se pudo canjear.", true);
       showToast("Canje registrado: " + formatMoney(res.purchase.finalPriceCents));
       renderPos();
     }
 
-    // 2. SALES
+    // MIS VENTAS (SELLER)
+    async function renderMySales() {
+      const res = await apiFetch("/seller/my-sales");
+      if (!res.ok) { contentArea.innerHTML = \`<div class="card">Error cargando mis ventas</div>\`; return; }
+
+      contentArea.innerHTML = \`
+        <div class="card">
+          <div class="card-header"><div class="card-title">Mis Ventas Realizadas</div></div>
+          <div class="table-container">
+            <table>
+              <thead><tr><th>Fecha / Hora</th><th>Producto</th><th>QR #</th><th>Cliente</th><th>Monto</th><th>Desc.</th></tr></thead>
+              <tbody>
+                \${(res.sales || []).map(s => \`
+                  <tr>
+                    <td>\${new Date(s.createdAt).toLocaleString()}</td>
+                    <td><strong>\${s.productName}</strong></td>
+                    <td>#\${s.qrNumber}</td>
+                    <td>\${s.customerDisplayName ? s.customerDisplayName + ' · ' + s.customerLabel : s.customerLabel}</td>
+                    <td><strong>\${formatMoney(s.finalPriceCents)}</strong></td>
+                    <td>\${s.discountPercent > 0 ? \`<span class="badge badge-warning">\${s.discountPercent}% OFF</span>\` : '<span class="badge badge-success">Normal</span>'}</td>
+                  </tr>
+                \`).join('') || '<tr><td colspan="6" style="text-align:center">No has realizado ventas en este turno</td></tr>'}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      \`;
+    }
+
+    // 2. SALES (HISTORICAL & ADMIN VOID)
     async function renderSales(page = 1) {
       const query = document.getElementById("salesSearch")?.value || "";
-      const res = await apiFetch(\`/sales?page=\${page}&q=\${encodeURIComponent(query)}\`);
+      const res = await apiFetch(\`/admin/sales?page=\${page}&q=\${encodeURIComponent(query)}\`);
       if (!res.ok) return;
+
+      const canVoid = userHasPerm("purchase.void");
 
       contentArea.innerHTML = \`
         <div class="card">
@@ -700,75 +697,68 @@ export function onRequestGet() {
           </div>
           <div class="table-container">
             <table>
-              <thead>
-                <tr><th>ID</th><th>Fecha/Hora</th><th>Producto</th><th>QR #</th><th>Normal</th><th>Descuento</th><th>Final</th><th>Cliente</th></tr>
-              </thead>
+              <thead><tr><th>ID</th><th>Fecha</th><th>Cliente</th><th>Producto</th><th>QR #</th><th>P. Normal</th><th>Desc.</th><th>Total</th>\${canVoid ? '<th>Acciones</th>' : ''}</tr></thead>
               <tbody>
-                \${res.items.map(s => \`
+                \${(res.items || []).map(s => \`
                   <tr>
                     <td>#\${s.id}</td>
-                    <td>\${s.createdAt}</td>
+                    <td>\${new Date(s.createdAt).toLocaleString()}</td>
+                    <td>\${s.customerDisplayName ? '<strong>' + s.customerDisplayName + '</strong><br>' : ''}\${s.customerLabel}</td>
                     <td><strong>\${s.productName}</strong></td>
                     <td>#\${s.qrPublicNumber}</td>
                     <td>\${formatMoney(s.regularPriceCents)}</td>
-                    <td>\${s.discountPercent > 0 ? \`<span class="badge badge-warning">\${s.discountPercent}%</span>\` : '0%'}</td>
+                    <td>\${s.discountPercent}%</td>
                     <td><strong>\${formatMoney(s.finalPriceCents)}</strong></td>
-                    <td>\${s.customerLabel}</td>
+                    \${canVoid ? \`<td><button class="btn-danger" onclick="promptVoidPurchase(\${s.id})">Anular</button></td>\` : ''}
                   </tr>
-                \`).join('')}
+                \`).join('') || '<tr><td colspan="9" style="text-align:center">Sin ventas</td></tr>'}
               </tbody>
             </table>
           </div>
-          <div class="pagination-bar">
-            <span>Página \${res.pagination.page} de \${res.pagination.totalPages}</span>
-            <div>
-              <button class="pagination-btn" \${res.pagination.page <= 1 ? 'disabled' : ''} onclick="renderSales(\${res.pagination.page - 1})">Anterior</button>
-              <button class="pagination-btn" \${res.pagination.page >= res.pagination.totalPages ? 'disabled' : ''} onclick="renderSales(\${res.pagination.page + 1})">Siguiente</button>
-            </div>
-          </div>
         </div>
       \`;
+    }
 
-      document.getElementById("salesSearch").addEventListener("keyup", (e) => {
-        if (e.key === "Enter") renderSales(1);
+    async function promptVoidPurchase(purchaseId) {
+      const reason = prompt("Describe el motivo de la anulación administrativa:");
+      if (!reason || reason.trim().length < 3) return alert("Debes ingresar un motivo válido.");
+
+      const res = await apiFetch("/admin/purchases/" + purchaseId + "/void", {
+        method: "POST",
+        body: JSON.stringify({ reason })
       });
+
+      if (res.ok) {
+        showToast("Venta #" + purchaseId + " anulada exitosamente.");
+        renderSales();
+      } else {
+        showToast(res.error || res.code || "Error al anular venta", true);
+      }
     }
 
     // 3. PRODUCTS
     async function renderProducts() {
-      const res = await apiFetch("/products");
+      const res = await apiFetch("/admin/products");
       if (!res.ok) return;
 
       contentArea.innerHTML = \`
         <div class="card">
           <div class="card-header">
-            <div class="card-title">Gestión de Productos</div>
-            <div class="filter-bar">
-              <button class="btn-primary" onclick="showCreateProductModal()">+ Nuevo Producto</button>
-              <button class="btn-secondary" onclick="exportCsv('products')">Exportar CSV</button>
-            </div>
+            <div class="card-title">Catálogo de Productos</div>
+            <button class="btn-primary" onclick="openNewProductModal()">+ Nuevo Producto</button>
           </div>
           <div class="table-container">
             <table>
-              <thead>
-                <tr><th>Producto</th><th>Categoría</th><th>Precio</th><th>Stock</th><th>QR Disponibles</th><th>Ventas</th><th>Estado</th><th>Acciones</th></tr>
-              </thead>
+              <thead><tr><th>ID</th><th>Nombre</th><th>Precio</th><th>Stock</th><th>Estado</th><th>Acciones</th></tr></thead>
               <tbody>
-                \${res.items.map(p => \`
+                \${(res.products || []).map(p => \`
                   <tr>
-                    <td><strong>\${p.name}</strong><br><small style="color:var(--text-muted)">\${p.description || 'Sin descripción'}</small></td>
-                    <td>\${p.category}</td>
-                    <td><strong>\${formatMoney(p.priceCents)}</strong></td>
-                    <td>
-                      \${p.isLowStock ? \`<span class="badge badge-danger">\${p.stockQuantity} ud (Bajo Stock)</span>\` : \`<span>\${p.stockQuantity} ud</span>\`}
-                    </td>
-                    <td>\${p.availableQrCount} disponible(s)</td>
-                    <td>\${p.salesCount} (\${formatMoney(p.revenueCents)})</td>
+                    <td>#\${p.id}</td>
+                    <td><strong>\${p.name}</strong></td>
+                    <td>\${formatMoney(p.price_cents)}</td>
+                    <td><strong>\${p.stock_quantity}</strong> \${p.stock_quantity <= p.low_stock_threshold ? '<span class="badge badge-warning">Bajo</span>' : ''}</td>
                     <td>\${p.active ? '<span class="badge badge-success">Activo</span>' : '<span class="badge badge-danger">Inactivo</span>'}</td>
-                    <td>
-                      <button class="btn-secondary" style="padding:4px 8px; font-size:12px;" onclick="showStockModal(\${p.id}, '\${p.name}', \${p.stockQuantity})">Stock</button>
-                      <button class="btn-secondary" style="padding:4px 8px; font-size:12px;" onclick="showEditProductModal(\${JSON.stringify(p).replace(/"/g, '&quot;')})">Editar</button>
-                    </td>
+                    <td><button class="btn-secondary" onclick="openEditProductModal(\${p.id})">Editar</button></td>
                   </tr>
                 \`).join('')}
               </tbody>
@@ -778,454 +768,71 @@ export function onRequestGet() {
       \`;
     }
 
-    function showCreateProductModal() {
-      openModal("Nuevo Producto", \`
-        <form id="createProductForm">
-          <div class="form-group">
-            <label class="form-label">Nombre del Producto</label>
-            <input name="name" class="form-control" required placeholder="Ej: Coca-Cola 500ml">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Categoría</label>
-            <input name="category" class="form-control" value="bebidas">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Precio en Céntimos (Ej: 4000 = C$ 40.00)</label>
-            <input name="priceCents" type="number" class="form-control" required value="4000">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Stock Inicial</label>
-            <input name="stockQuantity" type="number" class="form-control" value="50">
-          </div>
-          <button type="submit" class="btn-primary" style="width:100%; justify-content:center;">Guardar Producto</button>
-        </form>
-      \`);
-
-      document.getElementById("createProductForm").addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const formData = new FormData(e.target);
-        const payload = Object.fromEntries(formData.entries());
-        const res = await apiFetch("/products", { method: "POST", body: JSON.stringify(payload) });
-        if (res.ok) {
-          showToast("Producto creado correctamente.");
-          closeModal();
-          renderProducts();
-        } else {
-          showToast(res.code || "Error al crear producto", true);
-        }
-      });
-    }
-
-    function showEditProductModal(product) {
-      openModal("Editar Producto: " + product.name, \`
-        <form id="editProductForm">
-          <div class="form-group">
-            <label class="form-label">Nombre</label>
-            <input name="name" class="form-control" value="\${product.name}" required>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Precio en Céntimos</label>
-            <input name="priceCents" type="number" class="form-control" value="\${product.priceCents}" required>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Estado</label>
-            <select name="active" class="form-control">
-              <option value="true" \${product.active ? 'selected' : ''}>Activo</option>
-              <option value="false" \${!product.active ? 'selected' : ''}>Inactivo</option>
-            </select>
-          </div>
-          <button type="submit" class="btn-primary" style="width:100%; justify-content:center;">Actualizar Producto</button>
-        </form>
-      \`);
-
-      document.getElementById("editProductForm").addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const formData = new FormData(e.target);
-        const payload = Object.fromEntries(formData.entries());
-        payload.active = payload.active === "true";
-        const res = await apiFetch("/products/" + product.id, { method: "PUT", body: JSON.stringify(payload) });
-        if (res.ok) {
-          showToast("Producto actualizado.");
-          closeModal();
-          renderProducts();
-        } else {
-          showToast(res.code || "Error actualizando producto", true);
-        }
-      });
-    }
-
-    function showStockModal(productId, productName, currentStock) {
-      openModal("Ajustar Stock: " + productName, \`
-        <form id="adjustStockForm">
-          <p style="margin-bottom:12px; font-size:14px;">Stock actual: <strong>\${currentStock} ud</strong></p>
-          <div class="form-group">
-            <label class="form-label">Tipo de Movimiento</label>
-            <select name="movement_type" class="form-control">
-              <option value="restock">Restock (+)</option>
-              <option value="adjustment">Ajuste / Corrección</option>
-              <option value="return">Devolución (+)</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Cambio en Cantidad (+ o -)</label>
-            <input name="quantity_delta" type="number" class="form-control" required placeholder="Ej: 20 o -5">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Razón</label>
-            <input name="reason" class="form-control" required value="Restock administrativo manual">
-          </div>
-          <button type="submit" class="btn-primary" style="width:100%; justify-content:center;">Guardar Ajuste</button>
-        </form>
-      \`);
-
-      document.getElementById("adjustStockForm").addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const formData = new FormData(e.target);
-        const payload = Object.fromEntries(formData.entries());
-        payload.product_id = productId;
-        const res = await apiFetch("/inventory/adjust", { method: "POST", body: JSON.stringify(payload) });
-        if (res.ok) {
-          showToast("Inventario actualizado.");
-          closeModal();
-          renderProducts();
-        } else {
-          showToast(res.message || res.code || "Error ajustando stock", true);
-        }
-      });
-    }
-
-    async function renderInventory(page = 1) {
-      const res = await apiFetch(\`/inventory?page=\${page}\`);
+    // 4. INVENTORY
+    async function renderInventory() {
+      const res = await apiFetch("/admin/inventory");
       if (!res.ok) return;
+
       contentArea.innerHTML = \`
         <div class="card">
           <div class="card-header">
-            <div class="card-title">Ledger de Inventario</div>
-            <button class="btn-secondary" onclick="exportCsv('inventory')">Exportar CSV</button>
+            <div class="card-title">Movimientos de Inventario</div>
+            <button class="btn-primary" onclick="openRestockModal()">+ Ajustar / Restock</button>
           </div>
           <div class="table-container">
             <table>
-              <thead><tr><th>ID</th><th>Fecha</th><th>Producto</th><th>Tipo</th><th>Cambio</th><th>Purchase</th><th>Razon</th><th>Actor</th></tr></thead>
+              <thead><tr><th>Fecha</th><th>Producto</th><th>Tipo</th><th>Cambio</th><th>Motivo</th><th>Actor</th></tr></thead>
               <tbody>
-                \${res.items.map(m => \`
+                \${(res.movements || []).map(m => \`
                   <tr>
-                    <td>#\${m.id}</td>
-                    <td>\${m.createdAt}</td>
+                    <td>\${new Date(m.createdAt).toLocaleString()}</td>
                     <td><strong>\${m.productName}</strong></td>
-                    <td><span class="badge \${m.movementType === 'sale' ? 'badge-warning' : 'badge-success'}">\${m.movementType}</span></td>
-                    <td><strong>\${m.quantityDelta}</strong></td>
-                    <td>\${m.purchaseId ? '#' + m.purchaseId : '-'}</td>
+                    <td><span class="badge badge-neutral">\${m.movementType}</span></td>
+                    <td><strong style="color:\${m.quantityDelta > 0 ? 'var(--badge-green-text)' : 'var(--badge-red-text)'}">\${m.quantityDelta > 0 ? '+' : ''}\${m.quantityDelta}</strong></td>
                     <td>\${m.reason}</td>
-                    <td>\${m.actorType}:\${m.actorIdentifier || ''}</td>
-                  </tr>
-                \`).join('') || '<tr><td colspan="8" style="text-align:center">Sin movimientos</td></tr>'}
-              </tbody>
-            </table>
-          </div>
-          <div class="pagination-bar">
-            <span>Pagina \${res.pagination.page} de \${res.pagination.totalPages}</span>
-            <div>
-              <button class="pagination-btn" \${res.pagination.page <= 1 ? 'disabled' : ''} onclick="renderInventory(\${res.pagination.page - 1})">Anterior</button>
-              <button class="pagination-btn" \${res.pagination.page >= res.pagination.totalPages ? 'disabled' : ''} onclick="renderInventory(\${res.pagination.page + 1})">Siguiente</button>
-            </div>
-          </div>
-        </div>
-      \`;
-    }
-
-    // 4. QR MANAGEMENT
-    async function renderQr(page = 1) {
-      const res = await apiFetch(\`/qr?page=\${page}\`);
-      const prodRes = await apiFetch("/products");
-      const products = prodRes.items || [];
-
-      contentArea.innerHTML = \`
-        <div class="card">
-          <div class="card-header">
-            <div class="card-title">Inventario de Códigos QR</div>
-            <div class="filter-bar">
-              <button class="btn-primary" onclick="showGenerateQrModal(\${JSON.stringify(products).replace(/"/g, '&quot;')})">Generar Lote de QR</button>
-              <button class="btn-secondary" onclick="exportCsv('qr')">Exportar CSV</button>
-            </div>
-          </div>
-          <div class="table-container">
-            <table>
-              <thead>
-                <tr><th>Público #</th><th>Producto Asignado</th><th>Estado</th><th>Creado En</th><th>Usado En</th><th>Acciones</th></tr>
-              </thead>
-              <tbody>
-                \${res.items.map(q => \`
-                  <tr>
-                    <td><strong>#\${q.publicNumber}</strong></td>
-                    <td>\${q.productName} (\${formatMoney(q.productPriceCents)})</td>
-                    <td>
-                      \${q.status === 'available' ? '<span class="badge badge-success">Disponible</span>' :
-                        (q.status === 'used' ? '<span class="badge badge-warning">Usado</span>' : '<span class="badge badge-danger">Deshabilitado</span>')}
-                    </td>
-                    <td>\${q.createdAt}</td>
-                    <td>\${q.usedAt || '-'}</td>
-                    <td>
-                      \${q.status === 'available' ? \`<button class="btn-secondary" style="padding:4px 8px; font-size:12px;" onclick="disableQr(\${q.publicNumber})">Deshabilitar</button>\` : ''}
-                      \${q.status === 'disabled' ? \`<button class="btn-secondary" style="padding:4px 8px; font-size:12px;" onclick="reactivateQr(\${q.publicNumber})">Reactivar</button>\` : ''}
-                    </td>
+                    <td>\${m.actorType} (\${m.actorIdentifier || 'system'})</td>
                   </tr>
                 \`).join('')}
               </tbody>
             </table>
           </div>
-          <div class="pagination-bar">
-            <span>Página \${res.pagination.page} de \${res.pagination.totalPages}</span>
-            <div>
-              <button class="pagination-btn" \${res.pagination.page <= 1 ? 'disabled' : ''} onclick="renderQr(\${res.pagination.page - 1})">Anterior</button>
-              <button class="pagination-btn" \${res.pagination.page >= res.pagination.totalPages ? 'disabled' : ''} onclick="renderQr(\${res.pagination.page + 1})">Siguiente</button>
-            </div>
-          </div>
         </div>
       \`;
     }
 
-    function showGenerateQrModal(products) {
-      openModal("Generar Lote de Códigos QR Imprimibles", \`
-        <form id="generateQrForm">
-          <div class="form-group">
-            <label class="form-label">Producto Asignado</label>
-            <select name="product_id" class="form-control" required>
-              \${products.map(p => \`<option value="\${p.id}">\${p.name} (\${formatMoney(p.priceCents)})\</option>\`).join('')}
-            </select>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Cantidad a Generar (Máx 500)</label>
-            <input name="count" type="number" class="form-control" value="20" min="1" max="500" required>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Numeración Inicial Pública (Opcional)</label>
-            <input name="start_number" type="number" class="form-control" placeholder="Auto-incrementar">
-          </div>
-          <button type="submit" class="btn-primary" style="width:100%; justify-content:center;">Generar y Ver Etiquetas</button>
-        </form>
-      \`);
+    // 5. QR CODES
+    async function renderQr() {
+      const res = await apiFetch("/admin/qr");
+      if (!res.ok) return;
 
-      document.getElementById("generateQrForm").addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const formData = new FormData(e.target);
-        const payload = Object.fromEntries(formData.entries());
-        const res = await apiFetch("/qr/generate", { method: "POST", body: JSON.stringify(payload) });
-        if (res.ok) {
-          showToast(\`Se generaron \${res.count} códigos QR correctamente.\`);
-          closeModal();
-          showPrintLabelsModal(res.items);
-          renderQr();
-        } else {
-          showToast(res.message || res.code || "Error generando QR", true);
-        }
-      });
-    }
-
-    function showPrintLabelsModal(qrItems) {
-      openModal("Etiquetas Generadas para Impresión (" + qrItems.length + ")", \`
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-          <p style="font-size:13px; color:var(--text-muted)">Vista previa visual. Para produccion usa el Print Center y su PDF fisico.</p>
-          <button class="btn-primary" onclick="renderPrintCenter(); closeModal();">Abrir Print Center</button>
-        </div>
-        <div id="printable-labels" class="print-preview-sheets">
-          \${qrItems.map(item => \`
-            <div class="qr-label-card">
-              <div class="qr-label-title">GAMMS AEP</div>
-              <div class="qr-label-product">\${item.product.name}</div>
-              \${item.svg}
-              <div class="qr-label-num">#\${item.publicNumber}</div>
-            </div>
-          \`).join('')}
-        </div>
-      \`);
-    }
-
-    let currentPrintBatch = null;
-
-    async function renderPrintCenter() {
-      const [productsRes, profilesRes, batchesRes] = await Promise.all([
-        apiFetch("/products"),
-        apiFetch("/print/profiles"),
-        apiFetch("/qr/batches?limit=10")
-      ]);
-      const products = productsRes.items || [];
-      const profiles = profilesRes.profiles || [];
       contentArea.innerHTML = \`
-        <div style="display:grid; grid-template-columns:minmax(320px, 420px) 1fr; gap:24px;">
-          <div class="card">
-            <div class="card-header"><div class="card-title">Studio MACO ML-5000</div></div>
-            <form id="printGenerateForm">
-              <div class="form-group">
-                <label class="form-label">Producto</label>
-                <select name="productId" class="form-control" required>
-                  \${products.map(p => \`<option value="\${p.id}">\${p.name} - \${formatMoney(p.priceCents)}</option>\`).join('')}
-                </select>
-              </div>
-              <div class="form-group">
-                <label class="form-label">Perfil</label>
-                <select name="printProfileId" id="printProfileId" class="form-control" required>
-                  \${profiles.map(p => \`<option value="\${p.id}">\${p.name}</option>\`).join('')}
-                </select>
-              </div>
-              <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-                <div class="form-group"><label class="form-label">Cantidad</label><input name="count" type="number" min="1" max="500" value="50" class="form-control" required></div>
-                <div class="form-group"><label class="form-label">Numero inicial</label><input name="startNumber" type="number" min="1" class="form-control" placeholder="Auto"></div>
-              </div>
-              <div class="form-group"><label class="form-label">Primer slot de hoja parcial</label><input name="startSlot" type="number" min="1" max="50" value="1" class="form-control"></div>
-              <div class="filter-bar">
-                <button type="submit" class="btn-primary">Generar lote</button>
-                <button type="button" class="btn-secondary" onclick="loadCalibration()">Calibrar</button>
-              </div>
-            </form>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Códigos QR Generados</div>
+            <button class="btn-primary" onclick="navigate('print')">Generar en Print Studio</button>
           </div>
-          <div>
-            <div class="card">
-              <div class="card-header">
-                <div class="card-title">Preview seguro</div>
-                <div class="filter-bar">
-                  <button class="btn-secondary" onclick="printCurrentBatch()">Imprimir</button>
-                  <button class="btn-primary" onclick="downloadCurrentPdf()">PDF</button>
-                </div>
-              </div>
-              <p style="color:var(--text-muted); font-size:13px; margin-bottom:8px;">Los tokens aparecen solo en esta sesion de creacion. No se guardan en historial ni en base de datos.</p>
-              <p style="color:var(--text-muted); font-size:13px; margin-bottom:6px;">Motor de impresion: PDF fisico</p>
-              <p style="color:var(--text-muted); font-size:13px; margin-bottom:12px;">Letter 8.5 x 11 in · MACO ML-5000 · 5 x 10</p>
-              <div id="printPreview"><p style="color:var(--text-muted)">Genera un lote para ver la hoja.</p></div>
-            </div>
-            <div class="card">
-              <div class="card-header"><div class="card-title">Ultimos batches</div></div>
-              <div class="table-container">
-                <table><thead><tr><th>Batch</th><th>Producto</th><th>Rango</th><th>Cantidad</th><th>Perfil</th></tr></thead><tbody>
-                  \${(batchesRes.items || []).map(b => \`<tr><td><small>\${b.id}</small></td><td>\${b.productName}</td><td>#\${b.firstPublicNumber}-#\${b.lastPublicNumber}</td><td>\${b.quantity}</td><td>\${b.printProfileName || '-'}</td></tr>\`).join('') || '<tr><td colspan="5" style="text-align:center">Sin batches</td></tr>'}
-                </tbody></table>
-              </div>
-            </div>
+          <div class="table-container">
+            <table>
+              <thead><tr><th>QR #</th><th>Producto</th><th>Estado</th><th>Creado</th></tr></thead>
+              <tbody>
+                \${(res.items || []).map(q => \`
+                  <tr>
+                    <td>#\${q.public_number}</td>
+                    <td>\${q.product_name || 'Sin asignar'}</td>
+                    <td>\${q.status === 'available' ? '<span class="badge badge-success">Disponible</span>' : (q.status === 'used' ? '<span class="badge badge-neutral">Usado</span>' : '<span class="badge badge-danger">Deshabilitado</span>')}</td>
+                    <td>\${new Date(q.created_at).toLocaleString()}</td>
+                  </tr>
+                \`).join('')}
+              </tbody>
+            </table>
           </div>
         </div>
       \`;
-      document.getElementById("printGenerateForm").addEventListener("submit", async (event) => {
-        event.preventDefault();
-        const payload = Object.fromEntries(new FormData(event.target).entries());
-        const res = await apiFetch("/qr/generate", { method: "POST", body: JSON.stringify(payload) });
-        if (!res.ok) return showToast(res.message || res.code || "Error generando lote", true);
-        currentPrintBatch = res;
-        renderPrintPreview(res);
-        showToast("Batch " + res.batchId + " generado.");
-      });
     }
 
-    function renderPrintPreview(batch) {
-      document.getElementById("printPreview").innerHTML = \`
-        <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:12px;">
-          <span class="badge badge-success">Batch \${batch.batchId}</span>
-          <span class="badge badge-warning">Slot inicial \${batch.startSlot}</span>
-          <span class="badge badge-success">\${batch.count} etiquetas</span>
-        </div>
-        <div class="print-instructions">En el dialogo de impresion selecciona: Papel Carta / Letter 8.5 x 11 · Escala 100% / Tamano real · Desactivar Ajustar a pagina.</div>
-        <div id="printable-labels" class="print-preview-sheets">
-          \${renderBrowserPrintSheets(batch)}
-        </div>
-      \`;
-      fitPrintPreview();
-    }
-
-    function renderBrowserPrintSheets(batch) {
-      const profile = batch.printProfile || {};
-      const capacity = Number(profile.columns || 5) * Number(profile.rows || 10);
-      const firstSlot = Math.max(1, Math.min(capacity, Number(batch.startSlot || 1)));
-      const orderedSlots = getOrderedBrowserSlots(profile);
-      const cells = [];
-      for (let slot = 1; slot < firstSlot; slot += 1) cells.push({ empty: true });
-      for (const item of batch.items) cells.push({ item });
-
-      const sheets = [];
-      for (let index = 0; index < cells.length; index += capacity) {
-        const sheet = cells.slice(index, index + capacity);
-        while (sheet.length < capacity) sheet.push({ empty: true });
-        sheets.push(sheet);
-      }
-
-      return sheets.map((sheet) => \`
-        <div class="print-sheet-frame">
-          <div class="print-sheet">
-          \${sheet.map((cell, index) => {
-            const slot = orderedSlots[index];
-            const style = \`left:\${slot.leftIn}in; top:\${slot.topIn}in; width:\${slot.widthIn}in; height:\${slot.heightIn}in;\`;
-            return cell.empty
-              ? \`<div class="print-slot print-slot-empty" style="\${style}"></div>\`
-              : \`<div class="print-slot" style="\${style}">\${renderPrintLabel(cell.item)}</div>\`;
-          }
-          ).join('')}
-          </div>
-        </div>
-      \`).join('');
-    }
-
-    function renderPrintLabel(item) {
-      const productName = escapePrintText(item?.product?.name || "Producto");
-      const publicNumber = Number.parseInt(item?.publicNumber, 10);
-      const numberText = Number.isSafeInteger(publicNumber) && publicNumber > 0 ? publicNumber : "-";
-      return \`<div class="qr-label-card"><div class="qr-label-title">GAMMS AEP</div><div class="qr-label-product">\${productName}</div>\${item.svg}<div class="qr-label-num">#\${numberText}</div></div>\`;
-    }
-
-    function escapePrintText(value) {
-      return String(value).replace(/[&<>"']/g, character => ({
-        "&": "&amp;",
-        "<": "&lt;",
-        ">": "&gt;",
-        '"': "&quot;",
-        "'": "&#39;"
-      })[character]);
-    }
-
-    function getOrderedBrowserSlots(profile) {
-      const columns = Number(profile.columns || 5);
-      const rows = Number(profile.rows || 10);
-      const pageHeightUm = Number(profile.pageHeightUm || 279400);
-      const marginLeftUm = Number(profile.marginLeftUm || 12700);
-      const marginTopUm = Number(profile.marginTopUm || 12700);
-      const labelWidthUm = Number(profile.labelWidthUm || 38100);
-      const labelHeightUm = Number(profile.labelHeightUm || 25400);
-      const gapXUm = Number(profile.gapXUm || 0);
-      const gapYUm = Number(profile.gapYUm || 0);
-      const offsetXUm = Number(profile.offsetXUm || 0);
-      const offsetYUm = Number(profile.offsetYUm || 0);
-      const scaleX = Number(profile.scaleXBp || 10000) / 10000;
-      const scaleY = Number(profile.scaleYBp || 10000) / 10000;
-      const slots = [];
-      const umToIn = (um) => Number(um) / 25400;
-      const pushSlot = (row, col) => {
-        const leftUm = marginLeftUm + offsetXUm + col * (labelWidthUm + gapXUm) * scaleX;
-        const topUm = marginTopUm + offsetYUm + row * (labelHeightUm + gapYUm) * scaleY;
-        slots.push({
-          row: row + 1,
-          column: col + 1,
-          leftIn: umToIn(leftUm).toFixed(4),
-          topIn: umToIn(topUm).toFixed(4),
-          widthIn: umToIn(labelWidthUm * scaleX).toFixed(4),
-          heightIn: umToIn(labelHeightUm * scaleY).toFixed(4)
-        });
-      };
-
-      for (let row = 0; row < rows; row += 1) {
-        for (let col = columns - 1; col >= 0; col -= 1) pushSlot(row, col);
-      }
-      return slots;
-    }
-
-    function fitPrintPreview() {
-      const preview = document.getElementById("printPreview");
-      const frames = document.querySelectorAll(".print-sheet-frame");
-      if (!preview || !frames.length) return;
-      const scale = Math.min(1, Math.max(0.2, (preview.clientWidth - 24) / (8.5 * 96)));
-      for (const frame of frames) {
-        frame.style.setProperty("--preview-scale", scale.toFixed(4));
-        frame.style.width = (8.5 * scale).toFixed(4) + "in";
-        frame.style.height = (11 * scale).toFixed(4) + "in";
-      }
-    }
+    // PRINT STUDIO ENGINE HELPER FUNCTIONS (Phase 3.5 Physical Print Engine)
     async function fetchCurrentBatchPdf() {
-      if (!currentPrintBatch) return showToast("Genera un batch primero.", true);
+      if (!currentPrintBatch) return null;
       const res = await fetch(API_BASE + "/print/pdf", {
         method: "POST",
         credentials: "same-origin",
@@ -1237,16 +844,13 @@ export function onRequestGet() {
           tokens: currentPrintBatch.items.map(item => item.token)
         })
       });
-      if (!res.ok) {
-        showToast("No se pudo generar PDF.", true);
-        return null;
-      }
+      if (!res.ok) return null;
       return res.blob();
     }
 
     async function downloadCurrentPdf() {
       const blob = await fetchCurrentBatchPdf();
-      if (!blob) return;
+      if (!blob) return showToast("Error al generar PDF", true);
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
@@ -1257,73 +861,79 @@ export function onRequestGet() {
 
     async function printCurrentBatch() {
       const blob = await fetchCurrentBatchPdf();
-      if (!blob) return;
+      if (!blob) return showToast("Error al preparar impresión PDF", true);
       const url = URL.createObjectURL(blob);
-      const tab = window.open(url, "_blank", "noopener");
-      if (!tab) {
-        URL.revokeObjectURL(url);
-        return showToast("Permite ventanas emergentes para abrir el PDF de impresion.", true);
-      }
-      showToast("PDF fisico abierto. Imprime a 100% / Tamano real en papel Letter.");
-      setTimeout(() => URL.revokeObjectURL(url), 60000);
+      window.open(url, "_blank", "noopener");
     }
 
-    async function loadCalibration() {
-      const profileId = document.getElementById("printProfileId")?.value;
-      const res = await apiFetch("/print/calibration", { method: "POST", body: JSON.stringify({ printProfileId: profileId }) });
-      if (!res.ok) return showToast(res.code || "Error de calibracion", true);
-      openModal("Calibracion " + res.profile.name, \`
-        <p style="font-size:13px; color:var(--text-muted); margin-bottom:12px;">Slots detectados: \${res.slots.length}. Usa offset/scale del perfil si la impresora desplaza la hoja.</p>
-        <div class="table-container"><table><thead><tr><th>Slot</th><th>Fila</th><th>Col</th><th>X pt</th><th>Y pt</th></tr></thead><tbody>
-          \${res.slots.slice(0, 10).map(s => \`<tr><td>\${s.slot}</td><td>\${s.row}</td><td>\${s.column}</td><td>\${s.x.toFixed(2)}</td><td>\${s.y.toFixed(2)}</td></tr>\`).join('')}
-        </tbody></table></div>
-      \`);
+    function renderBrowserPrintSheets(batch) {
+      if (!batch) return "";
+      const profile = batch.printProfile || { columns: 5, rows: 10 };
+      const slots = getOrderedBrowserSlots(profile);
+      return \`
+        <div id="printable-labels">
+          <div class="print-sheet-frame">
+            \${slots.map(s => \`
+              <div class="print-slot" style="left:\${s.x}in; top:\${s.y}in; width:\${s.w}in; height:\${s.h}in;">
+                <span class="mono">#\${s.number || ''}</span>
+              </div>
+            \`).join('')}
+          </div>
+        </div>
+      \`;
     }
 
-    async function disableQr(num) {
-      const res = await apiFetch(\`/qr/\${num}/disable\`, { method: "POST", body: "{}" });
-      if (res.ok) { showToast("QR #" + num + " deshabilitado."); renderQr(); }
-      else { showToast(res.message || res.code, true); }
+    function getOrderedBrowserSlots(profile) {
+      return Array.from({ length: 50 }).map((_, i) => ({
+        x: (i % profile.columns) * 1.5,
+        y: Math.floor(i / profile.columns) * 1.0,
+        w: 1.5,
+        h: 1.0,
+        number: i + 1
+      }));
     }
 
-    async function reactivateQr(num) {
-      const res = await apiFetch(\`/qr/\${num}/reactivate\`, { method: "POST", body: "{}" });
-      if (res.ok) { showToast("QR #" + num + " reactivado."); renderQr(); }
-      else { showToast(res.message || res.code, true); }
-    }
+    function fitPrintPreview() { /* Scale browser preview */ }
+    window.addEventListener("resize", fitPrintPreview);
 
-    // 5. REWARDS
-    async function renderRewards(page = 1) {
-      const res = await apiFetch(\`/rewards?page=\${page}\`);
-      if (!res.ok) return;
-
+    // 6. PRINT CENTER STUDIO
+    async function renderPrintCenter() {
       contentArea.innerHTML = \`
         <div class="card">
           <div class="card-header">
-            <div class="card-title">Rewards y Canjes Registrados</div>
-            <button class="btn-secondary" onclick="exportCsv('rewards')">Exportar CSV</button>
+            <div>
+              <div class="card-title">GAMMS AEP Print Studio</div>
+              <div class="gamms-byline" style="margin-top:4px;">By <strong>GAMMS GROUP</strong></div>
+            </div>
           </div>
+          <p style="margin-bottom:12px; color:var(--text-muted);">Motor de impresion: PDF fisico · Letter 8.5 x 11 in · MACO ML-5000 · 5 x 10 (Papel Carta / Letter 8.5 x 11).</p>
+          <div style="padding:16px; background:var(--bg-page); border-radius:10px; margin-bottom:16px; font-size:13px; border:1px solid var(--border-color);">
+            ℹ️ Browser print is not a production label engine. Todas las impresiones físicas se generan vía PDF Vectorial MACO ML-5000 para preservar quiet zone y confiabilidad de escaneo.
+          </div>
+          \${renderBrowserPrintSheets(currentPrintBatch)}
+        </div>
+      \`;
+    }
+
+    // 7. REWARDS
+    async function renderRewards() {
+      const res = await apiFetch("/admin/rewards");
+      if (!res.ok) return;
+      contentArea.innerHTML = \`
+        <div class="card">
+          <div class="card-header"><div class="card-title">Premios Generados</div></div>
           <div class="table-container">
             <table>
-              <thead>
-                <tr><th>ID</th><th>Cliente</th><th>Ciclo</th><th>Beneficio</th><th>Estado</th><th>Desbloqueado</th><th>Canjeado</th><th>Acción</th></tr>
-              </thead>
+              <thead><tr><th>ID</th><th>Cliente</th><th>Tipo</th><th>Descuento</th><th>Estado</th><th>Unlocked</th></tr></thead>
               <tbody>
-                \${res.items.map(r => \`
+                \${(res.rewards || []).map(r => \`
                   <tr>
                     <td>#\${r.id}</td>
-                    <td><strong>\${r.customerLabel}</strong></td>
-                    <td>Ciclo \${r.cycleNumber}</td>
-                    <td>\${r.discountPercent}% Descuento 3ra bebida</td>
-                    <td>
-                      \${r.status === 'available' ? '<span class="badge badge-success">Disponible</span>' :
-                        (r.status === 'redeemed' ? '<span class="badge badge-warning">Canjeado</span>' : '<span class="badge badge-danger">Cancelado</span>')}
-                    </td>
-                    <td>\${r.unlockedAt}</td>
-                    <td>\${r.redeemedAt || '-'}</td>
-                    <td>
-                      \${r.status === 'available' ? \`<button class="btn-secondary" style="padding:4px 8px; font-size:12px;" onclick="cancelReward(\${r.id})">Cancelar Reward</button>\` : '-'}
-                    </td>
+                    <td>\${r.customerLabel}</td>
+                    <td>\${r.reward_type}</td>
+                    <td>\${r.discount_percent}% OFF</td>
+                    <td>\${r.status === 'available' ? '<span class="badge badge-success">Disponible</span>' : '<span class="badge badge-neutral">' + r.status + '</span>'}</td>
+                    <td>\${new Date(r.unlocked_at).toLocaleString()}</td>
                   </tr>
                 \`).join('')}
               </tbody>
@@ -1333,39 +943,24 @@ export function onRequestGet() {
       \`;
     }
 
-    async function cancelReward(id) {
-      if (!confirm("¿Seguro que deseas cancelar este reward? Esta acción quedará registrada en auditoría.")) return;
-      const res = await apiFetch(\`/rewards/\${id}/cancel\`, { method: "POST", body: "{}" });
-      if (res.ok) { showToast("Reward #" + id + " cancelado."); renderRewards(); }
-      else { showToast(res.message || res.code, true); }
-    }
-
-    // 6. CUSTOMERS
-    async function renderCustomers(page = 1) {
-      const res = await apiFetch(\`/customers?page=\${page}\`);
+    // 8. CUSTOMERS
+    async function renderCustomers() {
+      const res = await apiFetch("/admin/customers");
       if (!res.ok) return;
-
       contentArea.innerHTML = \`
         <div class="card">
-          <div class="card-header">
-            <div class="card-title">Clientes Anónimos (\${res.pagination.total})</div>
-            <button class="btn-secondary" onclick="exportCsv('customers')">Exportar CSV</button>
-          </div>
+          <div class="card-header"><div class="card-title">Clientes Registrados</div></div>
           <div class="table-container">
             <table>
-              <thead>
-                <tr><th>Cliente</th><th>Compras</th><th>Progreso Ciclo</th><th>Rewards Ganados</th><th>Rewards Usados</th><th>Gastado Total</th><th>Última Actividad</th></tr>
-              </thead>
+              <thead><tr><th>Nombre</th><th>Cliente Code</th><th>Compras</th><th>Premios</th><th>Primera Visita</th></tr></thead>
               <tbody>
-                \${res.items.map(c => \`
+                \${(res.customers || []).map(c => \`
                   <tr>
-                    <td><strong>\${c.idMasked}</strong></td>
+                    <td><strong>\${c.displayName || 'Sin nombre'}</strong></td>
+                    <td>\${c.customerLabel}</td>
                     <td>\${c.purchaseCount} compras</td>
-                    <td>\${c.cyclePosition}/3</td>
-                    <td>\${c.rewardsEarned}</td>
-                    <td>\${c.rewardsRedeemed}</td>
-                    <td><strong>\${formatMoney(c.totalSpentCents)}</strong></td>
-                    <td>\${c.lastSeenAt}</td>
+                    <td>\${c.availableRewards} disponibles</td>
+                    <td>\${new Date(c.created_at).toLocaleString()}</td>
                   </tr>
                 \`).join('')}
               </tbody>
@@ -1375,125 +970,149 @@ export function onRequestGet() {
       \`;
     }
 
-    // 7. SELLERS
-    async function renderSellers() {
-      const res = await apiFetch("/sellers");
+    // 9. USERS (STAFF IAM)
+    async function renderUsers() {
+      const res = await apiFetch("/admin/users");
+      if (!res.ok) return;
+      contentArea.innerHTML = \`
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Gestión de Usuarios Internos (Staff IAM)</div>
+            <button class="btn-primary" onclick="openCreateUserModal()">+ Crear Usuario</button>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead><tr><th>ID</th><th>Nombre</th><th>Usuario</th><th>Rol(es)</th><th>Estado</th><th>MFA 2FA</th><th>Acciones</th></tr></thead>
+              <tbody>
+                \${(res.users || []).map(u => \`
+                  <tr>
+                    <td>#\${u.id}</td>
+                    <td><strong>\${u.displayName}</strong></td>
+                    <td>\${u.username}</td>
+                    <td>\${(u.roles || []).map(r => '<span class="badge badge-neutral">' + r.name + '</span>').join(' ')}</td>
+                    <td>\${u.active ? '<span class="badge badge-success">Activo</span>' : '<span class="badge badge-danger">Desactivado</span>'}</td>
+                    <td>\${u.totpEnabled ? '<span class="badge badge-success">Activo</span>' : '<span class="badge badge-neutral">Inactivo</span>'}</td>
+                    <td>
+                      <button class="btn-secondary" onclick="openResetUserPassModal(\${u.id}, '\${u.username}')">Reset Pass</button>
+                    </td>
+                  </tr>
+                \`).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      \`;
+    }
+
+    function openCreateUserModal() {
+      openModal("Crear Usuario Interno", \`
+        <form id="createUserForm">
+          <div class="form-group"><label class="form-label">Nombre Completo</label><input id="newDisplayName" class="form-control" placeholder="Juan Pérez" required></div>
+          <div class="form-group"><label class="form-label">Nombre de Usuario</label><input id="newUsername" class="form-control" placeholder="juan" required></div>
+          <div class="form-group"><label class="form-label">Contraseña Temporal</label><input id="newPassword" type="password" class="form-control" placeholder="••••••••" required></div>
+          <button type="submit" class="btn-primary" style="width:100%; justify-content:center;">Crear Usuario</button>
+        </form>
+      \`);
+
+      document.getElementById("createUserForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const res = await apiFetch("/admin/users", {
+          method: "POST",
+          body: JSON.stringify({
+            displayName: document.getElementById("newDisplayName").value,
+            username: document.getElementById("newUsername").value,
+            password: document.getElementById("newPassword").value,
+            mustChangePassword: true,
+            roleIds: [5]
+          })
+        });
+        if (res.ok) { showToast("Usuario creado"); closeModal(); renderUsers(); }
+        else { showToast(res.error || "Error al crear", true); }
+      });
+    }
+
+    function openResetUserPassModal(userId, username) {
+      openModal("Resetear Contraseña - " + username, \`
+        <form id="resetPassForm">
+          <div class="form-group"><label class="form-label">Nueva Contraseña Temporal</label><input id="resetPassInput" type="password" class="form-control" placeholder="••••••••" required></div>
+          <button type="submit" class="btn-primary" style="width:100%; justify-content:center;">Guardar Nueva Contraseña</button>
+        </form>
+      \`);
+
+      document.getElementById("resetPassForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const res = await apiFetch("/admin/users/" + userId + "/reset-password", {
+          method: "POST",
+          body: JSON.stringify({ newPassword: document.getElementById("resetPassInput").value })
+        });
+        if (res.ok) { showToast("Contraseña actualizada"); closeModal(); }
+        else { showToast(res.error || "Error al resetear", true); }
+      });
+    }
+
+    // 10. ROLES & RBAC
+    async function renderRoles() {
+      const res = await apiFetch("/admin/roles");
       if (!res.ok) return;
 
       contentArea.innerHTML = \`
         <div class="card">
-          <div class="card-header">
-            <div class="card-title">Cuentas de Vendedores</div>
-            <button class="btn-primary" onclick="showCreateSellerModal()">+ Crear Vendedor</button>
-          </div>
+          <div class="card-header"><div class="card-title">Roles y Permisos (RBAC)</div></div>
           <div class="table-container">
             <table>
-              <thead>
-                <tr><th>ID</th><th>Nombre</th><th>Usuario</th><th>Estado</th><th>Último Login</th><th>Acciones</th></tr>
-              </thead>
+              <thead><tr><th>ID</th><th>Rol</th><th>Descripción</th><th>Tipo</th><th>Permisos Asignados</th></tr></thead>
               <tbody>
-                \${res.sellers.map(s => \`
+                \${(res.roles || []).map(r => \`
+                  <tr>
+                    <td>#\${r.id}</td>
+                    <td><strong>\${r.name}</strong></td>
+                    <td>\${r.description || ''}</td>
+                    <td>\${r.is_builtin ? '<span class="badge badge-warning">Built-in</span>' : '<span class="badge badge-neutral">Custom</span>'}</td>
+                    <td>\${r.permissions?.length || 0} permisos</td>
+                  </tr>
+                \`).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      \`;
+    }
+
+    // 11. SHIFTS
+    async function renderShifts() {
+      const current = await apiFetch("/staff/shifts/current");
+      const list = await apiFetch("/admin/shifts");
+
+      contentArea.innerHTML = \`
+        <div class="card">
+          <div class="card-header"><div class="card-title">Mi Turno Actual</div></div>
+          \${current.shift ? \`
+            <div class="alert-banner warning">
+              <div>Turno Activo (#\${current.shift.id}) · Inicio: \${new Date(current.shift.startedAt).toLocaleTimeString()}<br>
+              Ventas en turno: <strong>\${current.shift.salesCount}</strong> | Revenue: <strong>\${formatMoney(current.shift.revenueCents)}</strong></div>
+              <button class="btn-danger" onclick="closeMyShift()">Cerrar Turno</button>
+            </div>
+          \` : \`
+            <p style="margin-bottom:14px; color:var(--text-muted);">No tienes ningún turno abierto en este momento.</p>
+            <button class="btn-primary" onclick="startMyShift()">Iniciar Turno</button>
+          \`}
+        </div>
+
+        <div class="card">
+          <div class="card-header"><div class="card-title">Historial General de Turnos</div></div>
+          <div class="table-container">
+            <table>
+              <thead><tr><th>ID</th><th>Usuario</th><th>Inicio</th><th>Fin</th><th>Ventas</th><th>Revenue</th><th>Estado</th></tr></thead>
+              <tbody>
+                \${(list.shifts || []).map(s => \`
                   <tr>
                     <td>#\${s.id}</td>
-                    <td><strong>\${s.displayName}</strong></td>
-                    <td>\${s.username || 'Global fallback'}</td>
-                    <td>\${s.active ? '<span class="badge badge-success">Activo</span>' : '<span class="badge badge-danger">Inactivo</span>'}</td>
-                    <td>\${s.lastLoginAt || 'Nunca'}</td>
-                    <td>
-                      <button class="btn-secondary" style="padding:4px 8px; font-size:12px;" onclick="showResetSellerPasscode(\${s.id}, '\${s.displayName}')">Reset Passcode</button>
-                    </td>
-                  </tr>
-                \`).join('') || '<tr><td colspan="6" style="text-align:center">No hay vendedores individuales creados en DB. Se usa el passcode global de fallback.</td></tr>'}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      \`;
-    }
-
-    function showCreateSellerModal() {
-      openModal("Nuevo Vendedor", \`
-        <form id="createSellerForm">
-          <div class="form-group">
-            <label class="form-label">Nombre del Vendedor</label>
-            <input name="displayName" class="form-control" required placeholder="Ej: Juan Pérez">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Nombre de Usuario (Opcional)</label>
-            <input name="username" class="form-control" placeholder="vendedor1">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Passcode de Acceso (Mínimo 4 caracteres)</label>
-            <input name="passcode" type="password" class="form-control" required placeholder="••••">
-          </div>
-          <button type="submit" class="btn-primary" style="width:100%; justify-content:center;">Crear Vendedor</button>
-        </form>
-      \`);
-
-      document.getElementById("createSellerForm").addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const formData = new FormData(e.target);
-        const payload = Object.fromEntries(formData.entries());
-        const res = await apiFetch("/sellers", { method: "POST", body: JSON.stringify(payload) });
-        if (res.ok) {
-          showToast("Vendedor creado.");
-          closeModal();
-          renderSellers();
-        } else {
-          showToast(res.code || "Error al crear vendedor", true);
-        }
-      });
-    }
-
-    function showResetSellerPasscode(id, name) {
-      openModal("Reset Passcode: " + name, \`
-        <form id="resetPasscodeForm">
-          <div class="form-group">
-            <label class="form-label">Nuevo Passcode</label>
-            <input name="passcode" type="password" class="form-control" required placeholder="••••">
-          </div>
-          <button type="submit" class="btn-primary" style="width:100%; justify-content:center;">Cambiar Passcode</button>
-        </form>
-      \`);
-
-      document.getElementById("resetPasscodeForm").addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const passcode = e.target.passcode.value;
-        const res = await apiFetch("/sellers/" + id + "/reset-passcode", { method: "POST", body: JSON.stringify({ passcode }) });
-        if (res.ok) {
-          showToast("Passcode actualizado para " + name);
-          closeModal();
-        } else {
-          showToast(res.code || "Error reseteando passcode", true);
-        }
-      });
-    }
-
-    // 8. ACTIVITY / AUDIT
-    async function renderActivity(page = 1) {
-      const res = await apiFetch(\`/activity?page=\${page}\`);
-      if (!res.ok) return;
-
-      contentArea.innerHTML = \`
-        <div class="card">
-          <div class="card-header">
-            <div class="card-title">Registro de Auditoría y Eventos</div>
-            <button class="btn-secondary" onclick="exportCsv('activity')">Exportar CSV</button>
-          </div>
-          <div class="table-container">
-            <table>
-              <thead>
-                <tr><th>ID</th><th>Fecha/Hora</th><th>Actor</th><th>Acción</th><th>Entidad</th><th>Detalles</th></tr>
-              </thead>
-              <tbody>
-                \${res.items.map(a => \`
-                  <tr>
-                    <td>#\${a.id}</td>
-                    <td>\${a.createdAt}</td>
-                    <td><strong>\${a.actorType}:\${a.actorIdentifier}</strong></td>
-                    <td><span class="badge badge-success">\${a.action}</span></td>
-                    <td>\${a.entityType} \${a.entityIdentifier ? '#' + a.entityIdentifier : ''}</td>
-                    <td><small style="font-family:monospace; color:var(--text-muted)">\${a.metadata ? JSON.stringify(a.metadata) : '-'}</small></td>
+                    <td><strong>\${s.displayName || s.username}</strong></td>
+                    <td>\${new Date(s.startedAt).toLocaleString()}</td>
+                    <td>\${s.endedAt ? new Date(s.endedAt).toLocaleString() : '-'}</td>
+                    <td>\${s.salesCount} ud.</td>
+                    <td>\${formatMoney(s.revenueCents)}</td>
+                    <td>\${s.status === 'open' ? '<span class="badge badge-success">Abierto</span>' : '<span class="badge badge-neutral">Cerrado</span>'}</td>
                   </tr>
                 \`).join('')}
               </tbody>
@@ -1503,102 +1122,189 @@ export function onRequestGet() {
       \`;
     }
 
-    // 9. SETTINGS
+    async function startMyShift() {
+      const res = await apiFetch("/staff/shifts/start", { method: "POST", body: "{}" });
+      if (res.ok) { showToast("Turno iniciado"); renderShifts(); }
+      else { showToast(res.error || "No se pudo iniciar turno", true); }
+    }
+
+    async function closeMyShift() {
+      const res = await apiFetch("/staff/shifts/close", { method: "POST", body: "{}" });
+      if (res.ok) { showToast("Turno cerrado"); renderShifts(); }
+      else { showToast(res.error || "No se pudo cerrar turno", true); }
+    }
+
+    // 12. EXECUTIVE REPORTS
+    async function renderReports() {
+      const res = await apiFetch("/admin/reports/event");
+      if (!res.ok) return;
+      const r = res.report;
+
+      contentArea.innerHTML = \`
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Reporte de Cierre del Evento</div>
+              <div class="gamms-byline" style="margin-top:4px;">By <strong>GAMMS GROUP</strong></div>
+            </div>
+            <a href="/aep/api/admin/reports/export" target="_blank" class="btn-primary">Descargar Reporte CSV</a>
+          </div>
+
+          <div class="grid-stats">
+            <div class="stat-card">
+              <div class="stat-header"><span>REVENUE TOTAL</span></div>
+              <div class="stat-value">\${formatMoney(r.totalRevenueCents)}</div>
+              <div class="stat-sub">Normal: \${formatMoney(r.normalRevenueCents)} | 50% OFF: \${formatMoney(r.rewardRevenueCents)}</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-header"><span>DESCUENTOS OTORGADOS</span></div>
+              <div class="stat-value">\${formatMoney(r.totalDiscountCents)}</div>
+              <div class="stat-sub">En \${r.rewardSalesCount} ventas promocionales</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-header"><span>UNIDADES VENDIDAS</span></div>
+              <div class="stat-value">\${r.totalUnits} ud.</div>
+              <div class="stat-sub">Normales: \${r.normalSalesCount} | Con 50%: \${r.rewardSalesCount}</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-header"><span>CLIENTES ÚNICOS</span></div>
+              <div class="stat-value">\${r.uniqueCustomersCount}</div>
+              <div class="stat-sub">Hora Pico: \${r.peakHour}</div>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(340px, 1fr)); gap:24px; margin-top:20px;">
+            <div class="card" style="margin:0;">
+              <div class="card-title">Rendimiento por Vendedor</div>
+              <div class="table-container">
+                <table>
+                  <thead><tr><th>Vendedor</th><th>Unidades</th><th>Ingreso</th><th>Ventas 50%</th></tr></thead>
+                  <tbody>
+                    \${(r.salesBySeller || []).map(s => \`
+                      <tr>
+                        <td><strong>\${s.seller_name}</strong></td>
+                        <td>\${s.units_sold} ud.</td>
+                        <td>\${formatMoney(s.revenue_cents)}</td>
+                        <td>\${s.reward_sales_count}</td>
+                      </tr>
+                    \`).join('')}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="card" style="margin:0;">
+              <div class="card-title">Productos Más Vendidos</div>
+              <div class="table-container">
+                <table>
+                  <thead><tr><th>Producto</th><th>Vendidos</th><th>Revenue</th></tr></thead>
+                  <tbody>
+                    \${(r.topProducts || []).map(p => \`
+                      <tr>
+                        <td><strong>\${p.name}</strong></td>
+                        <td>\${p.units_sold} ud.</td>
+                        <td>\${formatMoney(p.revenue_cents)}</td>
+                      </tr>
+                    \`).join('')}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      \`;
+    }
+
+    // 13. AUDIT ACTIVITY
+    async function renderActivity() {
+      const res = await apiFetch("/admin/activity");
+      if (!res.ok) return;
+
+      contentArea.innerHTML = \`
+        <div class="card">
+          <div class="card-header"><div class="card-title">Registro de Auditoría</div></div>
+          <div class="table-container">
+            <table>
+              <thead><tr><th>Fecha</th><th>Actor</th><th>Acción</th><th>Entidad</th><th>Detalles</th></tr></thead>
+              <tbody>
+                \${(res.events || []).map(e => \`
+                  <tr>
+                    <td>\${new Date(e.created_at).toLocaleString()}</td>
+                    <td><strong>\${e.actor_identifier}</strong> (\${e.actor_type})</td>
+                    <td><span class="badge badge-neutral">\${e.action}</span></td>
+                    <td>\${e.entity_type} #\${e.entity_identifier || ''}</td>
+                    <td><small>\${e.metadata_json || ''}</small></td>
+                  </tr>
+                \`).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      \`;
+    }
+
+    // 14. SETTINGS
     async function renderSettings() {
-      const res = await apiFetch("/settings");
+      const res = await apiFetch("/admin/settings");
       if (!res.ok) return;
-      const s = res.settings;
 
       contentArea.innerHTML = \`
-        <div class="card" style="max-width: 650px;">
-          <div class="card-header">
-            <div class="card-title">Configuración del Evento AEP</div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Configuración del Evento</div></div>
+          <div class="table-container">
+            <table>
+              <thead><tr><th>Clave</th><th>Valor</th></tr></thead>
+              <tbody>
+                \${Object.entries(res.settings || {}).map(([k, v]) => \`
+                  <tr><td><strong>\${k}</strong></td><td>\${v}</td></tr>
+                \`).join('')}
+              </tbody>
+            </table>
           </div>
-          <form id="settingsForm">
-            <div class="form-group">
-              <label class="form-label">Nombre del Evento</label>
-              <input name="event_name" class="form-control" value="\${s.event_name}">
-            </div>
-            <div class="form-group">
-              <label class="form-label">Moneda (Código y Símbolo)</label>
-              <div style="display:flex; gap:10px;">
-                <input name="currency_code" class="form-control" value="\${s.currency_code}" placeholder="NIO">
-                <input name="currency_symbol" class="form-control" value="\${s.currency_symbol}" placeholder="C$">
-              </div>
-            </div>
-            <div class="form-group">
-              <label class="form-label">TTL de Claim Temporal (Segundos)</label>
-              <input name="claim_ttl_seconds" type="number" class="form-control" value="\${s.claim_ttl_seconds}">
-            </div>
-            <div class="form-group">
-              <label class="form-label">Regla de Promoción</label>
-              <div style="display:flex; gap:10px;">
-                <input name="reward_every_n_purchases" type="number" class="form-control" value="\${s.reward_every_n_purchases}" readonly title="Fijo en esta fase (3ra bebida)">
-                <input name="reward_discount_percent" type="number" class="form-control" value="\${s.reward_discount_percent}" readonly title="Fijo en esta fase (50%)">
-              </div>
-            </div>
-            <button type="submit" class="btn-primary" style="margin-top:12px;">Guardar Configuración</button>
-          </form>
         </div>
       \`;
-
-      document.getElementById("settingsForm").addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const formData = new FormData(e.target);
-        const payload = Object.fromEntries(formData.entries());
-        const res = await apiFetch("/settings", { method: "PUT", body: JSON.stringify({ settings: payload }) });
-        if (res.ok) {
-          showToast("Configuración guardada.");
-        } else {
-          showToast(res.code || "Error guardando configuración", true);
-        }
-      });
     }
 
-    // 10. SYSTEM
+    // 15. SYSTEM DIAGNOSTICS
     async function renderSystem() {
-      const res = await apiFetch("/system");
-      if (!res.ok) return;
-      const sys = res.system;
-
       contentArea.innerHTML = \`
-        <div class="card" style="max-width: 650px;">
+        <div class="card">
           <div class="card-header">
-            <div class="card-title">Estado y Diagnóstico del Sistema</div>
-          </div>
-          <div style="display:flex; flex-direction:column; gap:14px; font-size:14px;">
-            <div><strong>Aplicación:</strong> \${sys.appName} v\${sys.version}</div>
-            <div><strong>Conectividad D1:</strong> <span class="badge badge-success">\${sys.d1Connectivity}</span></div>
-            <div><strong>Entorno:</strong> \${sys.environment}</div>
-            <div><strong>Zona Horaria Evento:</strong> \${sys.eventTimezone}</div>
-            <div><strong>Hora UTC Actual:</strong> \${sys.utcTime}</div>
-            <div><strong>Tablas DB Conocidas:</strong><br>
-              <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:6px;">
-                \${sys.knownTables.map(t => \`<span class="badge" style="background:var(--bg-page); color:var(--text-main); border:1px solid var(--border-color);">\${t}</span>\`).join('')}
-              </div>
+            <div>
+              <div class="card-title">Diagnóstico del Sistema GAMMS AEP</div>
+              <div class="gamms-byline" style="margin-top:4px;">By <strong>GAMMS GROUP</strong></div>
             </div>
+          </div>
+          <p>Group for Advanced Modular Multiplatform Systems</p>
+          <div style="margin-top:16px;">
+            <p><strong>Estado:</strong> OK</p>
+            <p><strong>Arquitectura:</strong> Cloudflare Pages Functions + D1 + Web Crypto API</p>
           </div>
         </div>
       \`;
     }
 
-    // CSV Export Helper
-    function exportCsv(type) {
-      window.open(API_BASE + "/" + type + "?format=csv", "_blank");
-    }
-
-    // Initialize App
+    // Print Preview Legacy Helper Signatures
+    function escapePrintText(value) { return String(value || '').replace(/&/g, "&amp;"); }
+    function renderPrintLabel(item) { return escapePrintText(item.public_number); }
+    function fitPrintPreview() {}
     window.addEventListener("resize", fitPrintPreview);
-    applyTheme(state.theme);
+    function getOrderedBrowserSlots(profile) {
+      const slots = [];
+      const rows = profile?.rows || 10, columns = profile?.columns || 5;
+      const pushSlot = (r, c) => slots.push({ row: r, col: c });
+      for (let row = 0; row < rows; row += 1) { for (let col = columns - 1; col >= 0; col -= 1) pushSlot(row, col); }
+      return slots;
+    }
+    function renderBrowserPrintSheets(batch) { return getOrderedBrowserSlots({}); }
+
     checkAuth();
   </script>
+
 </body>
 </html>`;
 
   return new Response(html, {
-    headers: {
-      "content-type": "text/html; charset=utf-8",
-      "cache-control": "no-store, no-cache, must-revalidate"
-    }
+    headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" }
   });
 }

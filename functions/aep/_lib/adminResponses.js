@@ -32,6 +32,10 @@ export function adminError(code, status = 400, details = null, extraHeaders = {}
   return adminJson(payload, { status, headers: extraHeaders });
 }
 
+export const jsonResponse = adminJson;
+export const errorJson = adminError;
+
+
 export function adminCsv(csvContent, filename = "export.csv") {
   const headers = new Headers(DEFAULT_SECURITY_HEADERS);
   headers.set("content-type", "text/csv; charset=utf-8");

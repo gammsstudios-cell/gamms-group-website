@@ -1,19 +1,28 @@
+// GET /aep/api/seller/claims/[code]
 import { previewClaim, sanitizeRedemptionError } from "../../../_lib/redemption.js";
-import { requireSellerAuth } from "../../../_lib/sellerAuth.js";
-import { json, safeError } from "../../../_lib/responses.js";
+import { requirePermission } from "../../../_lib/staffAuth.js";
+import { jsonResponse, errorJson } from "../../../_lib/adminResponses.js";
 
 export async function onRequestGet(context) {
-  const auth = await requireSellerAuth(context.request, context.env);
-  if (!auth.ok) return safeError(auth.code, auth.status);
+  const db = context.env.DB;
+  const perm = await requirePermission(context.request, context.env, db, "pos.access");
+  if (!perm.authorized) return perm.response;
 
-  const result = await previewClaim(context.env.DB, context.params.code);
-  if (!result.ok) return safeError(sanitizeRedemptionError(result.code), 200);
+  const result = await previewClaim(db, context.params.code);
+  if (!result.ok) {
+    return jsonResponse({
+      ok: false,
+      code: sanitizeRedemptionError(result.code),
+      error: result.error || "Claim no disponible"
+    }, 200);
+  }
 
-  return json({
+  return jsonResponse({
     ok: true,
     claim: result.claim,
-    qr: result.qr,
-    product: result.product,
-    pricing: result.pricing
+    customer: result.customer,
+    reward: result.reward,
+    preLinkedQr: result.preLinkedQr || null,
+    pricing: result.pricing || null
   });
 }

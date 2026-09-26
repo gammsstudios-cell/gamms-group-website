@@ -12,3 +12,8 @@ export function json(data, init = {}) {
 export function safeError(code, status = 200, headers) {
   return json({ ok: false, code }, { status, headers });
 }
+
+export function errorJson(code, status = 200, headers) {
+  return safeError(code, status, headers);
+}
+

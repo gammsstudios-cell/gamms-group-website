@@ -155,6 +155,16 @@ class FakeStatement {
       };
     }
 
+    if (this.sql.includes("FROM aep_settings")) {
+      if (this.params[0] === "event_active") return { value: "true" };
+      if (this.params[0] === "require_seller_shift") return { value: "false" };
+      return { value: "true" };
+    }
+
+    if (this.sql.includes("FROM customers")) {
+      return { display_name: "Matthew" };
+    }
+
     throw new Error(`Unhandled first SQL: ${this.sql}`);
   }
 
