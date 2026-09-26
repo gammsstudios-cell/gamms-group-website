@@ -9,25 +9,32 @@ import { verifyTotpCodeWithReplay, consumeRecoveryCodeAtomic, decryptTotpSecret 
 import { jsonResponse, errorJson } from "../../_lib/adminResponses.js";
 import { logAuditEvent } from "../../_lib/audit.js";
 
-const OWNER_MFA_LOCKOUT_KEY = "owner_mfa_lockout_state";
+const OWNER_MFA_PRINCIPAL_REF = "env:admin:mfa";
 const OWNER_MFA_LOCK_THRESHOLD = 5;
 const OWNER_MFA_LOCK_MS = 15 * 60 * 1000;
 
 async function getOwnerMfaLockoutState(db) {
-  if (!db) return { failedCount: 0, lockedUntil: null };
+  if (!db) return { ok: false, code: "OWNER_MFA_STATE_UNAVAILABLE" };
   try {
-    const row = await db.prepare("SELECT value FROM aep_settings WHERE key = ?")
-      .bind(OWNER_MFA_LOCKOUT_KEY)
+    const row = await db.prepare(`
+      SELECT failed_count, locked_until
+      FROM auth_principal_lockout_state
+      WHERE principal_ref = ?
+    `)
+      .bind(OWNER_MFA_PRINCIPAL_REF)
       .first();
-    if (!row?.value) return { failedCount: 0, lockedUntil: null };
-    const parsed = JSON.parse(row.value);
-    const failedCount = Number.isSafeInteger(parsed.failedCount) && parsed.failedCount > 0
-      ? parsed.failedCount
-      : 0;
-    const lockedUntil = typeof parsed.lockedUntil === "string" ? parsed.lockedUntil : null;
-    return { failedCount, lockedUntil };
+    if (!row) return { ok: true, failedCount: 0, lockedUntil: null };
+    const failedCount = Number(row.failed_count);
+    const lockedUntil = row.locked_until ?? null;
+    if (!Number.isSafeInteger(failedCount) || failedCount < 0) {
+      return { ok: false, code: "OWNER_MFA_STATE_UNAVAILABLE" };
+    }
+    if (lockedUntil !== null && (typeof lockedUntil !== "string" || Number.isNaN(Date.parse(lockedUntil)))) {
+      return { ok: false, code: "OWNER_MFA_STATE_UNAVAILABLE" };
+    }
+    return { ok: true, failedCount, lockedUntil };
   } catch {
-    return { failedCount: 0, lockedUntil: null };
+    return { ok: false, code: "OWNER_MFA_STATE_UNAVAILABLE" };
   }
 }
 
@@ -37,35 +44,64 @@ function isOwnerMfaLocked(state, nowMs = Date.now()) {
   return Number.isFinite(lockedUntilMs) && lockedUntilMs > nowMs;
 }
 
-async function saveOwnerMfaLockoutState(db, state) {
-  if (!db) return;
-  await db.prepare(`
-    INSERT INTO aep_settings (key, value, updated_at)
-    VALUES (?, ?, CURRENT_TIMESTAMP)
-    ON CONFLICT(key) DO UPDATE SET
-      value = excluded.value,
-      updated_at = CURRENT_TIMESTAMP
-  `).bind(OWNER_MFA_LOCKOUT_KEY, JSON.stringify(state)).run();
-}
-
 async function recordOwnerMfaFailure(db) {
+  if (!db) return { ok: false, code: "OWNER_MFA_STATE_UNAVAILABLE" };
   const now = Date.now();
-  const state = await getOwnerMfaLockoutState(db);
-  if (isOwnerMfaLocked(state, now)) return state;
-
-  const failedCount = state.failedCount + 1;
-  const nextState = {
-    failedCount,
-    lockedUntil: failedCount >= OWNER_MFA_LOCK_THRESHOLD
-      ? new Date(now + OWNER_MFA_LOCK_MS).toISOString()
-      : null
-  };
-  await saveOwnerMfaLockoutState(db, nextState);
-  return nextState;
+  const nowIso = new Date(now).toISOString();
+  const lockedUntilIso = new Date(now + OWNER_MFA_LOCK_MS).toISOString();
+  try {
+    const row = await db.prepare(`
+      INSERT INTO auth_principal_lockout_state (
+        principal_ref, failed_count, locked_until, updated_at
+      )
+      VALUES (?, 1, NULL, CURRENT_TIMESTAMP)
+      ON CONFLICT(principal_ref) DO UPDATE SET
+        failed_count = CASE
+          WHEN locked_until IS NOT NULL AND locked_until > ? THEN failed_count
+          WHEN locked_until IS NOT NULL AND locked_until <= ? THEN 1
+          ELSE failed_count + 1
+        END,
+        locked_until = CASE
+          WHEN locked_until IS NOT NULL AND locked_until > ? THEN locked_until
+          WHEN locked_until IS NOT NULL AND locked_until <= ? THEN NULL
+          WHEN failed_count + 1 >= ? THEN ?
+          ELSE NULL
+        END,
+        updated_at = CURRENT_TIMESTAMP
+      RETURNING failed_count, locked_until
+    `).bind(
+      OWNER_MFA_PRINCIPAL_REF,
+      nowIso,
+      nowIso,
+      nowIso,
+      nowIso,
+      OWNER_MFA_LOCK_THRESHOLD,
+      lockedUntilIso
+    ).first();
+    if (!row) return { ok: false, code: "OWNER_MFA_STATE_UNAVAILABLE" };
+    return { ok: true, failedCount: Number(row.failed_count), lockedUntil: row.locked_until ?? null };
+  } catch {
+    return { ok: false, code: "OWNER_MFA_STATE_UNAVAILABLE" };
+  }
 }
 
 async function clearOwnerMfaFailures(db) {
-  await saveOwnerMfaLockoutState(db, { failedCount: 0, lockedUntil: null });
+  if (!db) return { ok: false, code: "OWNER_MFA_STATE_UNAVAILABLE" };
+  try {
+    const result = await db.prepare(`
+      INSERT INTO auth_principal_lockout_state (
+        principal_ref, failed_count, locked_until, updated_at
+      )
+      VALUES (?, 0, NULL, CURRENT_TIMESTAMP)
+      ON CONFLICT(principal_ref) DO UPDATE SET
+        failed_count = 0,
+        locked_until = NULL,
+        updated_at = CURRENT_TIMESTAMP
+    `).bind(OWNER_MFA_PRINCIPAL_REF).run();
+    return { ok: true, result };
+  } catch {
+    return { ok: false, code: "OWNER_MFA_STATE_UNAVAILABLE" };
+  }
 }
 
 export async function onRequestPost({ request, env }) {
@@ -99,23 +135,34 @@ export async function onRequestPost({ request, env }) {
   const envAdminUser = env.AEP_ADMIN_USERNAME || "admin";
   const isOwnerUsername = username.toLowerCase() === envAdminUser.toLowerCase();
 
-  if (env.AEP_ADMIN_PASSCODE_HASH && isOwnerUsername) {
+  if (isOwnerUsername) {
     const adminAuthResult = await loginAdmin(env, password);
+    if (adminAuthResult.code === "ADMIN_AUTH_NOT_CONFIGURED") {
+      return errorJson(adminAuthResult.code, adminAuthResult.status);
+    }
     if (adminAuthResult.ok) {
       // If Owner MFA secret exists, TOTP is required for Owner login
       if (env.AEP_ADMIN_TOTP_SECRET) {
         const ownerMfaState = await getOwnerMfaLockoutState(db);
+        if (!ownerMfaState.ok) {
+          return errorJson(ownerMfaState.code, 503);
+        }
         if (isOwnerMfaLocked(ownerMfaState)) {
           return errorJson("STAFF_USER_LOCKED", 429);
         }
 
         if (!totpCode) {
-          await recordOwnerMfaFailure(db);
           return errorJson("Código de autenticación requerido (MFA)", 401, "MFA_REQUIRED");
         }
         const totpRes = await verifyTotpCodeWithReplay(db, "env:admin", env.AEP_ADMIN_TOTP_SECRET, totpCode);
+        if (!totpRes.valid && totpRes.code === "MFA_REPLAY_STATE_UNAVAILABLE") {
+          return errorJson("MFA_REPLAY_STATE_UNAVAILABLE", 503);
+        }
         if (!totpRes.valid) {
-          await recordOwnerMfaFailure(db);
+          const failureState = await recordOwnerMfaFailure(db);
+          if (!failureState.ok) {
+            return errorJson(failureState.code, 503);
+          }
           if (totpRes.code === "MFA_REPLAYED") {
             return errorJson("Código MFA ya ha sido utilizado", 401, "MFA_REPLAYED");
           }
@@ -124,7 +171,10 @@ export async function onRequestPost({ request, env }) {
           }
           return errorJson("Código de autenticación inválido", 401, "MFA_INVALID");
         }
-        await clearOwnerMfaFailures(db);
+        const resetState = await clearOwnerMfaFailures(db);
+        if (!resetState.ok) {
+          return errorJson(resetState.code, 503);
+        }
       }
 
       // Owner authenticated: Create Admin Session & Cookie
@@ -203,7 +253,6 @@ export async function onRequestPost({ request, env }) {
   // 3. Check MFA TOTP if enabled
   if (user.totp_enabled === 1) {
     if (!totpCode) {
-      await recordFailedLogin(db, user.id, username);
       return errorJson("Código de autenticación requerido (MFA)", 401, "MFA_REQUIRED");
     }
 
@@ -218,6 +267,8 @@ export async function onRequestPost({ request, env }) {
           totpValid = true;
         } else if (totpResult.code === "MFA_REPLAYED") {
           failureReason = "MFA_REPLAYED";
+        } else if (totpResult.code === "MFA_REPLAY_STATE_UNAVAILABLE") {
+          return errorJson("MFA_REPLAY_STATE_UNAVAILABLE", 503);
         }
       }
     }

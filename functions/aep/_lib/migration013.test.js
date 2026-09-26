@@ -84,6 +84,24 @@ class TestStatement {
   }
 }
 
+class FailingPrepareD1 {
+  constructor(base, shouldFail) {
+    this.base = base;
+    this.shouldFail = shouldFail;
+  }
+
+  prepare(sql) {
+    if (this.shouldFail(sql)) {
+      throw new Error("SIMULATED_D1_FAILURE");
+    }
+    return this.base.prepare(sql);
+  }
+
+  batch(statements) {
+    return this.base.batch(statements);
+  }
+}
+
 function createFreshDb(upTo = "013") {
   const sqlite = new DatabaseSync(":memory:");
   const migrationsDir = resolve(process.cwd(), "database/migrations");
@@ -96,8 +114,39 @@ function createFreshDb(upTo = "013") {
   return new TestD1(sqlite);
 }
 
+function getSetCookieHeader(response) {
+  return response.headers.getSetCookie
+    ? response.headers.getSetCookie().join("; ")
+    : (response.headers.get("set-cookie") ?? "");
+}
+
+async function createStaffMfaUser(db, {
+  id = 201,
+  username = "staff-mfa",
+  password = "StaffSecret1",
+  failedLoginCount = 0
+} = {}) {
+  const stored = await hashPasswordPbkdf2(password);
+  const secret = generateTotpSecret();
+  const encrypted = await encryptTotpSecret(secret, MFA_KEY_64);
+  await db.prepare(`
+    INSERT INTO aep_users (
+      id, username, username_normalized, display_name,
+      password_algo, password_hash, password_salt, password_iterations,
+      failed_login_count, totp_enabled, totp_secret_enc
+    )
+    VALUES (?, ?, LOWER(?), 'Staff MFA', 'pbkdf2-sha256', ?, ?, ?, ?, 1, ?)
+  `).bind(id, username, username, stored.hash, stored.salt, stored.iterations, failedLoginCount, encrypted).run();
+  return { id, username, password, secret };
+}
+
 test("Migration 013 creates the TOTP replay table with atomic monotonic state", async () => {
   const db = createFreshDb("013");
+  const lockoutTable = await db.prepare(`
+    SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'auth_principal_lockout_state'
+  `).first();
+  assert.equal(lockoutTable.name, "auth_principal_lockout_state");
+
   const secret = generateTotpSecret();
   const timestampSec = 1_800_000_000;
   const step = Math.floor(timestampSec / 30);
@@ -340,4 +389,259 @@ test("Owner MFA failures are rate-limited before creating an Admin session", asy
     ? locked.headers.getSetCookie().join("; ")
     : (locked.headers.get("set-cookie") ?? "");
   assert.doesNotMatch(setCookie, /GAMMS-AEP-Admin=/);
+});
+
+test("Owner MFA failure increment is atomic and counts two failures as two", async () => {
+  const db = createFreshDb("013");
+  const secret = generateTotpSecret();
+  const env = {
+    DB: db,
+    AEP_ADMIN_USERNAME: "owner",
+    AEP_ADMIN_PASSCODE_HASH: await sha256Hex("OwnerSecretPass123"),
+    AEP_ADMIN_SESSION_SECRET: "owner-session-secret",
+    AEP_ADMIN_TOTP_SECRET: secret
+  };
+
+  await Promise.all([0, 1].map(() => loginPost({
+    request: new Request("https://example.com/aep/api/staff/login", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ username: "owner", password: "OwnerSecretPass123", totpCode: "000000" })
+    }),
+    env
+  })));
+
+  const state = await db.prepare(`
+    SELECT failed_count, locked_until
+    FROM auth_principal_lockout_state
+    WHERE principal_ref = 'env:admin:mfa'
+  `).first();
+  assert.equal(state.failed_count, 2);
+  assert.equal(state.locked_until, null);
+});
+
+test("Expired Owner MFA lockout starts a fresh failure cycle", async () => {
+  const db = createFreshDb("013");
+  await db.prepare(`
+    INSERT INTO auth_principal_lockout_state (principal_ref, failed_count, locked_until)
+    VALUES ('env:admin:mfa', 5, ?)
+  `).bind("2000-01-01T00:00:00.000Z").run();
+
+  const secret = generateTotpSecret();
+  const response = await loginPost({
+    request: new Request("https://example.com/aep/api/staff/login", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ username: "owner", password: "OwnerSecretPass123", totpCode: "000000" })
+    }),
+    env: {
+      DB: db,
+      AEP_ADMIN_USERNAME: "owner",
+      AEP_ADMIN_PASSCODE_HASH: await sha256Hex("OwnerSecretPass123"),
+      AEP_ADMIN_SESSION_SECRET: "owner-session-secret",
+      AEP_ADMIN_TOTP_SECRET: secret
+    }
+  });
+
+  assert.equal(response.status, 401);
+  const state = await db.prepare("SELECT failed_count, locked_until FROM auth_principal_lockout_state WHERE principal_ref = 'env:admin:mfa'").first();
+  assert.equal(state.failed_count, 1);
+  assert.equal(state.locked_until, null);
+});
+
+test("Owner MFA state read failure fails closed without an Admin cookie", async () => {
+  const baseDb = createFreshDb("013");
+  const db = new FailingPrepareD1(baseDb, (sql) => (
+    sql.includes("FROM auth_principal_lockout_state")
+  ));
+  const secret = generateTotpSecret();
+
+  const response = await loginPost({
+    request: new Request("https://example.com/aep/api/staff/login", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ username: "owner", password: "OwnerSecretPass123", totpCode: "000000" })
+    }),
+    env: {
+      DB: db,
+      AEP_ADMIN_USERNAME: "owner",
+      AEP_ADMIN_PASSCODE_HASH: await sha256Hex("OwnerSecretPass123"),
+      AEP_ADMIN_SESSION_SECRET: "owner-session-secret",
+      AEP_ADMIN_TOTP_SECRET: secret
+    }
+  });
+
+  assert.equal(response.status, 503);
+  const body = await response.json();
+  assert.equal(body.code, "OWNER_MFA_STATE_UNAVAILABLE");
+  assert.doesNotMatch(getSetCookieHeader(response), /GAMMS-AEP-Admin=/);
+});
+
+test("Owner MFA_REQUIRED does not increment lockout state", async () => {
+  const db = createFreshDb("013");
+  await db.prepare(`
+    INSERT INTO auth_principal_lockout_state (principal_ref, failed_count, locked_until)
+    VALUES ('env:admin:mfa', 2, NULL)
+  `).run();
+  const secret = generateTotpSecret();
+
+  const response = await loginPost({
+    request: new Request("https://example.com/aep/api/staff/login", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ username: "owner", password: "OwnerSecretPass123" })
+    }),
+    env: {
+      DB: db,
+      AEP_ADMIN_USERNAME: "owner",
+      AEP_ADMIN_PASSCODE_HASH: await sha256Hex("OwnerSecretPass123"),
+      AEP_ADMIN_SESSION_SECRET: "owner-session-secret",
+      AEP_ADMIN_TOTP_SECRET: secret
+    }
+  });
+
+  assert.equal(response.status, 401);
+  const state = await db.prepare("SELECT failed_count, locked_until FROM auth_principal_lockout_state WHERE principal_ref = 'env:admin:mfa'").first();
+  assert.equal(state.failed_count, 2);
+  assert.equal(state.locked_until, null);
+});
+
+test("Staff MFA_REQUIRED does not increment failed_login_count", async () => {
+  const db = createFreshDb("013");
+  const staff = await createStaffMfaUser(db, { id: 202, failedLoginCount: 3 });
+
+  const response = await loginPost({
+    request: new Request("https://example.com/aep/api/staff/login", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ username: staff.username, password: staff.password })
+    }),
+    env: { DB: db, AEP_MFA_ENCRYPTION_KEY: MFA_KEY_64 }
+  });
+
+  assert.equal(response.status, 401);
+  const user = await db.prepare("SELECT failed_login_count FROM aep_users WHERE id = ?").bind(staff.id).first();
+  assert.equal(user.failed_login_count, 3);
+});
+
+test("Valid Owner TOTP with replay infrastructure failure returns 503 without increment", async () => {
+  const baseDb = createFreshDb("013");
+  const db = new FailingPrepareD1(baseDb, (sql) => sql.includes("auth_totp_replay_state"));
+  const secret = generateTotpSecret();
+  const otp = await generateTotpCode(secret);
+
+  const response = await loginPost({
+    request: new Request("https://example.com/aep/api/staff/login", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ username: "owner", password: "OwnerSecretPass123", totpCode: otp })
+    }),
+    env: {
+      DB: db,
+      AEP_ADMIN_USERNAME: "owner",
+      AEP_ADMIN_PASSCODE_HASH: await sha256Hex("OwnerSecretPass123"),
+      AEP_ADMIN_SESSION_SECRET: "owner-session-secret",
+      AEP_ADMIN_TOTP_SECRET: secret
+    }
+  });
+
+  assert.equal(response.status, 503);
+  const body = await response.json();
+  assert.equal(body.code, "MFA_REPLAY_STATE_UNAVAILABLE");
+  assert.equal(await baseDb.prepare("SELECT COUNT(*) AS total FROM auth_principal_lockout_state").first().then((row) => row.total), 0);
+  assert.doesNotMatch(getSetCookieHeader(response), /GAMMS-AEP-Admin=/);
+});
+
+test("Owner username remains reserved when Owner config is incomplete", async () => {
+  const db = createFreshDb("013");
+  const staffHash = await hashPasswordPbkdf2("StaffSecret1");
+  await db.prepare(`
+    INSERT INTO aep_users (
+      id, username, username_normalized, display_name,
+      password_algo, password_hash, password_salt, password_iterations
+    )
+    VALUES (203, 'owner', 'owner', 'Owner DB User', 'pbkdf2-sha256', ?, ?, ?)
+  `).bind(staffHash.hash, staffHash.salt, staffHash.iterations).run();
+
+  const response = await loginPost({
+    request: new Request("https://example.com/aep/api/staff/login", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ username: "owner", password: "StaffSecret1" })
+    }),
+    env: {
+      DB: db,
+      AEP_ADMIN_USERNAME: "owner",
+      AEP_ADMIN_PASSCODE_HASH: await sha256Hex("OwnerOnlySecret1")
+    }
+  });
+
+  assert.equal(response.status, 503);
+  assert.equal((await db.prepare("SELECT COUNT(*) AS total FROM aep_staff_sessions").first()).total, 0);
+  assert.doesNotMatch(getSetCookieHeader(response), /GAMMS-AEP-Staff=/);
+});
+
+test("Owner MFA threshold locks on fifth invalid code and success resets state", async () => {
+  const db = createFreshDb("013");
+  const secret = generateTotpSecret();
+  const env = {
+    DB: db,
+    AEP_ADMIN_USERNAME: "owner",
+    AEP_ADMIN_PASSCODE_HASH: await sha256Hex("OwnerSecretPass123"),
+    AEP_ADMIN_SESSION_SECRET: "owner-session-secret",
+    AEP_ADMIN_TOTP_SECRET: secret
+  };
+
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const response = await loginPost({
+      request: new Request("https://example.com/aep/api/staff/login", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ username: "owner", password: "OwnerSecretPass123", totpCode: "000000" })
+      }),
+      env
+    });
+    assert.equal(response.status, 401);
+  }
+  let state = await db.prepare("SELECT failed_count, locked_until FROM auth_principal_lockout_state WHERE principal_ref = 'env:admin:mfa'").first();
+  assert.equal(state.failed_count, 4);
+  assert.equal(state.locked_until, null);
+
+  const fifth = await loginPost({
+    request: new Request("https://example.com/aep/api/staff/login", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ username: "owner", password: "OwnerSecretPass123", totpCode: "000000" })
+    }),
+    env
+  });
+  assert.equal(fifth.status, 401);
+  state = await db.prepare("SELECT failed_count, locked_until FROM auth_principal_lockout_state WHERE principal_ref = 'env:admin:mfa'").first();
+  assert.equal(state.failed_count, 5);
+  assert.ok(Date.parse(state.locked_until) > Date.now());
+
+  const locked = await loginPost({
+    request: new Request("https://example.com/aep/api/staff/login", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ username: "owner", password: "OwnerSecretPass123", totpCode: "000000" })
+    }),
+    env
+  });
+  assert.equal(locked.status, 429);
+
+  await db.prepare("UPDATE auth_principal_lockout_state SET failed_count = 2, locked_until = NULL WHERE principal_ref = 'env:admin:mfa'").run();
+  const otp = await generateTotpCode(secret);
+  const success = await loginPost({
+    request: new Request("https://example.com/aep/api/staff/login", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ username: "owner", password: "OwnerSecretPass123", totpCode: otp })
+    }),
+    env
+  });
+  assert.equal(success.status, 200);
+  state = await db.prepare("SELECT failed_count, locked_until FROM auth_principal_lockout_state WHERE principal_ref = 'env:admin:mfa'").first();
+  assert.equal(state.failed_count, 0);
+  assert.equal(state.locked_until, null);
 });

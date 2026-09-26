@@ -289,7 +289,7 @@ export async function verifyTotpCodeWithReplay(db, principalRef, secret, userCod
 
     return { valid: true, matchedStep: result.matchedStep };
   } catch (error) {
-    return { valid: false, code: "MFA_REPLAYED", error: "Error de validación contra reutilización OTP" };
+    return { valid: false, code: "MFA_REPLAY_STATE_UNAVAILABLE", error: "Error de validación contra reutilización OTP" };
   }
 }
 
