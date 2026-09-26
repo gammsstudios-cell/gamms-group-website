@@ -1,7 +1,7 @@
 export const UM_PER_INCH = 25400;
 export const POINTS_PER_INCH = 72;
 export const BASIS_POINTS = 10000;
-export const DEFAULT_PRINT_ORDER = "top-to-bottom-right-to-left";
+export const DEFAULT_PRINT_ORDER = "right-to-left-top-to-bottom";
 export const PRINT_ORDERS = new Set([
   DEFAULT_PRINT_ORDER,
   "top-to-bottom-left-to-right",

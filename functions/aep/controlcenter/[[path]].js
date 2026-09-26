@@ -156,7 +156,7 @@ export function onRequestGet() {
       #printable-labels, #printable-labels * { visibility: visible; }
       #app, .main-wrapper, .content-area, #printPreview { display: block !important; margin: 0 !important; padding: 0 !important; width: 8.5in !important; max-width: 8.5in !important; background: #FFF !important; overflow: visible !important; }
       #printable-labels { position: absolute; left: 0; top: 0; width: 8.5in; margin: 0; padding: 0; background: #FFF; display: block; overflow: visible; }
-      .print-sheet { position: relative; width: 8.5in; height: 11in; box-sizing: border-box; margin: 0; padding: 0; overflow: hidden; background: #FFF; display: block; break-after: page; page-break-after: always; }
+      .print-sheet { position: relative; width: 8.5in; height: 11in; box-sizing: border-box; margin: 0; padding: 0; overflow: hidden; background: #FFF; display: block; transform: none !important; box-shadow: none !important; break-after: page; page-break-after: always; }
       .print-sheet:last-child { break-after: auto; page-break-after: auto; }
       .print-sheet-frame { display: contents !important; width: auto !important; height: auto !important; }
       .print-slot { position: absolute; margin: 0; padding: 0; overflow: visible; background: #FFF; border: none; outline: none; }
@@ -230,7 +230,7 @@ export function onRequestGet() {
         </a>
         <a class="nav-item" data-route="qr">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3z"/><path d="M17 17h4v4h-4z"/><path d="M14 19h2v2h-2z"/></svg>
-          CÃ³digos QR
+          Códigos QR
         </a>
         <a class="nav-item" data-route="print">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
@@ -250,11 +250,11 @@ export function onRequestGet() {
         </a>
         <a class="nav-item" data-route="activity">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          AuditorÃ­a
+          Auditoría
         </a>
         <a class="nav-item" data-route="settings">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-          ConfiguraciÃ³n
+          Configuración
         </a>
         <a class="nav-item" data-route="system">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="15" x2="23" y2="15"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="15" x2="4" y2="15"/></svg>
@@ -337,7 +337,7 @@ export function onRequestGet() {
     function showToast(msg, isError = false) {
       const toast = document.createElement("div");
       toast.className = "toast";
-      toast.innerHTML = (isError ? "âš ï¸ " : "âœ“ ") + msg;
+      toast.textContent = (isError ? "Error: " : "Correcto: ") + msg;
       document.getElementById("toast-container").appendChild(toast);
       setTimeout(() => toast.remove(), 4000);
     }
@@ -463,7 +463,7 @@ export function onRequestGet() {
     // ----------------------------------------------------
 
     function renderLogin() {
-      pageTitle.textContent = "Iniciar SesiÃ³n Administrador";
+      pageTitle.textContent = "Iniciar Sesión Administrador";
       contentArea.innerHTML = \`
         <div style="max-width: 420px; margin: 40px auto;">
           <div class="card">
@@ -474,7 +474,7 @@ export function onRequestGet() {
             <form id="loginForm">
               <div class="form-group">
                 <label class="form-label">Passcode de Administrador</label>
-                <input id="adminPasscode" type="password" class="form-control" placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" required autofocus>
+                <input id="adminPasscode" type="password" class="form-control" placeholder="••••••••" required autofocus>
               </div>
               <button type="submit" class="btn-primary" style="width:100%; justify-content:center; margin-top:8px;">
                 Ingresar al Panel
@@ -492,11 +492,11 @@ export function onRequestGet() {
           body: JSON.stringify({ passcode })
         });
         if (res.ok) {
-          showToast("SesiÃ³n de administrador iniciada.");
+          showToast("Sesión de administrador iniciada.");
           state.authenticated = true;
           navigate("overview");
         } else {
-          showToast(res.code || "Credenciales invÃ¡lidas", true);
+          showToast(res.code || "Credenciales inválidas", true);
         }
       });
     }
@@ -539,12 +539,12 @@ export function onRequestGet() {
               <div class="stat-icon">$</div>
             </div>
             <div class="stat-value">\${formatMoney(overview.todayRevenueCents)}</div>
-            <div class="stat-sub">Total histÃ³rico: \${formatMoney(overview.totalRevenueCents)}</div>
+            <div class="stat-sub">Total histórico: \${formatMoney(overview.totalRevenueCents)}</div>
           </div>
           <div class="stat-card">
             <div class="stat-header">
               <span>BEBIDAS VENDIDAS</span>
-              <div class="stat-icon">ðŸ¥¤</div>
+              <div class="stat-icon">🥤</div>
             </div>
             <div class="stat-value">\${overview.todaySalesCount}</div>
             <div class="stat-sub">Ventas totales: \${overview.totalSalesCount}</div>
@@ -552,7 +552,7 @@ export function onRequestGet() {
           <div class="stat-card">
             <div class="stat-header">
               <span>REWARDS CANJEADOS</span>
-              <div class="stat-icon">ðŸŽ</div>
+              <div class="stat-icon">🎁</div>
             </div>
             <div class="stat-value">\${overview.redeemedRewardsCount}</div>
             <div class="stat-sub">Disponibles: \${overview.availableRewardsCount} | Claims: \${overview.activeClaimsCount}</div>
@@ -560,7 +560,7 @@ export function onRequestGet() {
           <div class="stat-card">
             <div class="stat-header">
               <span>QR DISPONIBLES</span>
-              <div class="stat-icon">ðŸ·ï¸</div>
+              <div class="stat-icon">🏷️</div>
             </div>
             <div class="stat-value">\${overview.availableQrCount}</div>
             <div class="stat-sub">Usados: \${overview.usedQrCount} | Total: \${overview.totalQrCount}</div>
@@ -594,8 +594,8 @@ export function onRequestGet() {
 
           <div class="card">
             <div class="card-header">
-              <div class="card-title">Productos MÃ¡s Vendidos</div>
-              <button class="btn-secondary" onclick="navigate('products')">CatÃ¡logo</button>
+              <div class="card-title">Productos Más Vendidos</div>
+              <button class="btn-secondary" onclick="navigate('products')">Catálogo</button>
             </div>
             <div class="table-container">
               <table>
@@ -732,7 +732,7 @@ export function onRequestGet() {
             </table>
           </div>
           <div class="pagination-bar">
-            <span>PÃ¡gina \${res.pagination.page} de \${res.pagination.totalPages}</span>
+            <span>Página \${res.pagination.page} de \${res.pagination.totalPages}</span>
             <div>
               <button class="pagination-btn" \${res.pagination.page <= 1 ? 'disabled' : ''} onclick="renderSales(\${res.pagination.page - 1})">Anterior</button>
               <button class="pagination-btn" \${res.pagination.page >= res.pagination.totalPages ? 'disabled' : ''} onclick="renderSales(\${res.pagination.page + 1})">Siguiente</button>
@@ -754,7 +754,7 @@ export function onRequestGet() {
       contentArea.innerHTML = \`
         <div class="card">
           <div class="card-header">
-            <div class="card-title">GestiÃ³n de Productos</div>
+            <div class="card-title">Gestión de Productos</div>
             <div class="filter-bar">
               <button class="btn-primary" onclick="showCreateProductModal()">+ Nuevo Producto</button>
               <button class="btn-secondary" onclick="exportCsv('products')">Exportar CSV</button>
@@ -763,12 +763,12 @@ export function onRequestGet() {
           <div class="table-container">
             <table>
               <thead>
-                <tr><th>Producto</th><th>CategorÃ­a</th><th>Precio</th><th>Stock</th><th>QR Disponibles</th><th>Ventas</th><th>Estado</th><th>Acciones</th></tr>
+                <tr><th>Producto</th><th>Categoría</th><th>Precio</th><th>Stock</th><th>QR Disponibles</th><th>Ventas</th><th>Estado</th><th>Acciones</th></tr>
               </thead>
               <tbody>
                 \${res.items.map(p => \`
                   <tr>
-                    <td><strong>\${p.name}</strong><br><small style="color:var(--text-muted)">\${p.description || 'Sin descripciÃ³n'}</small></td>
+                    <td><strong>\${p.name}</strong><br><small style="color:var(--text-muted)">\${p.description || 'Sin descripción'}</small></td>
                     <td>\${p.category}</td>
                     <td><strong>\${formatMoney(p.priceCents)}</strong></td>
                     <td>
@@ -798,11 +798,11 @@ export function onRequestGet() {
             <input name="name" class="form-control" required placeholder="Ej: Coca-Cola 500ml">
           </div>
           <div class="form-group">
-            <label class="form-label">CategorÃ­a</label>
+            <label class="form-label">Categoría</label>
             <input name="category" class="form-control" value="bebidas">
           </div>
           <div class="form-group">
-            <label class="form-label">Precio en CÃ©ntimos (Ej: 4000 = C$ 40.00)</label>
+            <label class="form-label">Precio en Céntimos (Ej: 4000 = C$ 40.00)</label>
             <input name="priceCents" type="number" class="form-control" required value="4000">
           </div>
           <div class="form-group">
@@ -836,7 +836,7 @@ export function onRequestGet() {
             <input name="name" class="form-control" value="\${product.name}" required>
           </div>
           <div class="form-group">
-            <label class="form-label">Precio en CÃ©ntimos</label>
+            <label class="form-label">Precio en Céntimos</label>
             <input name="priceCents" type="number" class="form-control" value="\${product.priceCents}" required>
           </div>
           <div class="form-group">
@@ -874,8 +874,8 @@ export function onRequestGet() {
             <label class="form-label">Tipo de Movimiento</label>
             <select name="movement_type" class="form-control">
               <option value="restock">Restock (+)</option>
-              <option value="adjustment">Ajuste / CorrecciÃ³n</option>
-              <option value="return">DevoluciÃ³n (+)</option>
+              <option value="adjustment">Ajuste / Corrección</option>
+              <option value="return">Devolución (+)</option>
             </select>
           </div>
           <div class="form-group">
@@ -883,7 +883,7 @@ export function onRequestGet() {
             <input name="quantity_delta" type="number" class="form-control" required placeholder="Ej: 20 o -5">
           </div>
           <div class="form-group">
-            <label class="form-label">RazÃ³n</label>
+            <label class="form-label">Razón</label>
             <input name="reason" class="form-control" required value="Restock administrativo manual">
           </div>
           <button type="submit" class="btn-primary" style="width:100%; justify-content:center;">Guardar Ajuste</button>
@@ -954,16 +954,16 @@ export function onRequestGet() {
       contentArea.innerHTML = \`
         <div class="card">
           <div class="card-header">
-            <div class="card-title">Inventario de CÃ³digos QR</div>
+            <div class="card-title">Inventario de Códigos QR</div>
             <div class="filter-bar">
-              <button class="btn-primary" onclick="showGenerateQrModal(\${JSON.stringify(products).replace(/"/g, '&quot;')})">âš¡ Generar Lote de QR</button>
+              <button class="btn-primary" onclick="showGenerateQrModal(\${JSON.stringify(products).replace(/"/g, '&quot;')})">Generar Lote de QR</button>
               <button class="btn-secondary" onclick="exportCsv('qr')">Exportar CSV</button>
             </div>
           </div>
           <div class="table-container">
             <table>
               <thead>
-                <tr><th>PÃºblico #</th><th>Producto Asignado</th><th>Estado</th><th>Creado En</th><th>Usado En</th><th>Acciones</th></tr>
+                <tr><th>Público #</th><th>Producto Asignado</th><th>Estado</th><th>Creado En</th><th>Usado En</th><th>Acciones</th></tr>
               </thead>
               <tbody>
                 \${res.items.map(q => \`
@@ -986,7 +986,7 @@ export function onRequestGet() {
             </table>
           </div>
           <div class="pagination-bar">
-            <span>PÃ¡gina \${res.pagination.page} de \${res.pagination.totalPages}</span>
+            <span>Página \${res.pagination.page} de \${res.pagination.totalPages}</span>
             <div>
               <button class="pagination-btn" \${res.pagination.page <= 1 ? 'disabled' : ''} onclick="renderQr(\${res.pagination.page - 1})">Anterior</button>
               <button class="pagination-btn" \${res.pagination.page >= res.pagination.totalPages ? 'disabled' : ''} onclick="renderQr(\${res.pagination.page + 1})">Siguiente</button>
@@ -997,7 +997,7 @@ export function onRequestGet() {
     }
 
     function showGenerateQrModal(products) {
-      openModal("Generar Lote de CÃ³digos QR Imprimibles", \`
+      openModal("Generar Lote de Códigos QR Imprimibles", \`
         <form id="generateQrForm">
           <div class="form-group">
             <label class="form-label">Producto Asignado</label>
@@ -1006,11 +1006,11 @@ export function onRequestGet() {
             </select>
           </div>
           <div class="form-group">
-            <label class="form-label">Cantidad a Generar (MÃ¡x 500)</label>
+            <label class="form-label">Cantidad a Generar (Máx 500)</label>
             <input name="count" type="number" class="form-control" value="20" min="1" max="500" required>
           </div>
           <div class="form-group">
-            <label class="form-label">NumeraciÃ³n Inicial PÃºblica (Opcional)</label>
+            <label class="form-label">Numeración Inicial Pública (Opcional)</label>
             <input name="start_number" type="number" class="form-control" placeholder="Auto-incrementar">
           </div>
           <button type="submit" class="btn-primary" style="width:100%; justify-content:center;">Generar y Ver Etiquetas</button>
@@ -1023,7 +1023,7 @@ export function onRequestGet() {
         const payload = Object.fromEntries(formData.entries());
         const res = await apiFetch("/qr/generate", { method: "POST", body: JSON.stringify(payload) });
         if (res.ok) {
-          showToast(\`Se generaron \${res.count} cÃ³digos QR correctamente.\`);
+          showToast(\`Se generaron \${res.count} códigos QR correctamente.\`);
           closeModal();
           showPrintLabelsModal(res.items);
           renderQr();
@@ -1034,10 +1034,10 @@ export function onRequestGet() {
     }
 
     function showPrintLabelsModal(qrItems) {
-      openModal("Etiquetas Generadas para ImpresiÃ³n (" + qrItems.length + ")", \`
+      openModal("Etiquetas Generadas para Impresión (" + qrItems.length + ")", \`
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
           <p style="font-size:13px; color:var(--text-muted)">Haz clic en Imprimir para enviar a la impresora de etiquetas.</p>
-          <button class="btn-primary" onclick="window.print()">ðŸ–¨ï¸ Imprimir Etiquetas</button>
+          <button class="btn-primary" onclick="window.print()">Imprimir Etiquetas</button>
         </div>
         <div id="printable-labels" class="qr-label-grid">
           \${qrItems.map(item => \`
@@ -1200,8 +1200,8 @@ export function onRequestGet() {
         });
       };
 
-      for (let col = columns - 1; col >= 0; col -= 1) {
-        for (let row = 0; row < rows; row += 1) pushSlot(row, col);
+      for (let row = 0; row < rows; row += 1) {
+        for (let col = columns - 1; col >= 0; col -= 1) pushSlot(row, col);
       }
       return slots;
     }
@@ -1283,7 +1283,7 @@ export function onRequestGet() {
           <div class="table-container">
             <table>
               <thead>
-                <tr><th>ID</th><th>Cliente</th><th>Ciclo</th><th>Beneficio</th><th>Estado</th><th>Desbloqueado</th><th>Canjeado</th><th>AcciÃ³n</th></tr>
+                <tr><th>ID</th><th>Cliente</th><th>Ciclo</th><th>Beneficio</th><th>Estado</th><th>Desbloqueado</th><th>Canjeado</th><th>Acción</th></tr>
               </thead>
               <tbody>
                 \${res.items.map(r => \`
@@ -1311,7 +1311,7 @@ export function onRequestGet() {
     }
 
     async function cancelReward(id) {
-      if (!confirm("Â¿Seguro que deseas cancelar este reward? Esta acciÃ³n quedarÃ¡ registrada en auditorÃ­a.")) return;
+      if (!confirm("¿Seguro que deseas cancelar este reward? Esta acción quedará registrada en auditoría.")) return;
       const res = await apiFetch(\`/rewards/\${id}/cancel\`, { method: "POST", body: "{}" });
       if (res.ok) { showToast("Reward #" + id + " cancelado."); renderRewards(); }
       else { showToast(res.message || res.code, true); }
@@ -1325,13 +1325,13 @@ export function onRequestGet() {
       contentArea.innerHTML = \`
         <div class="card">
           <div class="card-header">
-            <div class="card-title">Clientes AnÃ³nimos (\${res.pagination.total})</div>
+            <div class="card-title">Clientes Anónimos (\${res.pagination.total})</div>
             <button class="btn-secondary" onclick="exportCsv('customers')">Exportar CSV</button>
           </div>
           <div class="table-container">
             <table>
               <thead>
-                <tr><th>Cliente</th><th>Compras</th><th>Progreso Ciclo</th><th>Rewards Ganados</th><th>Rewards Usados</th><th>Gastado Total</th><th>Ãšltima Actividad</th></tr>
+                <tr><th>Cliente</th><th>Compras</th><th>Progreso Ciclo</th><th>Rewards Ganados</th><th>Rewards Usados</th><th>Gastado Total</th><th>Última Actividad</th></tr>
               </thead>
               <tbody>
                 \${res.items.map(c => \`
@@ -1366,7 +1366,7 @@ export function onRequestGet() {
           <div class="table-container">
             <table>
               <thead>
-                <tr><th>ID</th><th>Nombre</th><th>Usuario</th><th>Estado</th><th>Ãšltimo Login</th><th>Acciones</th></tr>
+                <tr><th>ID</th><th>Nombre</th><th>Usuario</th><th>Estado</th><th>Último Login</th><th>Acciones</th></tr>
               </thead>
               <tbody>
                 \${res.sellers.map(s => \`
@@ -1393,15 +1393,15 @@ export function onRequestGet() {
         <form id="createSellerForm">
           <div class="form-group">
             <label class="form-label">Nombre del Vendedor</label>
-            <input name="displayName" class="form-control" required placeholder="Ej: Juan PÃ©rez">
+            <input name="displayName" class="form-control" required placeholder="Ej: Juan Pérez">
           </div>
           <div class="form-group">
             <label class="form-label">Nombre de Usuario (Opcional)</label>
             <input name="username" class="form-control" placeholder="vendedor1">
           </div>
           <div class="form-group">
-            <label class="form-label">Passcode de Acceso (MÃ­nimo 4 caracteres)</label>
-            <input name="passcode" type="password" class="form-control" required placeholder="â€¢â€¢â€¢â€¢">
+            <label class="form-label">Passcode de Acceso (Mínimo 4 caracteres)</label>
+            <input name="passcode" type="password" class="form-control" required placeholder="••••">
           </div>
           <button type="submit" class="btn-primary" style="width:100%; justify-content:center;">Crear Vendedor</button>
         </form>
@@ -1427,7 +1427,7 @@ export function onRequestGet() {
         <form id="resetPasscodeForm">
           <div class="form-group">
             <label class="form-label">Nuevo Passcode</label>
-            <input name="passcode" type="password" class="form-control" required placeholder="â€¢â€¢â€¢â€¢">
+            <input name="passcode" type="password" class="form-control" required placeholder="••••">
           </div>
           <button type="submit" class="btn-primary" style="width:100%; justify-content:center;">Cambiar Passcode</button>
         </form>
@@ -1454,13 +1454,13 @@ export function onRequestGet() {
       contentArea.innerHTML = \`
         <div class="card">
           <div class="card-header">
-            <div class="card-title">Registro de AuditorÃ­a y Eventos</div>
+            <div class="card-title">Registro de Auditoría y Eventos</div>
             <button class="btn-secondary" onclick="exportCsv('activity')">Exportar CSV</button>
           </div>
           <div class="table-container">
             <table>
               <thead>
-                <tr><th>ID</th><th>Fecha/Hora</th><th>Actor</th><th>AcciÃ³n</th><th>Entidad</th><th>Detalles</th></tr>
+                <tr><th>ID</th><th>Fecha/Hora</th><th>Actor</th><th>Acción</th><th>Entidad</th><th>Detalles</th></tr>
               </thead>
               <tbody>
                 \${res.items.map(a => \`
@@ -1489,7 +1489,7 @@ export function onRequestGet() {
       contentArea.innerHTML = \`
         <div class="card" style="max-width: 650px;">
           <div class="card-header">
-            <div class="card-title">ConfiguraciÃ³n del Evento AEP</div>
+            <div class="card-title">Configuración del Evento AEP</div>
           </div>
           <form id="settingsForm">
             <div class="form-group">
@@ -1497,7 +1497,7 @@ export function onRequestGet() {
               <input name="event_name" class="form-control" value="\${s.event_name}">
             </div>
             <div class="form-group">
-              <label class="form-label">Moneda (CÃ³digo y SÃ­mbolo)</label>
+              <label class="form-label">Moneda (Código y Símbolo)</label>
               <div style="display:flex; gap:10px;">
                 <input name="currency_code" class="form-control" value="\${s.currency_code}" placeholder="NIO">
                 <input name="currency_symbol" class="form-control" value="\${s.currency_symbol}" placeholder="C$">
@@ -1508,13 +1508,13 @@ export function onRequestGet() {
               <input name="claim_ttl_seconds" type="number" class="form-control" value="\${s.claim_ttl_seconds}">
             </div>
             <div class="form-group">
-              <label class="form-label">Regla de PromociÃ³n</label>
+              <label class="form-label">Regla de Promoción</label>
               <div style="display:flex; gap:10px;">
                 <input name="reward_every_n_purchases" type="number" class="form-control" value="\${s.reward_every_n_purchases}" readonly title="Fijo en esta fase (3ra bebida)">
                 <input name="reward_discount_percent" type="number" class="form-control" value="\${s.reward_discount_percent}" readonly title="Fijo en esta fase (50%)">
               </div>
             </div>
-            <button type="submit" class="btn-primary" style="margin-top:12px;">Guardar ConfiguraciÃ³n</button>
+            <button type="submit" class="btn-primary" style="margin-top:12px;">Guardar Configuración</button>
           </form>
         </div>
       \`;
@@ -1525,9 +1525,9 @@ export function onRequestGet() {
         const payload = Object.fromEntries(formData.entries());
         const res = await apiFetch("/settings", { method: "PUT", body: JSON.stringify({ settings: payload }) });
         if (res.ok) {
-          showToast("ConfiguraciÃ³n guardada.");
+          showToast("Configuración guardada.");
         } else {
-          showToast(res.code || "Error guardando configuraciÃ³n", true);
+          showToast(res.code || "Error guardando configuración", true);
         }
       });
     }
@@ -1541,10 +1541,10 @@ export function onRequestGet() {
       contentArea.innerHTML = \`
         <div class="card" style="max-width: 650px;">
           <div class="card-header">
-            <div class="card-title">Estado y DiagnÃ³stico del Sistema</div>
+            <div class="card-title">Estado y Diagnóstico del Sistema</div>
           </div>
           <div style="display:flex; flex-direction:column; gap:14px; font-size:14px;">
-            <div><strong>AplicaciÃ³n:</strong> \${sys.appName} v\${sys.version}</div>
+            <div><strong>Aplicación:</strong> \${sys.appName} v\${sys.version}</div>
             <div><strong>Conectividad D1:</strong> <span class="badge badge-success">\${sys.d1Connectivity}</span></div>
             <div><strong>Entorno:</strong> \${sys.environment}</div>
             <div><strong>Zona Horaria Evento:</strong> \${sys.eventTimezone}</div>
@@ -1565,6 +1565,7 @@ export function onRequestGet() {
     }
 
     // Initialize App
+    window.addEventListener("resize", fitPrintPreview);
     applyTheme(state.theme);
     checkAuth();
   </script>

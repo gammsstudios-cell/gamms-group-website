@@ -445,8 +445,8 @@ test("print order maps items to exact physical MACO slots", async () => {
 
   const defaultSlots = getOrderedPhysicalSlots(profile);
   assert.deepEqual({ row: defaultSlots[0].row, column: defaultSlots[0].column }, { row: 1, column: 5 });
-  assert.deepEqual({ row: defaultSlots[9].row, column: defaultSlots[9].column }, { row: 10, column: 5 });
-  assert.deepEqual({ row: defaultSlots[10].row, column: defaultSlots[10].column }, { row: 1, column: 4 });
+  assert.deepEqual({ row: defaultSlots[4].row, column: defaultSlots[4].column }, { row: 1, column: 1 });
+  assert.deepEqual({ row: defaultSlots[5].row, column: defaultSlots[5].column }, { row: 2, column: 5 });
   assert.deepEqual({ row: defaultSlots[49].row, column: defaultSlots[49].column }, { row: 10, column: 1 });
 
   const topBottomLeft = getOrderedPhysicalSlots(profile, "top-to-bottom-left-to-right");
@@ -465,16 +465,16 @@ test("print order maps items to exact physical MACO slots", async () => {
   assert.deepEqual({ row: rightLeftTop[5].row, column: rightLeftTop[5].column }, { row: 2, column: 5 });
 });
 
-test("print order startSlot skips positions in the selected order", async () => {
+test("default print order startSlot skips positions right-to-left by row", async () => {
   const db = await createTestDb();
   const profile = await getPrintProfile(db);
   const labels = Array.from({ length: 2 }, (_, index) => ({ publicNumber: index + 1, url: `https://example.com/${index}` }));
-  const pages = paginateLabels(labels, profile, 3, "top-to-bottom-right-to-left");
+  const pages = paginateLabels(labels, profile, 3);
 
   assert.equal(pages.ok, true);
   assert.deepEqual(
     pages.pages[0].map((item) => ({ row: item.box.row, column: item.box.column })),
-    [{ row: 3, column: 5 }, { row: 4, column: 5 }]
+    [{ row: 1, column: 3 }, { row: 1, column: 2 }]
   );
 });
 
@@ -686,6 +686,8 @@ test("Control Center browser print uses exact Letter sheets without printable in
   assert.match(source, /function getOrderedBrowserSlots\(profile\)/);
   assert.match(source, /\.print-sheet-frame \{ width: 8\.5in; height: 11in;/);
   assert.match(source, /function fitPrintPreview\(\)/);
+  assert.match(source, /transform: none !important; box-shadow: none !important;/);
+  assert.match(source, /window\.addEventListener\("resize", fitPrintPreview\)/);
   assert.match(source, /transform: scale\(var\(--preview-scale, 1\)\)/);
   assert.match(source, /\.print-slot \.qr-label-card svg \{ position: absolute; left: 0\.04in; top: 0\.20in; width: 0\.56in; height: 0\.56in;/);
   assert.doesNotMatch(source, /name="printOrder"/);
