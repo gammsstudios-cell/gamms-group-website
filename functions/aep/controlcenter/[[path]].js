@@ -134,11 +134,22 @@ export function onRequestGet() {
     .badge-danger { background: var(--badge-red-bg); color: var(--badge-red-text); }
     .badge-neutral { background: var(--bg-page); color: var(--text-muted); border: 1px solid var(--border-color); }
 
-    /* Print Center Physical Mapping CSS */
-    #printable-labels { display: none !important; }
-    .print-sheet-frame { width: 8.5in; height: 11in; transform: scale(var(--preview-scale, 1)); position: relative; background: #fff; margin: 0 auto; box-shadow: 0 4px 12px rgba(0,0,0,0.15); border-radius: 4px; overflow: hidden; }
-    .print-slot { position: absolute; border: 1px dashed #ccc; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2px; text-align: center; }
-    .print-slot .qr-label-card svg { position: absolute; left: 0.04in; top: 0.14in; width: 0.72in; height: 0.72in; shape-rendering: crispEdges; }
+    /* Print Center visual preview. Physical output is PDF only. */
+    #printable-labels { display: block; margin-top: 12px; }
+    .print-preview-sheets { display: flex; flex-direction: column; align-items: center; gap: 18px; overflow: auto; padding: 12px; background: var(--bg-page); border-radius: 12px; border: 1px solid var(--border-color); }
+    .print-sheet-frame { width: 8.5in; height: 11in; transform: scale(var(--preview-scale, 1)); transform-origin: top center; position: relative; background: #fff; margin: 0 auto; box-shadow: 0 4px 12px rgba(0,0,0,0.15); border-radius: 4px; overflow: hidden; flex: 0 0 auto; }
+    .print-sheet { position: relative; width: 8.5in; height: 11in; overflow: hidden; background: #fff; }
+    .print-slot { position: absolute; box-sizing: border-box; display: flex; align-items: center; justify-content: center; padding: 0; text-align: center; overflow: visible; }
+    .print-slot-empty { opacity: 0.18; border: 1px dashed #ccc; }
+    .qr-label-card { position: relative; width: 100%; height: 100%; background: #fff; color: #000; font-family: Arial, sans-serif; overflow: hidden; }
+    .qr-label-title { position: absolute; left: 0.08in; right: 0.08in; top: 0.06in; font-size: 0.07in; line-height: 1; font-weight: 800; text-align: center; }
+    .qr-label-product { position: absolute; left: 0.08in; right: 0.08in; top: 0.17in; font-size: 0.065in; line-height: 1; font-weight: 700; color: #0645ad; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .qr-label-card svg { position: absolute; left: 0.37in; top: 0.29in; width: 0.76in; height: 0.76in; shape-rendering: crispEdges; }
+    .qr-label-num { position: absolute; left: 0.08in; right: 0.08in; bottom: 0.06in; font-size: 0.07in; line-height: 1; font-weight: 800; text-align: center; }
+    .print-instructions { margin: 10px 0 12px; padding: 10px 12px; border-radius: 10px; background: var(--badge-amber-bg); color: var(--badge-amber-text); font-size: 12.5px; font-weight: 700; }
+    @media print {
+      #printable-labels { display: none !important; }
+    }
 
 
     /* Modal */
@@ -265,6 +276,11 @@ export function onRequestGet() {
     const userProfileTag = document.getElementById("userProfileTag");
 
     function formatMoney(cents) { return "C$ " + ((cents || 0) / 100).toFixed(2); }
+    function formatDate(value) {
+      if (!value) return "-";
+      const date = new Date(value);
+      return Number.isNaN(date.getTime()) ? "-" : date.toLocaleString();
+    }
     function showToast(msg, isError = false) {
       const toast = document.createElement("div");
       toast.className = "toast";
@@ -864,10 +880,10 @@ export function onRequestGet() {
               <tbody>
                 \${(res.items || []).map(q => \`
                   <tr>
-                    <td>#\${q.public_number}</td>
-                    <td>\${q.product_name || 'Sin asignar'}</td>
+                    <td>#\${q.publicNumber ?? ''}</td>
+                    <td>\${q.productName || 'Sin asignar'}</td>
                     <td>\${q.status === 'available' ? '<span class="badge badge-success">Disponible</span>' : (q.status === 'used' ? '<span class="badge badge-neutral">Usado</span>' : '<span class="badge badge-danger">Deshabilitado</span>')}</td>
-                    <td>\${new Date(q.created_at).toLocaleString()}</td>
+                    <td>\${formatDate(q.createdAt)}</td>
                   </tr>
                 \`).join('')}
               </tbody>
@@ -880,7 +896,7 @@ export function onRequestGet() {
     // PRINT STUDIO ENGINE HELPER FUNCTIONS (Phase 3.5 Physical Print Engine)
     async function fetchCurrentBatchPdf() {
       if (!currentPrintBatch) return null;
-      const res = await fetch(API_BASE + "/print/pdf", {
+      const res = await fetch(API_BASE + "/admin/print/pdf", {
         method: "POST",
         credentials: "same-origin",
         headers: { "Content-Type": "application/json", "Accept": "application/pdf" },
@@ -924,62 +940,94 @@ export function onRequestGet() {
 
     function renderBrowserPrintSheets(batch) {
       if (!batch) return "";
-      const profile = batch.printProfile || { columns: 5, rows: 10 };
-      const slots = getOrderedBrowserSlots(profile);
-      const startSlot = Math.max(1, Number(batch.startSlot || 1));
-      const items = Array.isArray(batch.items) ? batch.items : [];
-      return \`
-        <div id="printable-labels">
-          <div class="print-sheet-frame">
-            \${items.map((item, index) => {
-              const slot = slots[startSlot - 1 + index];
-              if (!slot) return "";
-              return \`
-                <div class="print-slot" style="left:\${slot.x}in; top:\${slot.y}in; width:\${slot.w}in; height:\${slot.h}in;">
-                  <div class="qr-label-card">
-                    \${item.svg || ""}
-                    <strong>GAMMS AEP</strong>
-                    <span>\${escapePrintText(item.product?.name || "Producto")}</span>
-                    <span class="mono">#\${escapePrintText(item.publicNumber)}</span>
-                  </div>
-                </div>
-              \`;
+      const profile = batch.printProfile || {};
+      const columns = Number(profile.columns || 5);
+      const rows = Number(profile.rows || 10);
+      const capacity = columns * rows;
+      const firstSlot = Math.max(1, Math.min(capacity, Number(batch.startSlot || 1)));
+      const orderedSlots = getOrderedBrowserSlots(profile);
+      const cells = [];
+      for (let slot = 1; slot < firstSlot; slot += 1) cells.push({ empty: true });
+      for (const item of (batch.items || [])) cells.push({ item });
+
+      const sheets = [];
+      for (let index = 0; index < cells.length; index += capacity) {
+        const sheet = cells.slice(index, index + capacity);
+        while (sheet.length < capacity) sheet.push({ empty: true });
+        sheets.push(sheet);
+      }
+
+      return sheets.map((sheet) => \`
+        <div class="print-sheet-frame">
+          <div class="print-sheet">
+            \${sheet.map((cell, index) => {
+              const slot = orderedSlots[index];
+              const style = \`left:\${slot.leftIn}in; top:\${slot.topIn}in; width:\${slot.widthIn}in; height:\${slot.heightIn}in;\`;
+              return cell.empty
+                ? \`<div class="print-slot print-slot-empty" style="\${style}"></div>\`
+                : \`<div class="print-slot" style="\${style}">\${renderPrintLabel(cell.item)}</div>\`;
             }).join('')}
           </div>
         </div>
-      \`;
+      \`).join('');
+    }
+
+    function renderPrintLabel(item) {
+      const productName = escapePrintText(item?.product?.name || "Producto");
+      const publicNumber = Number.parseInt(item?.publicNumber, 10);
+      const numberText = Number.isSafeInteger(publicNumber) && publicNumber > 0 ? publicNumber : "-";
+      return \`<div class="qr-label-card"><div class="qr-label-title">GAMMS AEP</div><div class="qr-label-product">\${productName}</div>\${item.svg || ""}<div class="qr-label-num">#\${numberText}</div></div>\`;
     }
 
     function getOrderedBrowserSlots(profile) {
-      const columns = profile?.columns || 5;
-      const rows = profile?.rows || 10;
-      const labelWidth = ((profile?.labelWidthUm || 38100) / 25400);
-      const labelHeight = ((profile?.labelHeightUm || 25400) / 25400);
-      const marginLeft = ((profile?.marginLeftUm || 12700) / 25400);
-      const marginTop = ((profile?.marginTopUm || 12700) / 25400);
-      const gapX = ((profile?.gapXUm || 0) / 25400);
-      const gapY = ((profile?.gapYUm || 0) / 25400);
+      const columns = Number(profile?.columns || 5);
+      const rows = Number(profile?.rows || 10);
+      const marginLeftUm = Number(profile?.marginLeftUm || 12700);
+      const marginTopUm = Number(profile?.marginTopUm || 12700);
+      const labelWidthUm = Number(profile?.labelWidthUm || 38100);
+      const labelHeightUm = Number(profile?.labelHeightUm || 25400);
+      const gapXUm = Number(profile?.gapXUm || 0);
+      const gapYUm = Number(profile?.gapYUm || 0);
+      const offsetXUm = Number(profile?.offsetXUm || 0);
+      const offsetYUm = Number(profile?.offsetYUm || 0);
+      const scaleX = Number(profile?.scaleXBp || 10000) / 10000;
+      const scaleY = Number(profile?.scaleYBp || 10000) / 10000;
       const slots = [];
+      const umToIn = (um) => Number(um) / 25400;
+      const pushSlot = (row, col) => {
+        const leftUm = marginLeftUm + offsetXUm + col * (labelWidthUm + gapXUm) * scaleX;
+        const topUm = marginTopUm + offsetYUm + row * (labelHeightUm + gapYUm) * scaleY;
+        slots.push({
+          row: row + 1,
+          column: col + 1,
+          leftIn: umToIn(leftUm).toFixed(4),
+          topIn: umToIn(topUm).toFixed(4),
+          widthIn: umToIn(labelWidthUm * scaleX).toFixed(4),
+          heightIn: umToIn(labelHeightUm * scaleY).toFixed(4)
+        });
+      };
+
       for (let row = 0; row < rows; row += 1) {
-        for (let col = columns - 1; col >= 0; col -= 1) {
-          slots.push({
-            row: row + 1,
-            col: col + 1,
-            x: marginLeft + col * (labelWidth + gapX),
-            y: marginTop + row * (labelHeight + gapY),
-            w: labelWidth,
-            h: labelHeight
-          });
-        }
+        for (let col = columns - 1; col >= 0; col -= 1) pushSlot(row, col);
       }
       return slots;
     }
 
-    function fitPrintPreview() { /* Scale browser preview */ }
+    function fitPrintPreview() {
+      const preview = document.getElementById("printPreview");
+      const frames = document.querySelectorAll(".print-sheet-frame");
+      if (!preview || !frames.length) return;
+      const scale = Math.min(1, Math.max(0.2, (preview.clientWidth - 24) / (8.5 * 96)));
+      for (const frame of frames) {
+        frame.style.setProperty("--preview-scale", scale.toFixed(4));
+        frame.style.width = (8.5 * scale).toFixed(4) + "in";
+        frame.style.height = (11 * scale).toFixed(4) + "in";
+      }
+    }
     window.addEventListener("resize", fitPrintPreview);
 
     // 6. PRINT CENTER STUDIO
-    async function renderPrintCenter() {
+    async function renderPrintCenterLegacyDisabled() {
       contentArea.innerHTML = \`
         <div class="card">
           <div class="card-header">
@@ -995,6 +1043,117 @@ export function onRequestGet() {
           \${renderBrowserPrintSheets(currentPrintBatch)}
         </div>
       \`;
+    }
+
+    async function renderPrintCenter() {
+      const [productsRes, profilesRes, batchesRes] = await Promise.all([
+        apiFetch("/admin/products"),
+        apiFetch("/admin/print/profiles"),
+        apiFetch("/admin/qr/batches?limit=10")
+      ]);
+      if (!productsRes.ok || !profilesRes.ok || !batchesRes.ok) return;
+      const products = productsRes.items || [];
+      const profiles = profilesRes.profiles || [];
+
+      contentArea.innerHTML = \`
+        <div style="display:grid; grid-template-columns:minmax(320px, 420px) 1fr; gap:24px;">
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">Studio MACO ML-5000</div>
+                <div class="gamms-byline" style="margin-top:4px;">By <strong>GAMMS GROUP</strong></div>
+              </div>
+            </div>
+            <form id="printGenerateForm">
+              <div class="form-group">
+                <label class="form-label">Producto</label>
+                <select name="productId" class="form-control" required>
+                  \${products.map(p => \`<option value="\${p.id}">\${escapePrintText(p.name)} - \${formatMoney(p.priceCents)}</option>\`).join('')}
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Perfil</label>
+                <select name="printProfileId" id="printProfileId" class="form-control" required>
+                  \${profiles.map(p => \`<option value="\${p.id}">\${escapePrintText(p.name)}</option>\`).join('')}
+                </select>
+              </div>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                <div class="form-group"><label class="form-label">Cantidad</label><input name="count" type="number" min="1" max="500" value="50" class="form-control" required></div>
+                <div class="form-group"><label class="form-label">Numero inicial</label><input name="startNumber" type="number" min="1" class="form-control" placeholder="Auto"></div>
+              </div>
+              <div class="form-group"><label class="form-label">Primer slot de hoja parcial</label><input name="startSlot" type="number" min="1" max="50" value="1" class="form-control"></div>
+              <p style="margin-bottom:12px; color:var(--text-muted); font-size:12.5px;">Orden: derecha a izquierda por fila, luego siguiente fila.</p>
+              <div class="filter-bar">
+                <button type="submit" class="btn-primary">Generar lote</button>
+                <button type="button" class="btn-secondary" onclick="loadCalibration()">Calibrar</button>
+              </div>
+            </form>
+          </div>
+          <div>
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <div class="card-title">Preview seguro</div>
+                  <p style="margin-top:4px; color:var(--text-muted); font-size:12.5px;">Motor de impresion: PDF fisico · Letter 8.5 x 11 in · MACO ML-5000 · 5 x 10</p>
+                </div>
+                <div class="filter-bar">
+                  <button class="btn-secondary" onclick="printCurrentBatch()">Imprimir</button>
+                  <button class="btn-primary" onclick="downloadCurrentPdf()">PDF</button>
+                </div>
+              </div>
+              <p style="color:var(--text-muted); font-size:13px; margin-bottom:8px;">Los tokens aparecen solo en esta sesion de creacion. No se guardan en historial ni en base de datos.</p>
+              <div id="printPreview"><p style="color:var(--text-muted)">Genera un lote para ver la hoja.</p></div>
+            </div>
+            <div class="card">
+              <div class="card-header"><div class="card-title">Ultimos batches</div></div>
+              <div class="table-container">
+                <table><thead><tr><th>Batch</th><th>Producto</th><th>Rango</th><th>Cantidad</th><th>Perfil</th><th>Creado</th></tr></thead><tbody>
+                  \${(batchesRes.items || []).map(b => \`<tr><td><small>\${escapePrintText(b.id)}</small></td><td>\${escapePrintText(b.productName)}</td><td>#\${b.firstPublicNumber}-#\${b.lastPublicNumber}</td><td>\${b.quantity}</td><td>\${escapePrintText(b.printProfileName || '-')}</td><td>\${formatDate(b.createdAt)}</td></tr>\`).join('') || '<tr><td colspan="6" style="text-align:center">Sin batches</td></tr>'}
+                </tbody></table>
+              </div>
+            </div>
+          </div>
+        </div>
+      \`;
+      document.getElementById("printGenerateForm").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const payload = Object.fromEntries(new FormData(event.target).entries());
+        const res = await apiFetch("/admin/qr/generate", { method: "POST", body: JSON.stringify(payload) });
+        if (!res.ok) return showToast(res.message || res.code || "Error generando lote", true);
+        currentPrintBatch = res;
+        renderPrintPreview(res);
+        showToast("Batch " + res.batchId + " generado.");
+      });
+      if (currentPrintBatch) renderPrintPreview(currentPrintBatch);
+    }
+
+    function renderPrintPreview(batch) {
+      const preview = document.getElementById("printPreview");
+      if (!preview) return;
+      preview.innerHTML = \`
+        <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:12px;">
+          <span class="badge badge-success">Batch \${escapePrintText(batch.batchId)}</span>
+          <span class="badge badge-warning">Slot inicial \${batch.startSlot}</span>
+          <span class="badge badge-success">\${batch.count} etiquetas</span>
+        </div>
+        <div class="print-instructions">En el dialogo de impresion selecciona: Papel Carta / Letter 8.5 x 11 · Escala 100% / Tamano real · Desactivar Ajustar a pagina.</div>
+        <div id="printable-labels" class="print-preview-sheets">
+          \${renderBrowserPrintSheets(batch)}
+        </div>
+      \`;
+      fitPrintPreview();
+    }
+
+    async function loadCalibration() {
+      const profileId = document.getElementById("printProfileId")?.value;
+      const res = await apiFetch("/admin/print/calibration", { method: "POST", body: JSON.stringify({ printProfileId: profileId }) });
+      if (!res.ok) return showToast(res.code || "Error de calibracion", true);
+      openModal("Calibracion " + res.profile.name, \`
+        <p style="font-size:13px; color:var(--text-muted); margin-bottom:12px;">Slots detectados: \${res.slots.length}. Usa offset/scale del perfil si la impresora desplaza la hoja.</p>
+        <div class="table-container"><table><thead><tr><th>Slot</th><th>Fila</th><th>Col</th><th>X pt</th><th>Y pt</th></tr></thead><tbody>
+          \${res.slots.slice(0, 10).map(s => \`<tr><td>\${s.slot}</td><td>\${s.row}</td><td>\${s.column}</td><td>\${s.x.toFixed(2)}</td><td>\${s.y.toFixed(2)}</td></tr>\`).join('')}
+        </tbody></table></div>
+      \`);
     }
 
     // 7. REWARDS
