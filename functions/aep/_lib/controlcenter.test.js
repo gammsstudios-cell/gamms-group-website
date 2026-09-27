@@ -1044,3 +1044,55 @@ test("createSellerAccount and resetSellerPasscode manage seller profiles", async
   const resetRes = await resetSellerPasscode(db, createRes.seller.id, "newpass456");
   assert.equal(resetRes.ok, true);
 });
+
+test("Control Center product modal exists and uses the real product API contract", () => {
+  const source = readFileSync(resolve(process.cwd(), "functions/aep/controlcenter/[[path]].js"), "utf8");
+  const productsBlock = source.slice(
+    source.indexOf("// 3. PRODUCTS"),
+    source.indexOf("// 4. INVENTORY")
+  );
+
+  assert.match(source, /async function openNewProductModal\(\)/);
+  assert.match(source, /async function openEditProductModal\(id\)/);
+  assert.match(source, /apiFetch\("\/admin\/products", \{\s*method: "POST"/);
+  assert.match(source, /apiFetch\("\/admin\/products\/" \+ id, \{\s*method: "PUT"/);
+  assert.match(source, /Math\.round\(.*\* 100\)/);
+  assert.match(source, /Number\(\(product\.priceCents \?\? 0\) \/ 100\)\.toFixed\(2\)/);
+  assert.match(source, /Number\(\(product\.costCents \?\? 0\) \/ 100\)\.toFixed\(2\)/);
+  assert.match(source, /readonly/);
+  assert.match(source, /stockQuantity/);
+  assert.doesNotMatch(productsBlock, /res\.products|price_cents|stock_quantity|low_stock_threshold/);
+});
+
+test("Control Center inventory modal exists and uses the real inventory contract", () => {
+  const source = readFileSync(resolve(process.cwd(), "functions/aep/controlcenter/[[path]].js"), "utf8");
+
+  assert.match(source, /async function openRestockModal\(\)/);
+  assert.match(source, /apiFetch\("\/admin\/inventory\/adjust", \{\s*method: "POST"/);
+  assert.match(source, /quantityDelta === 0/);
+  assert.match(source, /const products = Array\.isArray\(productsRes\.items\) \? productsRes\.items : \[];/);
+  assert.match(source, /const movements = Array\.isArray\(res\.items\) \? res\.items : \[];/);
+  assert.doesNotMatch(source, /res\.movements/);
+  assert.match(source, /m\.createdAt/);
+  assert.match(source, /m\.productName/);
+  assert.match(source, /m\.movementType/);
+  assert.match(source, /m\.quantityDelta/);
+});
+
+test("Control Center product and inventory renderers use the correct contracts and endpoint payloads", () => {
+  const source = readFileSync(resolve(process.cwd(), "functions/aep/controlcenter/[[path]].js"), "utf8");
+  const productsBlock = source.slice(source.indexOf("async function renderProducts()"), source.indexOf("async function openRestockModal"));
+  const inventoryBlock = source.slice(source.indexOf("async function openRestockModal()"), source.indexOf("// 5. QR CODES"));
+
+  assert.match(productsBlock, /const products = Array\.isArray\(res\.items\) \? res\.items : \[];/);
+  assert.match(productsBlock, /formatMoney\(p\.priceCents\)/);
+  assert.match(productsBlock, /p\.stockQuantity \?\? 0/);
+  assert.match(productsBlock, /p\.lowStockThreshold \?\? 0/);
+  assert.doesNotMatch(productsBlock, /res\.products|price_cents|stock_quantity|low_stock_threshold/);
+
+  assert.match(inventoryBlock, /const products = Array\.isArray\(productsRes\.items\) \? productsRes\.items : \[];/);
+  assert.match(inventoryBlock, /const movements = Array\.isArray\(res\.items\) \? res\.items : \[];/);
+  assert.match(inventoryBlock, /productId, quantityDelta, movementType, reason/);
+  assert.match(inventoryBlock, /quantityDelta === 0/);
+  assert.doesNotMatch(inventoryBlock, /res\.movements/);
+});

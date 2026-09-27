@@ -1028,9 +1028,171 @@ export function onRequestGet() {
     }
 
     // 3. PRODUCTS
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    async function openNewProductModal() {
+      const modalHtml = [
+        '<form id="newProductForm">',
+        '  <div class="form-group"><label class="form-label">Nombre</label><input id="newProductName" class="form-control" placeholder="Ej: Agua de Coco" required></div>',
+        '  <div class="form-group"><label class="form-label">Descripción</label><textarea id="newProductDescription" class="form-control" rows="3" placeholder="Descripción breve del producto"></textarea></div>',
+        '  <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">',
+        '    <div class="form-group"><label class="form-label">Categoría</label><input id="newProductCategory" class="form-control" value="bebidas" required></div>',
+        '    <div class="form-group"><label class="form-label">SKU</label><input id="newProductSku" class="form-control" placeholder="SKU-001"></div>',
+        '  </div>',
+        '  <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">',
+        '    <div class="form-group"><label class="form-label">Precio (C$)</label><input id="newProductPriceCents" class="form-control" type="number" min="0" step="0.01" value="0" required></div>',
+        '    <div class="form-group"><label class="form-label">Costo (C$)</label><input id="newProductCostCents" class="form-control" type="number" min="0" step="0.01" value="0"></div>',
+        '  </div>',
+        '  <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">',
+        '    <div class="form-group"><label class="form-label">Stock inicial</label><input id="newProductStockQuantity" class="form-control" type="number" min="0" step="1" value="0" required></div>',
+        '    <div class="form-group"><label class="form-label">Stock Bajo</label><input id="newProductLowStockThreshold" class="form-control" type="number" min="0" step="1" value="5"></div>',
+        '  </div>',
+        '  <div class="form-group">',
+        '    <label class="form-label">Activo</label>',
+        '    <select id="newProductActive" class="form-control">',
+        '      <option value="1" selected>Activo</option>',
+        '      <option value="0">Inactivo</option>',
+        '    </select>',
+        '  </div>',
+        '  <button type="submit" class="btn-primary" style="width:100%; justify-content:center;">Guardar Producto</button>',
+        '</form>'
+      ].join("");
+
+      openModal("Nuevo Producto", modalHtml);
+
+      document.getElementById("newProductForm").addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        const priceValue = Number.parseFloat(document.getElementById("newProductPriceCents").value);
+        const costValue = Number.parseFloat(document.getElementById("newProductCostCents").value);
+
+        const payload = {
+          name: document.getElementById("newProductName").value.trim(),
+          description: document.getElementById("newProductDescription").value.trim(),
+          category: document.getElementById("newProductCategory").value.trim() || "bebidas",
+          sku: document.getElementById("newProductSku").value.trim(),
+          priceCents: Number.isFinite(priceValue) && priceValue >= 0 ? Math.round(priceValue * 100) : 0,
+          costCents: Number.isFinite(costValue) && costValue >= 0 ? Math.round(costValue * 100) : 0,
+          stockQuantity: Math.max(0, Number.parseInt(document.getElementById("newProductStockQuantity").value, 10) || 0),
+          lowStockThreshold: Math.max(0, Number.parseInt(document.getElementById("newProductLowStockThreshold").value, 10) || 0),
+          active: document.getElementById("newProductActive").value === "1"
+        };
+
+        if (!payload.name) {
+          showToast("El nombre del producto es obligatorio.", true);
+          return;
+        }
+
+        const res = await apiFetch("/admin/products", {
+          method: "POST",
+          body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) {
+          showToast(res.message || res.error || res.code || "No se pudo crear el producto.", true);
+          return;
+        }
+
+        closeModal();
+        showToast("Producto creado");
+        renderProducts();
+      });
+    }
+
+    async function openEditProductModal(id) {
+      const res = await apiFetch("/admin/products/" + id);
+      if (!res.ok) {
+        showToast(res.message || res.error || res.code || "No se pudo cargar el producto.", true);
+        return;
+      }
+
+      const product = res.product || res;
+      const priceValue = Number((product.priceCents ?? 0) / 100).toFixed(2);
+      const costValue = Number((product.costCents ?? 0) / 100).toFixed(2);
+      const modalHtml = [
+        '<form id="editProductForm">',
+        '  <div class="form-group"><label class="form-label">Nombre</label><input id="editProductName" class="form-control" value="' + escapeHtml(product.name || "") + '" required></div>',
+        '  <div class="form-group"><label class="form-label">Descripción</label><textarea id="editProductDescription" class="form-control" rows="3">' + escapeHtml(product.description || "") + '</textarea></div>',
+        '  <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">',
+        '    <div class="form-group"><label class="form-label">Categoría</label><input id="editProductCategory" class="form-control" value="' + escapeHtml(product.category || "bebidas") + '" required></div>',
+        '    <div class="form-group"><label class="form-label">SKU</label><input id="editProductSku" class="form-control" value="' + escapeHtml(product.sku || "") + '"></div>',
+        '  </div>',
+        '  <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">',
+        '    <div class="form-group"><label class="form-label">Precio (C$)</label><input id="editProductPriceCents" class="form-control" type="number" min="0" step="0.01" value="' + priceValue + '" required></div>',
+        '    <div class="form-group"><label class="form-label">Costo (C$)</label><input id="editProductCostCents" class="form-control" type="number" min="0" step="0.01" value="' + costValue + '"></div>',
+        '  </div>',
+        '  <div class="form-group">',
+        '    <label class="form-label">Stock actual</label>',
+        '    <input id="editProductStockCurrent" class="form-control" value="' + Number(product.stockQuantity ?? 0) + '" readonly>',
+        '  </div>',
+        '  <div class="form-group">',
+        '    <label class="form-label">Stock Bajo</label>',
+        '    <input id="editProductLowStockThreshold" class="form-control" type="number" min="0" step="1" value="' + Number(product.lowStockThreshold ?? 0) + '">',
+
+        '  </div>',
+        '  <div class="form-group">',
+        '    <label class="form-label">Activo</label>',
+        '    <select id="editProductActive" class="form-control">',
+        '      <option value="1" ' + (product.active ? "selected" : "") + '>Activo</option>',
+        '      <option value="0" ' + (product.active ? "" : "selected") + '>Inactivo</option>',
+        '    </select>',
+        '  </div>',
+        '  <button type="submit" class="btn-primary" style="width:100%; justify-content:center;">Guardar Cambios</button>',
+        '</form>'
+      ].join("");
+
+      openModal("Editar Producto", modalHtml);
+
+      document.getElementById("editProductForm").addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        const priceValue = Number.parseFloat(document.getElementById("editProductPriceCents").value);
+        const costValue = Number.parseFloat(document.getElementById("editProductCostCents").value);
+
+        const payload = {
+          name: document.getElementById("editProductName").value.trim(),
+          description: document.getElementById("editProductDescription").value.trim(),
+          category: document.getElementById("editProductCategory").value.trim() || "bebidas",
+          sku: document.getElementById("editProductSku").value.trim(),
+          priceCents: Number.isFinite(priceValue) && priceValue >= 0 ? Math.round(priceValue * 100) : 0,
+          costCents: Number.isFinite(costValue) && costValue >= 0 ? Math.round(costValue * 100) : 0,
+          lowStockThreshold: Math.max(0, Number.parseInt(document.getElementById("editProductLowStockThreshold").value, 10) || 0),
+          active: document.getElementById("editProductActive").value === "1"
+        };
+
+        if (!payload.name) {
+          showToast("El nombre del producto es obligatorio.", true);
+          return;
+        }
+
+        const putRes = await apiFetch("/admin/products/" + id, {
+          method: "PUT",
+          body: JSON.stringify(payload)
+        });
+
+        if (!putRes.ok) {
+          showToast(putRes.message || putRes.error || putRes.code || "No se pudo actualizar el producto.", true);
+          return;
+        }
+
+        closeModal();
+        showToast("Producto actualizado");
+        renderProducts();
+      });
+    }
+
     async function renderProducts() {
       const res = await apiFetch("/admin/products");
       if (!res.ok) return;
+
+      const products = Array.isArray(res.items) ? res.items : [];
 
       contentArea.innerHTML = \`
         <div class="card">
@@ -1042,16 +1204,16 @@ export function onRequestGet() {
             <table>
               <thead><tr><th>ID</th><th>Nombre</th><th>Precio</th><th>Stock</th><th>Estado</th><th>Acciones</th></tr></thead>
               <tbody>
-                \${(res.products || []).map(p => \`
+                \${(products || []).map(p => \`
                   <tr>
                     <td>#\${p.id}</td>
                     <td><strong>\${p.name}</strong></td>
-                    <td>\${formatMoney(p.price_cents)}</td>
-                    <td><strong>\${p.stock_quantity}</strong> \${p.stock_quantity <= p.low_stock_threshold ? '<span class="badge badge-warning">Bajo</span>' : ''}</td>
+                    <td>\${formatMoney(p.priceCents)}</td>
+                    <td><strong>\${p.stockQuantity ?? 0}</strong> \${(p.stockQuantity ?? 0) <= (p.lowStockThreshold ?? 0) ? '<span class="badge badge-warning">Bajo</span>' : ''}</td>
                     <td>\${p.active ? '<span class="badge badge-success">Activo</span>' : '<span class="badge badge-danger">Inactivo</span>'}</td>
                     <td><button class="btn-secondary" onclick="openEditProductModal(\${p.id})">Editar</button></td>
                   </tr>
-                \`).join('')}
+                \`).join('') || '<tr><td colspan="6" style="text-align:center">Sin productos</td></tr>'}
               </tbody>
             </table>
           </div>
@@ -1059,10 +1221,89 @@ export function onRequestGet() {
       \`;
     }
 
+    async function openRestockModal() {
+      const productsRes = await apiFetch("/admin/products");
+      if (!productsRes.ok) {
+        showToast(productsRes.message || productsRes.error || productsRes.code || "No se pudieron cargar los productos.", true);
+        return;
+      }
+
+      const products = Array.isArray(productsRes.items) ? productsRes.items : [];
+      const productOptions = products.map((product) => {
+        return '<option value="' + product.id + '">' + escapeHtml(product.name) + ' (' + Number(product.stockQuantity ?? 0) + ' en stock)</option>';
+      }).join("");
+
+      const modalHtml = [
+        '<form id="restockForm">',
+        '  <div class="form-group">',
+        '    <label class="form-label">Producto</label>',
+        '    <select id="restockProductId" class="form-control" required>',
+        productOptions || '<option value="">Sin productos</option>',
+        '    </select>',
+        '  </div>',
+        '  <div class="form-group">',
+        '    <label class="form-label">Tipo</label>',
+        '    <select id="restockMovementType" class="form-control">',
+        '      <option value="restock">Restock</option>',
+        '      <option value="adjustment">Ajuste</option>',
+        '    </select>',
+        '  </div>',
+        '  <div class="form-group">',
+        '    <label class="form-label">Cantidad</label>',
+        '    <input id="restockQuantityDelta" class="form-control" type="number" step="1" value="10" required>',
+        '  </div>',
+        '  <div class="form-group">',
+        '    <label class="form-label">Motivo</label>',
+        '    <input id="restockReason" class="form-control" placeholder="Ej: Compra proveedor, ajuste de inventario" required>',
+        '  </div>',
+        '  <button type="submit" class="btn-primary" style="width:100%; justify-content:center;">Guardar Movimiento</button>',
+        '</form>'
+      ].join("");
+
+      openModal("Ajustar / Restock de Inventario", modalHtml);
+
+      document.getElementById("restockForm").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const productId = document.getElementById("restockProductId").value;
+        const quantityDelta = Number.parseInt(document.getElementById("restockQuantityDelta").value, 10);
+        const movementType = document.getElementById("restockMovementType").value;
+        const reason = document.getElementById("restockReason").value.trim();
+
+        if (!productId) {
+          showToast("Selecciona un producto.", true);
+          return;
+        }
+        if (!Number.isInteger(quantityDelta) || quantityDelta === 0) {
+          showToast("La cantidad debe ser un número entero distinto de cero.", true);
+          return;
+        }
+        if (!reason) {
+          showToast("El motivo es obligatorio.", true);
+          return;
+        }
+
+        const res = await apiFetch("/admin/inventory/adjust", {
+          method: "POST",
+          body: JSON.stringify({ productId, quantityDelta, movementType, reason })
+        });
+
+        if (!res.ok) {
+          showToast(res.message || res.error || res.code || "No se pudo ajustar el inventario.", true);
+          return;
+        }
+
+        closeModal();
+        showToast("Inventario actualizado");
+        renderInventory();
+      });
+    }
+
     // 4. INVENTORY
     async function renderInventory() {
       const res = await apiFetch("/admin/inventory");
       if (!res.ok) return;
+
+      const movements = Array.isArray(res.items) ? res.items : [];
 
       contentArea.innerHTML = \`
         <div class="card">
@@ -1074,7 +1315,7 @@ export function onRequestGet() {
             <table>
               <thead><tr><th>Fecha</th><th>Producto</th><th>Tipo</th><th>Cambio</th><th>Motivo</th><th>Actor</th></tr></thead>
               <tbody>
-                \${(res.movements || []).map(m => \`
+                \${(movements || []).map(m => \`
                   <tr>
                     <td>\${new Date(m.createdAt).toLocaleString()}</td>
                     <td><strong>\${m.productName}</strong></td>
@@ -1083,7 +1324,7 @@ export function onRequestGet() {
                     <td>\${m.reason}</td>
                     <td>\${m.actorType} (\${m.actorIdentifier || 'system'})</td>
                   </tr>
-                \`).join('')}
+                \`).join('') || '<tr><td colspan="6" style="text-align:center">Sin movimientos</td></tr>'}
               </tbody>
             </table>
           </div>
