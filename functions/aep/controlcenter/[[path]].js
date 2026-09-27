@@ -229,6 +229,7 @@ export function onRequestGet() {
       user: null,
       permissions: []
     };
+    let authReady = false;
 
     const NAV_ITEMS = [
       { id: "overview", label: "Overview", perm: "dashboard.read", icon: '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>' },
@@ -303,13 +304,28 @@ export function onRequestGet() {
           ...options
         });
         if (res.status === 401 && !endpoint.includes("/login")) {
+          resetAuthState();
           renderLogin();
-          return { ok: false, code: "SELLER_AUTH_REQUIRED" };
+          return { ok: false, code: "AUTH_REQUIRED", halt: true };
+        }
+        if (res.status === 403) {
+          renderAccessDenied();
+          return { ok: false, code: "ACCESS_DENIED", halt: true };
         }
         return res.json();
       } catch (err) {
         return { ok: false, code: "NETWORK_ERROR", message: err.message };
       }
+    }
+
+    function resetAuthState() {
+      state.authenticated = false;
+      state.user = null;
+      state.permissions = [];
+      currentRoute = "overview";
+      navMenu.innerHTML = "";
+      userProfileTag.hidden = true;
+      logoutBtn.hidden = true;
     }
 
     function userHasPerm(permissionKey) {
@@ -330,8 +346,12 @@ export function onRequestGet() {
     }
 
     async function checkAuth() {
+      authReady = false;
+      navMenu.innerHTML = "";
+      contentArea.innerHTML = \`<div class="card"><div style="height: 120px; display:flex; align-items:center; justify-content:center; color:var(--text-muted);">Comprobando sesión...</div></div>\`;
       const res = await apiFetch("/staff/session");
       if (res.authenticated) {
+        authReady = true;
         state.authenticated = true;
         state.user = res.user;
         state.permissions = res.user.permissions || [];
@@ -345,13 +365,15 @@ export function onRequestGet() {
         const targetRoute = getRouteFromUrl();
         navigate(availableRoutes.includes(targetRoute) ? targetRoute : availableRoutes[0] || "overview");
       } else {
+        authReady = true;
+        resetAuthState();
         renderLogin();
       }
     }
 
     logoutBtn.addEventListener("click", async () => {
       await apiFetch("/staff/logout", { method: "POST", body: "{}" });
-      state.authenticated = false;
+      resetAuthState();
       renderLogin();
     });
 
@@ -363,7 +385,15 @@ export function onRequestGet() {
     }
 
     function navigate(route, pushState = true) {
-      if (!state.authenticated) { renderLogin(); return; }
+      if (!authReady) return;
+      if (!state.authenticated) { resetAuthState(); renderLogin(); return; }
+      const navObj = NAV_ITEMS.find(n => n.id === route);
+      if (navObj && !userHasPerm(navObj.perm)) {
+        currentRoute = route;
+        pageTitle.textContent = "Access Denied";
+        renderAccessDenied();
+        return;
+      }
       currentRoute = route;
       sidebar.classList.remove("mobile-open");
 
@@ -376,7 +406,6 @@ export function onRequestGet() {
         window.history.pushState({}, "", newPath);
       }
 
-      const navObj = NAV_ITEMS.find(n => n.id === route);
       pageTitle.textContent = navObj ? navObj.label : "Control Center";
       renderRoute(route);
     }
@@ -385,6 +414,7 @@ export function onRequestGet() {
 
     // LOGIN VIEW
     function renderLogin() {
+      resetAuthState();
       pageTitle.textContent = "Control Center Login";
       userProfileTag.hidden = true;
       logoutBtn.hidden = true;
@@ -452,7 +482,20 @@ export function onRequestGet() {
       });
     }
 
+    function renderAccessDenied() {
+      pageTitle.textContent = "Access Denied";
+      contentArea.innerHTML = \`
+        <div class="card">
+          <div class="card-header"><div class="card-title">Access Denied</div></div>
+          <p style="color:var(--text-muted);">No tienes permiso para abrir este módulo.</p>
+        </div>
+      \`;
+    }
+
     async function renderRoute(route) {
+      if (!state.authenticated) { renderLogin(); return; }
+      const navObj = NAV_ITEMS.find(n => n.id === route);
+      if (navObj && !userHasPerm(navObj.perm)) { renderAccessDenied(); return; }
       contentArea.innerHTML = \`<div class="card"><div style="height: 140px; display:flex; align-items:center; justify-content:center; color:var(--text-muted);">Cargando...</div></div>\`;
 
       switch (route) {
@@ -572,7 +615,11 @@ export function onRequestGet() {
 
     // POS CONTROL CENTER
     async function renderPos() {
-      const recent = await apiFetch("/admin/sales?limit=10");
+      const recent = userHasPerm("sales.read")
+        ? await apiFetch("/admin/sales?limit=10")
+        : await apiFetch("/seller/my-sales");
+      if (!recent.ok) return;
+      const recentSales = recent.items || recent.sales || [];
       contentArea.innerHTML = \`
         <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(340px, 1fr)); gap:24px;">
           <div class="card">
@@ -605,8 +652,8 @@ export function onRequestGet() {
               <table>
                 <thead><tr><th>Producto</th><th>QR</th><th>Total</th><th>Desc.</th></tr></thead>
                 <tbody>
-                  \${(recent.items || []).map(s => \`
-                    <tr><td><strong>\${s.productName}</strong></td><td>#\${s.qrPublicNumber}</td><td>\${formatMoney(s.finalPriceCents)}</td><td>\${s.discountPercent}%</td></tr>
+                  \${recentSales.map(s => \`
+                    <tr><td><strong>\${s.productName}</strong></td><td>#\${s.qrPublicNumber ?? s.qrNumber ?? ''}</td><td>\${formatMoney(s.finalPriceCents)}</td><td>\${s.discountPercent}%</td></tr>
                   \`).join('') || '<tr><td colspan="4" style="text-align:center">Sin ventas recientes</td></tr>'}
                 </tbody>
               </table>
@@ -866,31 +913,66 @@ export function onRequestGet() {
       window.open(url, "_blank", "noopener");
     }
 
+    function escapePrintText(value) {
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
     function renderBrowserPrintSheets(batch) {
       if (!batch) return "";
       const profile = batch.printProfile || { columns: 5, rows: 10 };
       const slots = getOrderedBrowserSlots(profile);
+      const startSlot = Math.max(1, Number(batch.startSlot || 1));
+      const items = Array.isArray(batch.items) ? batch.items : [];
       return \`
         <div id="printable-labels">
           <div class="print-sheet-frame">
-            \${slots.map(s => \`
-              <div class="print-slot" style="left:\${s.x}in; top:\${s.y}in; width:\${s.w}in; height:\${s.h}in;">
-                <span class="mono">#\${s.number || ''}</span>
-              </div>
-            \`).join('')}
+            \${items.map((item, index) => {
+              const slot = slots[startSlot - 1 + index];
+              if (!slot) return "";
+              return \`
+                <div class="print-slot" style="left:\${slot.x}in; top:\${slot.y}in; width:\${slot.w}in; height:\${slot.h}in;">
+                  <div class="qr-label-card">
+                    \${item.svg || ""}
+                    <strong>GAMMS AEP</strong>
+                    <span>\${escapePrintText(item.product?.name || "Producto")}</span>
+                    <span class="mono">#\${escapePrintText(item.publicNumber)}</span>
+                  </div>
+                </div>
+              \`;
+            }).join('')}
           </div>
         </div>
       \`;
     }
 
     function getOrderedBrowserSlots(profile) {
-      return Array.from({ length: 50 }).map((_, i) => ({
-        x: (i % profile.columns) * 1.5,
-        y: Math.floor(i / profile.columns) * 1.0,
-        w: 1.5,
-        h: 1.0,
-        number: i + 1
-      }));
+      const columns = profile?.columns || 5;
+      const rows = profile?.rows || 10;
+      const labelWidth = ((profile?.labelWidthUm || 38100) / 25400);
+      const labelHeight = ((profile?.labelHeightUm || 25400) / 25400);
+      const marginLeft = ((profile?.marginLeftUm || 12700) / 25400);
+      const marginTop = ((profile?.marginTopUm || 12700) / 25400);
+      const gapX = ((profile?.gapXUm || 0) / 25400);
+      const gapY = ((profile?.gapYUm || 0) / 25400);
+      const slots = [];
+      for (let row = 0; row < rows; row += 1) {
+        for (let col = columns - 1; col >= 0; col -= 1) {
+          slots.push({
+            row: row + 1,
+            col: col + 1,
+            x: marginLeft + col * (labelWidth + gapX),
+            y: marginTop + row * (labelHeight + gapY),
+            w: labelWidth,
+            h: labelHeight
+          });
+        }
+      }
+      return slots;
     }
 
     function fitPrintPreview() { /* Scale browser preview */ }
@@ -1283,20 +1365,6 @@ export function onRequestGet() {
         </div>
       \`;
     }
-
-    // Print Preview Legacy Helper Signatures
-    function escapePrintText(value) { return String(value || '').replace(/&/g, "&amp;"); }
-    function renderPrintLabel(item) { return escapePrintText(item.public_number); }
-    function fitPrintPreview() {}
-    window.addEventListener("resize", fitPrintPreview);
-    function getOrderedBrowserSlots(profile) {
-      const slots = [];
-      const rows = profile?.rows || 10, columns = profile?.columns || 5;
-      const pushSlot = (r, c) => slots.push({ row: r, col: c });
-      for (let row = 0; row < rows; row += 1) { for (let col = columns - 1; col >= 0; col -= 1) pushSlot(row, col); }
-      return slots;
-    }
-    function renderBrowserPrintSheets(batch) { return getOrderedBrowserSlots({}); }
 
     checkAuth();
   </script>

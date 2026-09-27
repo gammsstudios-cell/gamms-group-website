@@ -714,20 +714,74 @@ test("Control Center browser preview keeps PDF physical mapping without being pr
 
   assert.match(source, /\.print-slot \{ position: absolute;/);
   assert.match(source, /function renderBrowserPrintSheets\(batch\)/);
+  assert.equal((source.match(/function renderBrowserPrintSheets\(batch\)/g) || []).length, 1);
   assert.match(source, /function getOrderedBrowserSlots\(profile\)/);
+  assert.equal((source.match(/function getOrderedBrowserSlots\(profile\)/g) || []).length, 1);
   assert.match(source, /\.print-sheet-frame \{ width: 8\.5in; height: 11in;/);
   assert.match(source, /function fitPrintPreview\(\)/);
   assert.match(source, /window\.addEventListener\("resize", fitPrintPreview\)/);
   assert.match(source, /transform: scale\(var\(--preview-scale, 1\)\)/);
   assert.match(source, /\.print-slot \.qr-label-card svg \{ position: absolute; left: 0\.04in; top: 0\.14in; width: 0\.72in; height: 0\.72in;/);
-  assert.match(source, /function renderPrintLabel\(item\)/);
   assert.match(source, /function escapePrintText\(value\)/);
+  assert.match(source, /items\.map\(\(item, index\) =>/);
+  assert.match(source, /item\.svg \|\| ""/);
+  assert.match(source, /item\.publicNumber/);
   assert.match(source, /shape-rendering: crispEdges/);
-  assert.match(source, /for \(let row = 0; row < rows; row \+= 1\) \{\s*for \(let col = columns - 1; col >= 0; col -= 1\) pushSlot\(row, col\);/);
+  assert.match(source, /const labelWidth = \(\(profile\?\.labelWidthUm \|\| 38100\) \/ 25400\);/);
+  assert.match(source, /for \(let row = 0; row < rows; row \+= 1\) \{/);
+  assert.match(source, /for \(let col = columns - 1; col >= 0; col -= 1\) \{/);
+  assert.match(source, /x: marginLeft \+ col \* \(labelWidth \+ gapX\)/);
+  assert.doesNotMatch(source, /function renderBrowserPrintSheets\(batch\) \{ return getOrderedBrowserSlots\(\{\}\); \}/);
+  assert.doesNotMatch(source, /\$\{renderBrowserPrintSheets\(currentPrintBatch\)\}[\s\S]*\[object Object\]/);
+  assert.doesNotMatch(source, /\[object Object\]/);
   assert.doesNotMatch(source, /name="printOrder"/);
   assert.doesNotMatch(source, /#printable-labels \{[^}]*min-height: 11in/);
   assert.doesNotMatch(source, /grid-template-columns: repeat\(5, 1\.5in\)/);
   assert.doesNotMatch(source, /print-guidance/);
+});
+
+test("Control Center auth gate and 401/403 handling stop protected rendering", () => {
+  const source = readFileSync(resolve(process.cwd(), "functions/aep/controlcenter/[[path]].js"), "utf8");
+
+  assert.match(source, /let authReady = false;/);
+  assert.match(source, /Comprobando sesi/);
+  assert.match(source, /const res = await apiFetch\("\/staff\/session"\)/);
+  assert.match(source, /if \(!authReady\) return;/);
+  assert.match(source, /if \(!state\.authenticated\) \{ resetAuthState\(\); renderLogin\(\); return; \}/);
+  assert.match(source, /if \(res\.status === 401 && !endpoint\.includes\("\/login"\)\) \{/);
+  assert.match(source, /return \{ ok: false, code: "AUTH_REQUIRED", halt: true \};/);
+  assert.match(source, /if \(res\.status === 403\) \{/);
+  assert.match(source, /function renderAccessDenied\(\)/);
+  assert.match(source, /return \{ ok: false, code: "ACCESS_DENIED", halt: true \};/);
+  assert.match(source, /if \(navObj && !userHasPerm\(navObj\.perm\)\) \{ renderAccessDenied\(\); return; \}/);
+});
+
+test("Control Center essential routes and RBAC menu definitions remain present", () => {
+  const source = readFileSync(resolve(process.cwd(), "functions/aep/controlcenter/[[path]].js"), "utf8");
+  const expectedRoutes = [
+    "overview", "pos", "my-sales", "sales", "products", "inventory", "qr", "print",
+    "rewards", "customers", "users", "roles", "shifts", "reports", "audit", "settings", "system"
+  ];
+
+  for (const route of expectedRoutes) {
+    assert.match(source, new RegExp(`id: "${route}"`));
+    assert.match(source, new RegExp(`case "${route}"`));
+  }
+
+  assert.match(source, /if \(state\.permissions\.includes\("\*"\)\) return true;/);
+  assert.match(source, /perm: "users\.read"/);
+  assert.match(source, /perm: "roles\.read"/);
+  assert.match(source, /perm: "system\.read"/);
+  assert.match(source, /perm: "sales\.read_own"/);
+});
+
+test("Control Center POS uses seller sales endpoint when admin sales permission is absent", () => {
+  const source = readFileSync(resolve(process.cwd(), "functions/aep/controlcenter/[[path]].js"), "utf8");
+
+  assert.match(source, /const recent = userHasPerm\("sales\.read"\)/);
+  assert.match(source, /await apiFetch\("\/admin\/sales\?limit=10"\)/);
+  assert.match(source, /await apiFetch\("\/seller\/my-sales"\)/);
+  assert.match(source, /s\.qrPublicNumber \?\? s\.qrNumber/);
 });
 
 test("cannot reactivate a used QR code", async () => {
