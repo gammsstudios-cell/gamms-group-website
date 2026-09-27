@@ -1,12 +1,12 @@
 // POST /aep/api/seller/redeem
 import { redeemClaim, sanitizeRedemptionError } from "../../_lib/redemption.js";
-import { requireSellerAuth } from "../../_lib/sellerAuth.js";
+import { requirePosActor } from "../../_lib/posAuth.js";
 import { jsonResponse, errorJson } from "../../_lib/adminResponses.js";
 
 export async function onRequestPost({ request, env }) {
   const db = env.DB;
-  const auth = await requireSellerAuth(request, env);
-  if (!auth.ok) return errorJson(auth.code, auth.status);
+  const auth = await requirePosActor(request, env, db);
+  if (!auth.ok) return auth.response;
 
   let body;
   try {
@@ -19,11 +19,11 @@ export async function onRequestPost({ request, env }) {
   const physicalQrToken = body?.physicalQrToken || body?.qrToken || null;
 
   const result = await redeemClaim(db, claimCode, {
-    actorType: "seller",
-    actorIdentifier: "legacy-seller",
+    actorType: auth.actorType,
+    actorIdentifier: auth.actorIdentifier,
     physicalQrToken,
-    staffUserId: null,
-    shiftId: null,
+    staffUserId: auth.staffUserId,
+    shiftId: auth.shiftId,
     audit: true
   });
 

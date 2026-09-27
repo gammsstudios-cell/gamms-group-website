@@ -443,7 +443,7 @@ export async function redeemClaim(db, rawCode, options = {}) {
       purchase.id,
       options.staffUserId || null,
       options.shiftId || null,
-      "staff"
+      options.staffUserId ? "staff" : "system"
     );
 
     const product = await db.prepare("SELECT name FROM products WHERE id = ? LIMIT 1").bind(purchase.product_id).first();

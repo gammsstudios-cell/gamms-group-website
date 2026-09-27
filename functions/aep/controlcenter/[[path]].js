@@ -520,33 +520,6 @@ export function onRequestGet() {
           <p style="color:var(--text-muted);">No tienes permiso para abrir este módulo.</p>
         </div>
       \`;
-      const claimInput = document.getElementById("posClaimInput");
-      const physicalInput = document.getElementById("posPhysicalQrInput");
-      const claimActions = claimInput?.closest(".form-group")?.nextElementSibling;
-      if (claimActions) {
-        claimActions.innerHTML = \`
-          <button class="btn-secondary" onclick="openQrScanner('claim')">Escanear QR</button>
-          <button class="btn-secondary" onclick="previewPosClaim()">Validar premio</button>
-        \`;
-      }
-      const step2Box = document.getElementById("posStep2Box");
-      if (step2Box && physicalInput) {
-        const oldButton = step2Box.querySelector(".btn-primary");
-        if (oldButton) oldButton.remove();
-        physicalInput.closest(".form-group").insertAdjacentHTML("afterend", \`
-          <div class="filter-bar">
-            <button class="btn-secondary" onclick="openQrScanner('beverage')">Escanear QR fisico</button>
-            <button class="btn-secondary" onclick="previewPosBeverage()">Previsualizar compra</button>
-          </div>
-          <div id="posConfirmBox" style="margin-top:16px;" hidden></div>
-        \`);
-      }
-      claimInput?.addEventListener("keydown", (event) => {
-        if (event.key === "Enter") { event.preventDefault(); previewPosClaim(); }
-      });
-      physicalInput?.addEventListener("keydown", (event) => {
-        if (event.key === "Enter") { event.preventDefault(); previewPosBeverage(); }
-      });
     }
 
     async function renderRoute(route) {
@@ -691,14 +664,19 @@ export function onRequestGet() {
               <input id="posClaimInput" class="form-control" placeholder="T3X8-5OHC-EW" autofocus>
             </div>
             <div class="filter-bar">
-              <button class="btn-secondary" onclick="previewPosClaim()">1. Validar Premio</button>
+              <button class="btn-secondary" onclick="openQrScanner('claim')">Escanear QR</button>
+              <button class="btn-secondary" onclick="previewPosClaim()">Validar Premio</button>
             </div>
             <div id="posStep2Box" style="margin-top:18px;" hidden>
               <div class="form-group">
                 <label class="form-label">2. Escanear Bebida (QR Físico)</label>
                 <input id="posPhysicalQrInput" class="form-control" placeholder="Escanear token de la bebida">
               </div>
-              <button class="btn-primary" onclick="redeemPosClaim()" style="width:100%; justify-content:center;">Confirmar Canje 50%</button>
+              <div class="filter-bar">
+                <button class="btn-secondary" onclick="openQrScanner('beverage')">Escanear QR físico</button>
+                <button class="btn-secondary" onclick="previewPosBeverage()">Previsualizar compra</button>
+              </div>
+              <div id="posConfirmBox" style="margin-top:16px;" hidden></div>
             </div>
             <div id="posPreview" style="margin-top:18px;"></div>
           </div>
@@ -720,11 +698,17 @@ export function onRequestGet() {
           </div>
         </div>
       \`;
+      document.getElementById("posClaimInput")?.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") { event.preventDefault(); previewPosClaim(); }
+      });
+      document.getElementById("posPhysicalQrInput")?.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") { event.preventDefault(); previewPosBeverage(); }
+      });
     }
 
     function normalizeClaimInput(value) { return String(value || "").trim().replace(/^GAMMS-AEP-CLAIM:/i, "").trim(); }
 
-    async function previewPosClaim() {
+    async function previewPosClaimLegacyDisabled() {
       const input = document.getElementById("posClaimInput");
       const code = normalizeClaimInput(input.value);
       const box = document.getElementById("posPreview");
@@ -745,7 +729,7 @@ export function onRequestGet() {
       \`;
     }
 
-    async function redeemPosClaim() {
+    async function redeemPosClaimLegacyDisabled() {
       const code = normalizeClaimInput(document.getElementById("posClaimInput").value);
       const physicalQrToken = document.getElementById("posPhysicalQrInput").value.trim();
       if (!code) return showToast("Ingresa el premio.", true);

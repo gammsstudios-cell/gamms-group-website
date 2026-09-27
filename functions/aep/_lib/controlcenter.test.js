@@ -30,6 +30,9 @@ import { cancelReward, listRewards } from "./rewardsAdmin.js";
 import { listCustomers } from "./customersAdmin.js";
 import { createSellerAccount, listSellers, resetSellerPasscode, updateSellerAccount } from "./sellers.js";
 import { sha256Hex } from "./crypto.js";
+import { requirePosActor } from "./posAuth.js";
+import { createSellerSession, SELLER_COOKIE_NAME } from "./sellerAuth.js";
+import { buildStaffCookie, createStaffSession } from "./staffSessions.js";
 
 // Helper SQLite to D1 Adapter for testing migrations and queries
 class TestD1 {
@@ -795,9 +798,22 @@ test("Control Center defaults to dark theme without overwriting an existing pref
 
 test("Control Center POS camera scanner keeps purchase confirmation explicit", () => {
   const source = readFileSync(resolve(process.cwd(), "functions/aep/controlcenter/[[path]].js"), "utf8");
+  const accessDeniedBlock = source.slice(
+    source.indexOf("function renderAccessDenied()"),
+    source.indexOf("async function renderRoute")
+  );
+  const posBlock = source.slice(
+    source.indexOf("async function renderPos()"),
+    source.indexOf("function normalizeClaimInput")
+  );
 
-  assert.match(source, /openQrScanner\('claim'\)/);
-  assert.match(source, /openQrScanner\('beverage'\)/);
+  assert.match(posBlock, /openQrScanner\('claim'\)/);
+  assert.match(posBlock, /openQrScanner\('beverage'\)/);
+  assert.match(posBlock, /previewPosClaim\(\)/);
+  assert.match(posBlock, /previewPosBeverage\(\)/);
+  assert.doesNotMatch(accessDeniedBlock, /openQrScanner/);
+  assert.doesNotMatch(accessDeniedBlock, /posClaimInput/);
+  assert.doesNotMatch(accessDeniedBlock, /previewPosClaim/);
   assert.match(source, /new BarcodeDetector\(\{ formats: \["qr_code"\] \}\)/);
   assert.match(source, /facingMode: \{ ideal: "environment" \}/);
   assert.match(source, /navigator\.vibrate\(60\)/);
@@ -813,6 +829,103 @@ test("Control Center POS camera scanner keeps purchase confirmation explicit", (
   assert.doesNotMatch(source, /handleQrDetected[\s\S]{0,500}redeemPosClaim\(/);
   assert.match(source, /if \(event\.key === "Enter"\) \{ event\.preventDefault\(\); previewPosClaim\(\); \}/);
   assert.match(source, /if \(event\.key === "Enter"\) \{ event\.preventDefault\(\); previewPosBeverage\(\); \}/);
+});
+
+test("Control Center POS keeps one active preview/redeem implementation", () => {
+  const source = readFileSync(resolve(process.cwd(), "functions/aep/controlcenter/[[path]].js"), "utf8");
+
+  assert.equal((source.match(/async function previewPosClaim\(/g) || []).length, 1);
+  assert.equal((source.match(/async function redeemPosClaim\(/g) || []).length, 1);
+  assert.match(source, /async function previewPosClaimLegacyDisabled\(/);
+  assert.match(source, /async function redeemPosClaimLegacyDisabled\(/);
+});
+
+test("POS actor auth accepts Staff with pos.access and rejects valid Staff without permission as 403", async () => {
+  const db = await createTestDb();
+  await db.prepare(`
+    INSERT INTO aep_users (id, username, username_normalized, display_name, password_hash)
+    VALUES (101, 'pos_staff', 'pos_staff', 'POS Staff', 'hash')
+  `).run();
+  await db.prepare("INSERT INTO aep_user_roles (user_id, role_id) VALUES (101, 5)").run();
+  await db.prepare("INSERT INTO staff_shifts (id, user_id, status) VALUES (501, 101, 'open')").run();
+
+  const { token } = await createStaffSession(db, 101);
+  const auth = await requirePosActor(
+    new Request("https://example.com/aep/api/seller/claims/ABCD-EFGH-23", {
+      headers: { Cookie: buildStaffCookie(token, 3600, true) }
+    }),
+    {},
+    db
+  );
+
+  assert.equal(auth.ok, true);
+  assert.equal(auth.mode, "staff");
+  assert.equal(auth.staffUserId, 101);
+  assert.equal(auth.shiftId, 501);
+  assert.equal(auth.actorType, "staff");
+  assert.equal(auth.actorIdentifier, "pos_staff");
+
+  await db.prepare(`
+    INSERT INTO aep_users (id, username, username_normalized, display_name, password_hash)
+    VALUES (102, 'auditor_user', 'auditor_user', 'Auditor', 'hash')
+  `).run();
+  await db.prepare("INSERT INTO aep_user_roles (user_id, role_id) VALUES (102, 8)").run();
+  const deniedSession = await createStaffSession(db, 102);
+  const denied = await requirePosActor(
+    new Request("https://example.com/aep/api/seller/claims/ABCD-EFGH-23", {
+      headers: { Cookie: buildStaffCookie(deniedSession.token, 3600, true) }
+    }),
+    {},
+    db
+  );
+  assert.equal(denied.ok, false);
+  assert.equal(denied.response.status, 403);
+  assert.equal((await denied.response.json()).code, "PERMISSION_DENIED");
+});
+
+test("POS actor auth preserves legacy seller sessions and only logs in on invalid sessions", async () => {
+  const db = await createTestDb();
+  const env = {
+    AEP_SELLER_PASSCODE_HASH: "0".repeat(64),
+    AEP_SELLER_SESSION_SECRET: "test-secret"
+  };
+  const sellerToken = await createSellerSession(env);
+
+  const seller = await requirePosActor(
+    new Request("https://example.com/aep/api/seller/claims/ABCD-EFGH-23", {
+      headers: { Cookie: `${SELLER_COOKIE_NAME}=${encodeURIComponent(sellerToken)}` }
+    }),
+    env,
+    db
+  );
+  assert.equal(seller.ok, true);
+  assert.equal(seller.mode, "seller");
+  assert.equal(seller.actorIdentifier, "legacy-seller");
+  assert.equal(seller.staffUserId, null);
+
+  const missing = await requirePosActor(
+    new Request("https://example.com/aep/api/seller/claims/ABCD-EFGH-23"),
+    env,
+    db
+  );
+  assert.equal(missing.ok, false);
+  assert.equal(missing.response.status, 401);
+  assert.equal((await missing.response.json()).code, "SELLER_AUTH_REQUIRED");
+});
+
+test("POS seller endpoints use unified POS authorization and staff attribution", () => {
+  const claimSource = readFileSync(resolve(process.cwd(), "functions/aep/api/seller/claims/[code].js"), "utf8");
+  const previewSource = readFileSync(resolve(process.cwd(), "functions/aep/api/seller/claims/preview-product.js"), "utf8");
+  const redeemSource = readFileSync(resolve(process.cwd(), "functions/aep/api/seller/redeem.js"), "utf8");
+  const redemptionSource = readFileSync(resolve(process.cwd(), "functions/aep/_lib/redemption.js"), "utf8");
+
+  for (const endpointSource of [claimSource, previewSource, redeemSource]) {
+    assert.match(endpointSource, /requirePosActor/);
+    assert.doesNotMatch(endpointSource, /requireSellerAuth/);
+  }
+  assert.match(redeemSource, /staffUserId: auth\.staffUserId/);
+  assert.match(redeemSource, /shiftId: auth\.shiftId/);
+  assert.match(redemptionSource, /options\.staffUserId \? "staff" : "system"/);
 });
 
 test("cannot reactivate a used QR code", async () => {

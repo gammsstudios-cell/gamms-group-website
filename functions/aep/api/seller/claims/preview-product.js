@@ -1,12 +1,12 @@
 // POST /aep/api/seller/claims/preview-product
 import { previewClaimProduct, sanitizeRedemptionError } from "../../../_lib/redemption.js";
-import { requirePermission } from "../../../_lib/staffAuth.js";
+import { requirePosActor } from "../../../_lib/posAuth.js";
 import { jsonResponse, errorJson } from "../../../_lib/adminResponses.js";
 
 export async function onRequestPost({ request, env }) {
   const db = env.DB;
-  const perm = await requirePermission(request, env, db, "pos.access");
-  if (!perm.authorized) return perm.response;
+  const auth = await requirePosActor(request, env, db);
+  if (!auth.ok) return auth.response;
 
   let body;
   try {
