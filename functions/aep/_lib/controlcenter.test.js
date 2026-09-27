@@ -784,6 +784,37 @@ test("Control Center POS uses seller sales endpoint when admin sales permission 
   assert.match(source, /s\.qrPublicNumber \?\? s\.qrNumber/);
 });
 
+test("Control Center defaults to dark theme without overwriting an existing preference", () => {
+  const source = readFileSync(resolve(process.cwd(), "functions/aep/controlcenter/[[path]].js"), "utf8");
+
+  assert.match(source, /theme: localStorage\.getItem\("gamms_theme"\) \|\| "dark"/);
+  assert.match(source, /function applyTheme\(theme, persist = true\)/);
+  assert.match(source, /if \(persist\) localStorage\.setItem\("gamms_theme", theme\);/);
+  assert.match(source, /applyTheme\(state\.theme, false\);/);
+});
+
+test("Control Center POS camera scanner keeps purchase confirmation explicit", () => {
+  const source = readFileSync(resolve(process.cwd(), "functions/aep/controlcenter/[[path]].js"), "utf8");
+
+  assert.match(source, /openQrScanner\('claim'\)/);
+  assert.match(source, /openQrScanner\('beverage'\)/);
+  assert.match(source, /new BarcodeDetector\(\{ formats: \["qr_code"\] \}\)/);
+  assert.match(source, /facingMode: \{ ideal: "environment" \}/);
+  assert.match(source, /navigator\.vibrate\(60\)/);
+  assert.match(source, /caps\?\.torch/);
+  assert.match(source, /stream\.getTracks\(\)\.forEach\(track => track\.stop\(\)\)/);
+  assert.match(source, /closeModal\(\) \{ stopQrScanner\(\);/);
+  assert.match(source, /navigate\(route, pushState = true\) \{\s*stopQrScanner\(\);/);
+  assert.match(source, /logoutBtn\.addEventListener\("click", async \(\) => \{\s*stopQrScanner\(\);/);
+  assert.match(source, /apiFetch\("\/seller\/claims\/preview-product"/);
+  assert.match(source, /posProductPreview = res;/);
+  assert.match(source, /Previsualiza la compra antes de confirmar/);
+  assert.match(source, /<button class="btn-primary" onclick="redeemPosClaim\(\)"/);
+  assert.doesNotMatch(source, /handleQrDetected[\s\S]{0,500}redeemPosClaim\(/);
+  assert.match(source, /if \(event\.key === "Enter"\) \{ event\.preventDefault\(\); previewPosClaim\(\); \}/);
+  assert.match(source, /if \(event\.key === "Enter"\) \{ event\.preventDefault\(\); previewPosBeverage\(\); \}/);
+});
+
 test("cannot reactivate a used QR code", async () => {
   const db = await createTestDb();
   const prod = await createProduct(db, { name: "Soda", priceCents: 2000, stockQuantity: 50 });

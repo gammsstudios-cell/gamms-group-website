@@ -234,8 +234,20 @@ export function onRequestGet() {
     const API_BASE = "/aep/api";
     let currentRoute = "overview";
     let currentPrintBatch = null;
+    let posClaimPreview = null;
+    let posProductPreview = null;
+    let qrScanner = {
+      stream: null,
+      detector: null,
+      scanning: false,
+      processing: false,
+      mode: null,
+      video: null,
+      devices: [],
+      selectedDeviceId: ""
+    };
     let state = {
-      theme: localStorage.getItem("gamms_theme") || "system",
+      theme: localStorage.getItem("gamms_theme") || "dark",
       authenticated: false,
       user: null,
       permissions: []
@@ -289,7 +301,7 @@ export function onRequestGet() {
       setTimeout(() => toast.remove(), 4000);
     }
 
-    function closeModal() { modalOverlay.classList.remove("open"); }
+    function closeModal() { stopQrScanner(); modalOverlay.classList.remove("open"); }
     modalClose.addEventListener("click", closeModal);
     function openModal(title, contentHtml) {
       modalTitle.textContent = title;
@@ -297,9 +309,9 @@ export function onRequestGet() {
       modalOverlay.classList.add("open");
     }
 
-    function applyTheme(theme) {
+    function applyTheme(theme, persist = true) {
       state.theme = theme;
-      localStorage.setItem("gamms_theme", theme);
+      if (persist) localStorage.setItem("gamms_theme", theme);
       if (theme === "system") {
         const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
         document.documentElement.setAttribute("data-theme", isDark ? "dark" : "light");
@@ -388,6 +400,7 @@ export function onRequestGet() {
     }
 
     logoutBtn.addEventListener("click", async () => {
+      stopQrScanner();
       await apiFetch("/staff/logout", { method: "POST", body: "{}" });
       resetAuthState();
       renderLogin();
@@ -401,6 +414,7 @@ export function onRequestGet() {
     }
 
     function navigate(route, pushState = true) {
+      stopQrScanner();
       if (!authReady) return;
       if (!state.authenticated) { resetAuthState(); renderLogin(); return; }
       const navObj = NAV_ITEMS.find(n => n.id === route);
@@ -506,6 +520,33 @@ export function onRequestGet() {
           <p style="color:var(--text-muted);">No tienes permiso para abrir este módulo.</p>
         </div>
       \`;
+      const claimInput = document.getElementById("posClaimInput");
+      const physicalInput = document.getElementById("posPhysicalQrInput");
+      const claimActions = claimInput?.closest(".form-group")?.nextElementSibling;
+      if (claimActions) {
+        claimActions.innerHTML = \`
+          <button class="btn-secondary" onclick="openQrScanner('claim')">Escanear QR</button>
+          <button class="btn-secondary" onclick="previewPosClaim()">Validar premio</button>
+        \`;
+      }
+      const step2Box = document.getElementById("posStep2Box");
+      if (step2Box && physicalInput) {
+        const oldButton = step2Box.querySelector(".btn-primary");
+        if (oldButton) oldButton.remove();
+        physicalInput.closest(".form-group").insertAdjacentHTML("afterend", \`
+          <div class="filter-bar">
+            <button class="btn-secondary" onclick="openQrScanner('beverage')">Escanear QR fisico</button>
+            <button class="btn-secondary" onclick="previewPosBeverage()">Previsualizar compra</button>
+          </div>
+          <div id="posConfirmBox" style="margin-top:16px;" hidden></div>
+        \`);
+      }
+      claimInput?.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") { event.preventDefault(); previewPosClaim(); }
+      });
+      physicalInput?.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") { event.preventDefault(); previewPosBeverage(); }
+      });
     }
 
     async function renderRoute(route) {
@@ -631,6 +672,8 @@ export function onRequestGet() {
 
     // POS CONTROL CENTER
     async function renderPos() {
+      posClaimPreview = null;
+      posProductPreview = null;
       const recent = userHasPerm("sales.read")
         ? await apiFetch("/admin/sales?limit=10")
         : await apiFetch("/seller/my-sales");
@@ -706,6 +749,207 @@ export function onRequestGet() {
       const code = normalizeClaimInput(document.getElementById("posClaimInput").value);
       const physicalQrToken = document.getElementById("posPhysicalQrInput").value.trim();
       if (!code) return showToast("Ingresa el premio.", true);
+      const res = await apiFetch("/seller/redeem", { method: "POST", body: JSON.stringify({ code, physicalQrToken }) });
+      if (!res.ok) return showToast(res.error || res.code || "No se pudo canjear.", true);
+      showToast("Canje registrado: " + formatMoney(res.purchase.finalPriceCents));
+      renderPos();
+    }
+
+    function extractQrPayload(value, mode) {
+      const raw = String(value || "").trim();
+      if (!raw) return "";
+      try {
+        const url = new URL(raw);
+        const parts = url.pathname.split("/").filter(Boolean);
+        const promoIndex = parts.findIndex(part => part === "promo");
+        if (promoIndex >= 0 && parts[promoIndex + 1] === "r" && parts[promoIndex + 2]) return parts[promoIndex + 2];
+      } catch {}
+      if (mode === "claim") return normalizeClaimInput(raw);
+      return raw.replace(/^GAMMS-AEP-QR:/i, "").trim();
+    }
+
+    async function openQrScanner(mode) {
+      stopQrScanner();
+      qrScanner.mode = mode;
+      openModal(mode === "claim" ? "Escanear QR de premio" : "Escanear QR fisico", \`
+        <div style="display:grid; gap:12px;">
+          <div id="scannerStatus" class="badge badge-neutral">Buscando QR...</div>
+          <video id="qrScannerVideo" autoplay playsinline muted style="width:100%; max-height:420px; background:#000; border-radius:12px;"></video>
+          <div class="filter-bar">
+            <select id="qrCameraSelect" class="form-control" style="max-width:260px;"></select>
+            <button id="qrTorchBtn" type="button" class="btn-secondary" hidden>Linterna</button>
+          </div>
+          <p style="color:var(--text-muted); font-size:13px;">No se guardan imagenes ni video. Si la camara no esta disponible, usa el input manual.</p>
+        </div>
+      \`);
+      await startQrScanner(mode);
+    }
+
+    async function startQrScanner(mode, deviceId = "") {
+      const status = document.getElementById("scannerStatus");
+      const video = document.getElementById("qrScannerVideo");
+      const select = document.getElementById("qrCameraSelect");
+      const torchBtn = document.getElementById("qrTorchBtn");
+      if (!navigator.mediaDevices?.getUserMedia) {
+        if (status) status.textContent = "Camara no disponible. Usa el input manual.";
+        return;
+      }
+      if (!("BarcodeDetector" in window)) {
+        if (status) status.textContent = "Scanner no soportado por este navegador. Usa el input manual.";
+        return;
+      }
+      try {
+        const constraints = {
+          video: deviceId ? { deviceId: { exact: deviceId } } : { facingMode: { ideal: "environment" } },
+          audio: false
+        };
+        qrScanner.stream = await navigator.mediaDevices.getUserMedia(constraints);
+        qrScanner.video = video;
+        video.srcObject = qrScanner.stream;
+        await video.play();
+        qrScanner.detector = new BarcodeDetector({ formats: ["qr_code"] });
+        qrScanner.scanning = true;
+        qrScanner.processing = false;
+        qrScanner.selectedDeviceId = deviceId;
+
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        qrScanner.devices = devices.filter(device => device.kind === "videoinput");
+        if (select) {
+          select.innerHTML = qrScanner.devices.map((device, index) => \`<option value="\${device.deviceId}" \${device.deviceId === deviceId ? "selected" : ""}>Camara \${index + 1} \${device.label || ""}</option>\`).join("");
+          select.onchange = async () => {
+            stopQrScanner(false);
+            await startQrScanner(mode, select.value);
+          };
+        }
+
+        const track = qrScanner.stream.getVideoTracks()[0];
+        const caps = track?.getCapabilities?.();
+        if (torchBtn && caps?.torch) {
+          torchBtn.hidden = false;
+          torchBtn.onclick = async () => {
+            const enabled = torchBtn.getAttribute("data-on") !== "true";
+            await track.applyConstraints({ advanced: [{ torch: enabled }] });
+            torchBtn.setAttribute("data-on", String(enabled));
+          };
+        }
+        scanQrFrame();
+      } catch (error) {
+        if (status) status.textContent = "Permiso denegado o camara no disponible. Usa el input manual.";
+      }
+    }
+
+    async function scanQrFrame() {
+      if (!qrScanner.scanning || qrScanner.processing || !qrScanner.video || !qrScanner.detector) return;
+      try {
+        const codes = await qrScanner.detector.detect(qrScanner.video);
+        if (codes.length) {
+          qrScanner.processing = true;
+          const raw = codes[0].rawValue || "";
+          const payload = extractQrPayload(raw, qrScanner.mode);
+          const status = document.getElementById("scannerStatus");
+          if (navigator.vibrate) navigator.vibrate(60);
+          if (status) status.textContent = payload ? "QR detectado" : "QR invÃ¡lido";
+          if (payload) await handleQrDetected(payload, qrScanner.mode);
+          return;
+        }
+      } catch {}
+      requestAnimationFrame(scanQrFrame);
+    }
+
+    async function handleQrDetected(payload, mode) {
+      if (mode === "claim") {
+        const input = document.getElementById("posClaimInput");
+        if (input) input.value = payload;
+        stopQrScanner();
+        closeModal();
+        await previewPosClaim();
+      } else {
+        const input = document.getElementById("posPhysicalQrInput");
+        if (input) input.value = payload;
+        stopQrScanner();
+        closeModal();
+        await previewPosBeverage();
+      }
+    }
+
+    function stopQrScanner(close = true) {
+      qrScanner.scanning = false;
+      qrScanner.processing = false;
+      if (qrScanner.stream) {
+        qrScanner.stream.getTracks().forEach(track => track.stop());
+      }
+      qrScanner.stream = null;
+      qrScanner.video = null;
+      qrScanner.detector = null;
+      if (close) modalOverlay.classList.remove("open");
+    }
+
+    async function previewPosClaim() {
+      const input = document.getElementById("posClaimInput");
+      const code = normalizeClaimInput(input?.value);
+      const box = document.getElementById("posPreview");
+      const step2Box = document.getElementById("posStep2Box");
+      const confirmBox = document.getElementById("posConfirmBox");
+      if (!code) return showToast("Ingresa un codigo de premio.", true);
+      if (box) box.innerHTML = \`<div class="badge badge-neutral">Buscando QR...</div>\`;
+      const res = await apiFetch("/seller/claims/" + encodeURIComponent(code));
+      if (!res.ok) {
+        if (box) box.innerHTML = \`<div class="badge badge-danger">\${res.code === "CLAIM_EXPIRED" ? "Premio expirado" : "QR invÃ¡lido"}</div>\`;
+        if (step2Box) step2Box.hidden = true;
+        if (confirmBox) confirmBox.hidden = true;
+        return;
+      }
+      posClaimPreview = res;
+      posProductPreview = null;
+      if (step2Box) step2Box.hidden = false;
+      if (confirmBox) confirmBox.hidden = true;
+      if (box) box.innerHTML = \`
+        <div class="card" style="margin:0; box-shadow:none; background:var(--bg-page);">
+          <div class="card-title">\${res.customer?.displayName || 'Cliente'} (\${res.customer?.customerLabel || ''})</div>
+          <p style="margin-top:8px;">Estado: <strong>Premio vÃ¡lido</strong> Â· Descuento: <strong>50% OFF</strong></p>
+          <p style="margin-top:8px; color:var(--text-muted);">Ahora escanea el QR fisico de la bebida. La venta no se confirma hasta pulsar Confirmar compra.</p>
+        </div>
+      \`;
+      document.getElementById("posPhysicalQrInput")?.focus();
+    }
+
+    async function previewPosBeverage() {
+      const claimCode = normalizeClaimInput(document.getElementById("posClaimInput")?.value);
+      const physicalQrToken = document.getElementById("posPhysicalQrInput")?.value.trim();
+      const confirmBox = document.getElementById("posConfirmBox");
+      if (!claimCode) return showToast("Primero valida el premio.", true);
+      if (!physicalQrToken) return showToast("Escanea o ingresa el QR fisico de la bebida.", true);
+      confirmBox.hidden = false;
+      confirmBox.innerHTML = \`<div class="badge badge-neutral">Validando bebida...</div>\`;
+      const res = await apiFetch("/seller/claims/preview-product", {
+        method: "POST",
+        body: JSON.stringify({ claimCode, physicalQrToken })
+      });
+      if (!res.ok) {
+        posProductPreview = null;
+        confirmBox.innerHTML = \`<div class="badge badge-danger">\${res.error || res.code || "QR invÃ¡lido"}</div>\`;
+        return;
+      }
+      posProductPreview = res;
+      confirmBox.innerHTML = \`
+        <div class="card" style="margin:0; box-shadow:none; background:var(--bg-page);">
+          <div class="card-title">Confirmar compra</div>
+          <p style="margin-top:8px;"><strong>Cliente:</strong> \${res.customer?.displayName || 'Cliente'} \${res.customer?.customerLabel || ''}</p>
+          <p><strong>Producto:</strong> \${res.product?.name || 'Bebida'} Â· QR #\${res.qr?.publicNumber || ''}</p>
+          <p><strong>Precio normal:</strong> \${formatMoney(res.pricing?.regularPriceCents)}</p>
+          <p><strong>Descuento:</strong> \${res.pricing?.discountPercent ?? 50}%</p>
+          <p><strong>Precio final:</strong> \${formatMoney(res.pricing?.finalPriceCents)}</p>
+          <button class="btn-primary" onclick="redeemPosClaim()" style="width:100%; justify-content:center; margin-top:12px;">Confirmar compra</button>
+        </div>
+      \`;
+    }
+
+    async function redeemPosClaim() {
+      const code = normalizeClaimInput(document.getElementById("posClaimInput").value);
+      const physicalQrToken = document.getElementById("posPhysicalQrInput").value.trim();
+      if (!code) return showToast("Ingresa el premio.", true);
+      if (!physicalQrToken) return showToast("Ingresa el QR fisico.", true);
+      if (!posProductPreview) return showToast("Previsualiza la compra antes de confirmar.", true);
       const res = await apiFetch("/seller/redeem", { method: "POST", body: JSON.stringify({ code, physicalQrToken }) });
       if (!res.ok) return showToast(res.error || res.code || "No se pudo canjear.", true);
       showToast("Canje registrado: " + formatMoney(res.purchase.finalPriceCents));
@@ -1097,6 +1341,7 @@ export function onRequestGet() {
                   <p style="margin-top:4px; color:var(--text-muted); font-size:12.5px;">Motor de impresion: PDF fisico · Letter 8.5 x 11 in · MACO ML-5000 · 5 x 10</p>
                 </div>
                 <div class="filter-bar">
+                  <button class="btn-secondary" onclick="clearCurrentPrintBatch()">Nuevo lote</button>
                   <button class="btn-secondary" onclick="printCurrentBatch()">Imprimir</button>
                   <button class="btn-primary" onclick="downloadCurrentPdf()">PDF</button>
                 </div>
@@ -1130,11 +1375,15 @@ export function onRequestGet() {
     function renderPrintPreview(batch) {
       const preview = document.getElementById("printPreview");
       if (!preview) return;
+      const profile = batch.printProfile || {};
+      const capacity = Number(profile.columns || 5) * Number(profile.rows || 10);
+      const slotsUsed = Math.min(capacity, Math.max(0, Number(batch.startSlot || 1) - 1) + Number(batch.count || 0));
       preview.innerHTML = \`
         <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:12px;">
           <span class="badge badge-success">Batch \${escapePrintText(batch.batchId)}</span>
           <span class="badge badge-warning">Slot inicial \${batch.startSlot}</span>
           <span class="badge badge-success">\${batch.count} etiquetas</span>
+          <span class="badge badge-neutral">Slots \${slotsUsed}/\${capacity}</span>
         </div>
         <div class="print-instructions">En el dialogo de impresion selecciona: Papel Carta / Letter 8.5 x 11 · Escala 100% / Tamano real · Desactivar Ajustar a pagina.</div>
         <div id="printable-labels" class="print-preview-sheets">
@@ -1142,6 +1391,12 @@ export function onRequestGet() {
         </div>
       \`;
       fitPrintPreview();
+    }
+
+    function clearCurrentPrintBatch() {
+      currentPrintBatch = null;
+      const preview = document.getElementById("printPreview");
+      if (preview) preview.innerHTML = \`<p style="color:var(--text-muted)">Genera un lote para ver la hoja.</p>\`;
     }
 
     async function loadCalibration() {
@@ -1525,6 +1780,7 @@ export function onRequestGet() {
       \`;
     }
 
+    applyTheme(state.theme, false);
     checkAuth();
   </script>
 
