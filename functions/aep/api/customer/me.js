@@ -24,5 +24,5 @@ export async function onRequestGet({ request, env }) {
   return jsonResponse({
     ok: true,
     customer: profile
-  }, 200, headers);
+  }, { headers });
 }
