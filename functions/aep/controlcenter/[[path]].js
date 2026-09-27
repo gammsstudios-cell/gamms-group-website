@@ -848,7 +848,7 @@ export function onRequestGet() {
           const payload = extractQrPayload(raw, qrScanner.mode);
           const status = document.getElementById("scannerStatus");
           if (navigator.vibrate) navigator.vibrate(60);
-          if (status) status.textContent = payload ? "QR detectado" : "QR invÃ¡lido";
+          if (status) status.textContent = payload ? "QR detectado" : "QR inválido";
           if (payload) await handleQrDetected(payload, qrScanner.mode);
           return;
         }
@@ -894,7 +894,7 @@ export function onRequestGet() {
       if (box) box.innerHTML = \`<div class="badge badge-neutral">Buscando QR...</div>\`;
       const res = await apiFetch("/seller/claims/" + encodeURIComponent(code));
       if (!res.ok) {
-        if (box) box.innerHTML = \`<div class="badge badge-danger">\${res.code === "CLAIM_EXPIRED" ? "Premio expirado" : "QR invÃ¡lido"}</div>\`;
+        if (box) box.innerHTML = \`<div class="badge badge-danger">\${res.code === "CLAIM_EXPIRED" ? "Premio expirado" : "QR inválido"}</div>\`;
         if (step2Box) step2Box.hidden = true;
         if (confirmBox) confirmBox.hidden = true;
         return;
@@ -906,7 +906,7 @@ export function onRequestGet() {
       if (box) box.innerHTML = \`
         <div class="card" style="margin:0; box-shadow:none; background:var(--bg-page);">
           <div class="card-title">\${res.customer?.displayName || 'Cliente'} (\${res.customer?.customerLabel || ''})</div>
-          <p style="margin-top:8px;">Estado: <strong>Premio vÃ¡lido</strong> Â· Descuento: <strong>50% OFF</strong></p>
+          <p style="margin-top:8px;">Estado: <strong>Premio válido</strong> · Descuento: <strong>50% OFF</strong></p>
           <p style="margin-top:8px; color:var(--text-muted);">Ahora escanea el QR fisico de la bebida. La venta no se confirma hasta pulsar Confirmar compra.</p>
         </div>
       \`;
@@ -927,7 +927,7 @@ export function onRequestGet() {
       });
       if (!res.ok) {
         posProductPreview = null;
-        confirmBox.innerHTML = \`<div class="badge badge-danger">\${res.error || res.code || "QR invÃ¡lido"}</div>\`;
+        confirmBox.innerHTML = \`<div class="badge badge-danger">\${res.error || res.code || "QR inválido"}</div>\`;
         return;
       }
       posProductPreview = res;
@@ -935,7 +935,7 @@ export function onRequestGet() {
         <div class="card" style="margin:0; box-shadow:none; background:var(--bg-page);">
           <div class="card-title">Confirmar compra</div>
           <p style="margin-top:8px;"><strong>Cliente:</strong> \${res.customer?.displayName || 'Cliente'} \${res.customer?.customerLabel || ''}</p>
-          <p><strong>Producto:</strong> \${res.product?.name || 'Bebida'} Â· QR #\${res.qr?.publicNumber || ''}</p>
+          <p><strong>Producto:</strong> \${res.product?.name || 'Bebida'} · QR #\${res.qr?.publicNumber || ''}</p>
           <p><strong>Precio normal:</strong> \${formatMoney(res.pricing?.regularPriceCents)}</p>
           <p><strong>Descuento:</strong> \${res.pricing?.discountPercent ?? 50}%</p>
           <p><strong>Precio final:</strong> \${formatMoney(res.pricing?.finalPriceCents)}</p>
