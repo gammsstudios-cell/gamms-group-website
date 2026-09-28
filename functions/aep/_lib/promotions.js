@@ -5,7 +5,9 @@ export function rewardTypeForProduct(productId) {
 }
 
 function isMissingPromotionSchemaError(error) {
-  return /no such table:\s*product_promotion_rules/i.test(String(error?.message || error));
+  const message = String(error?.message || error);
+  return /no such table:\s*product_promotion_rules/i.test(message)
+    || /Unhandled first SQL:[\s\S]*product_promotion_rules/i.test(message);
 }
 
 export async function getPromotionRuleForProduct(db, productId) {
