@@ -34,3 +34,20 @@ test("Print Studio visibly labels the manual beverage code", () => {
   assert.match(controlCenter, /Codigo: #\\\$\{numberText\}/);
   assert.match(pdf, /Codigo: #\$\{label\.publicNumber\}/);
 });
+
+test("customer promo page renders configured discount and configurable purchase progress", () => {
+  const promo = readFileSync(resolve(process.cwd(), "functions/aep/promo/r/[token].js"), "utf8");
+  assert.doesNotMatch(promo, /50% DESBLOQUEADO|50% disponible|50% de descuento/);
+  assert.match(promo, /function discountShort\(value\)/);
+  assert.match(promo, /data\.reward\.discountPercent/);
+  assert.match(promo, /data\.claim && data\.claim\.discountPercent/);
+  assert.match(promo, /const everyN = Math\.max\(2,/);
+  assert.match(promo, /const requiredBeforeReward = Math\.max\(1, everyN - 1\)/);
+});
+
+test("assisted customer API supports lookup by the visible customer code", () => {
+  const source = readFileSync(resolve(process.cwd(), "functions/aep/api/admin/assisted/customers.js"), "utf8");
+  assert.match(source, /function customerIdSearchPattern\(query\)/);
+  assert.match(source, /cust_\$\{friendly\[1\]\}%/);
+  assert.match(source, /c\.id LIKE \?/);
+});
