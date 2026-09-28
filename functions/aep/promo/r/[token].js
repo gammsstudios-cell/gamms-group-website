@@ -59,10 +59,7 @@ export function onRequestGet(context) {
       color: #86868b;
       letter-spacing: .02em;
     }
-    .gamms-byline strong {
-      color: #1d1d1f;
-      font-weight: 700;
-    }
+    .gamms-byline strong { color: #1d1d1f; font-weight: 700; }
     h1 { margin: 0 0 12px; font-size: 26px; line-height: 1.1; }
     p { margin: 0; color: #424245; line-height: 1.5; }
     .customer-badge {
@@ -76,7 +73,7 @@ export function onRequestGet(context) {
       color: #1d1d1f;
     }
     .state { margin-top: 18px; padding: 14px; border-radius: 10px; background: #f5f5f7; }
-    .progress { margin-top: 18px; font-size: 20px; letter-spacing: .12em; }
+    .progress { margin-top: 18px; font-size: 20px; letter-spacing: .12em; overflow-wrap: anywhere; }
     .progress-copy { margin-top: 8px; color: #424245; }
     .claim { margin-top: 18px; text-align: center; }
     .claim svg { width: min(100%, 220px); height: auto; background: #fff; border-radius: 8px; padding: 8px; border: 1px solid #e5e5ea; }
@@ -103,6 +100,7 @@ export function onRequestGet(context) {
       cursor: pointer;
       transition: background .15s ease;
     }
+    button + button { margin-top: 10px; }
     button:hover { background: #333336; }
     button:disabled { cursor: not-allowed; opacity: .55; }
     .ok { color: #0a7a2f; background: #e8f5e9; }
@@ -137,15 +135,14 @@ export function onRequestGet(context) {
       <div class="gamms-byline">By <strong>GAMMS GROUP</strong></div>
     </div>
 
-    <!-- ONBOARDING SECTION -->
     <div id="onboardingSection" hidden>
       <h1>¡Bienvenido!</h1>
       <p>¿Cómo te llamas?</p>
       <div class="actions" style="margin-bottom:14px;">
-        <button id="recoverCustomerButton" type="button">Si, tengo mi QR de cliente</button>
+        <button id="recoverCustomerButton" type="button">Sí, tengo mi QR de cliente</button>
       </div>
       <div id="recoverCustomerBox" hidden>
-        <p>Escanea o pega el codigo de tu QR de cliente para recuperar tus compras.</p>
+        <p>Escanea o pega el código de tu QR de cliente para recuperar tus compras.</p>
         <input type="text" id="customerQrInput" class="input-field" placeholder="GAMMS-AEP-CUSTOMER:...">
         <button id="recoverCustomerSubmit" type="button">Recuperar mis compras</button>
       </div>
@@ -154,7 +151,6 @@ export function onRequestGet(context) {
       <button id="saveNameButton" type="button">Continuar</button>
     </div>
 
-    <!-- MAIN PROMO SECTION -->
     <div id="promoSection">
       <h1 id="title">Validando QR...</h1>
       <p id="message">Estamos revisando el código de esta bebida.</p>
@@ -192,7 +188,6 @@ export function onRequestGet(context) {
     const countdown = document.getElementById("countdown");
     const registerButton = document.getElementById("register");
     const claimButton = document.getElementById("claimButton");
-    
     const onboardingSection = document.getElementById("onboardingSection");
     const promoSection = document.getElementById("promoSection");
     const nameInput = document.getElementById("nameInput");
@@ -212,10 +207,26 @@ export function onRequestGet(context) {
       QR_INVALID: ["QR inválido", "No encontramos este código.", "bad"],
       PRODUCT_NOT_FOUND: ["Producto no disponible", "Este código no tiene un producto válido asociado.", "bad"],
       PURCHASE_CONFLICT: ["Compra no registrada", "Este código ya fue consumido.", "bad"],
-      REWARD_REQUIRES_SELLER: ["¡Tienes un 50% disponible!", "Muéstrale tu premio al vendedor para comprar esta bebida.", "ok"],
-      EVENT_CLOSED: ["Evento cerrado", "Gracias por participar.", "bad"],
+      REWARD_REQUIRES_SELLER: ["Tienes un descuento disponible", "Muéstrale tu premio al vendedor para comprar esta bebida.", "ok"],
+      EVENT_CLOSED: ["Evento cerrado", "El evento no está activo en este momento.", "bad"],
       INTERNAL_ERROR: ["No pudimos registrar", "Inténtalo nuevamente en unos segundos.", "bad"]
     };
+
+    function normalizedDiscount(value) {
+      const percent = Number(value);
+      if (!Number.isFinite(percent)) return 0;
+      return Math.min(100, Math.max(0, Math.round(percent)));
+    }
+
+    function discountShort(value) {
+      const percent = normalizedDiscount(value);
+      return percent === 100 ? "GRATIS" : percent + "%";
+    }
+
+    function discountLong(value) {
+      const percent = normalizedDiscount(value);
+      return percent === 100 ? "gratis" : percent + "% de descuento";
+    }
 
     function updateCustomerBadge(customer) {
       if (customer && customer.displayName) {
@@ -229,8 +240,8 @@ export function onRequestGet(context) {
 
     function checkCustomerProfile() {
       return fetch("/aep/api/customer/me", { headers: { accept: "application/json" } })
-        .then(res => res.json())
-        .then(data => {
+        .then(function (res) { return res.json(); })
+        .then(function (data) {
           if (data.ok && data.customer) {
             currentCustomer = data.customer;
             updateCustomerBadge(currentCustomer);
@@ -244,14 +255,14 @@ export function onRequestGet(context) {
           onboardingSection.hidden = true;
           return true;
         })
-        .catch(() => {
+        .catch(function () {
           promoSection.hidden = false;
           onboardingSection.hidden = true;
           return true;
         });
     }
 
-    saveNameButton.addEventListener("click", () => {
+    saveNameButton.addEventListener("click", function () {
       const name = nameInput.value.trim();
       if (name.length < 2) {
         alert("Por favor introduce tu nombre (mínimo 2 caracteres).");
@@ -263,32 +274,33 @@ export function onRequestGet(context) {
         headers: { "content-type": "application/json", accept: "application/json" },
         body: JSON.stringify({ displayName: name })
       })
-      .then(res => res.json())
-      .then(data => {
-        saveNameButton.disabled = false;
-        if (data.ok && data.customer) {
-          currentCustomer = data.customer;
-          updateCustomerBadge(currentCustomer);
-          onboardingSection.hidden = true;
-          promoSection.hidden = false;
-          validateQr();
-        } else {
-          alert(data.error || "Nombre no válido");
-        }
-      })
-      .catch(() => {
-        saveNameButton.disabled = false;
-        alert("Error al guardar tu nombre.");
-      });
+        .then(function (res) { return res.json(); })
+        .then(function (data) {
+          saveNameButton.disabled = false;
+          if (data.ok && data.customer) {
+            currentCustomer = data.customer;
+            updateCustomerBadge(currentCustomer);
+            onboardingSection.hidden = true;
+            promoSection.hidden = false;
+            validateQr();
+          } else {
+            alert(data.error || data.code || "Nombre no válido");
+          }
+        })
+        .catch(function () {
+          saveNameButton.disabled = false;
+          alert("Error al guardar tu nombre.");
+        });
     });
 
-    recoverCustomerButton.addEventListener("click", () => {
+    recoverCustomerButton.addEventListener("click", function () {
       recoverCustomerBox.hidden = !recoverCustomerBox.hidden;
       if (!recoverCustomerBox.hidden) customerQrInput.focus();
     });
 
-    function recoverIdentity(confirmSwitch = false) {
-      const identityToken = customerQrInput.value.trim();
+    function recoverIdentity(confirmSwitch) {
+      const switchConfirmed = confirmSwitch === true;
+      const identityToken = pendingIdentityToken || customerQrInput.value.trim();
       if (!identityToken) return alert("Escanea o pega tu QR de cliente.");
       pendingIdentityToken = identityToken;
       recoverCustomerSubmit.disabled = true;
@@ -296,52 +308,47 @@ export function onRequestGet(context) {
         method: "POST",
         credentials: "same-origin",
         headers: { "content-type": "application/json", accept: "application/json" },
-        body: JSON.stringify({ token: identityToken, confirmSwitch })
+        body: JSON.stringify({ token: identityToken, confirmSwitch: switchConfirmed })
       })
-      .then(res => res.json())
-      .then(data => {
-        recoverCustomerSubmit.disabled = false;
-        if (!data.ok && data.code === "IDENTITY_SWITCH_CONFIRMATION_REQUIRED") {
-          const current = data.details?.currentCustomer || data.currentCustomer || {};
-          const target = data.details?.targetCustomer || data.targetCustomer || {};
-          recoverCustomerBox.innerHTML = '<p><strong>Este telefono ya esta vinculado a otro cliente.</strong></p>' +
-            '<p>Cliente actual:<br>' + (current.displayName || 'Cliente') + ' · ' + (current.customerLabel || '') + '</p>' +
-            '<p>Cliente del QR:<br>' + (target.displayName || 'Cliente') + ' · ' + (target.customerLabel || '') + '</p>' +
-            '<button id="cancelIdentitySwitch" type="button">Cancelar</button>' +
-            '<button id="confirmIdentitySwitch" type="button" style="margin-top:10px;">Cambiar cliente</button>';
-          document.getElementById("cancelIdentitySwitch").addEventListener("click", () => {
-            recoverCustomerBox.hidden = true;
-          });
-          document.getElementById("confirmIdentitySwitch").addEventListener("click", () => {
-            customerQrInput.value = pendingIdentityToken;
-            recoverIdentity(true);
-          });
-          return;
-        }
-        if (!data.ok) return alert("QR de cliente no valido.");
-        currentCustomer = data.customer;
-        updateCustomerBadge(currentCustomer);
-        onboardingSection.hidden = true;
-        promoSection.hidden = false;
-        validateQr();
-      })
-      .catch(() => {
-        recoverCustomerSubmit.disabled = false;
-        alert("No pudimos recuperar tus compras.");
-      });
+        .then(function (res) { return res.json(); })
+        .then(function (data) {
+          recoverCustomerSubmit.disabled = false;
+          if (!data.ok && data.code === "IDENTITY_SWITCH_CONFIRMATION_REQUIRED") {
+            const details = data.details || {};
+            const current = details.currentCustomer || {};
+            const target = details.targetCustomer || {};
+            const description = "Este teléfono ya está vinculado a " +
+              (current.displayName || current.customerLabel || "otro cliente") +
+              ". ¿Cambiar a " + (target.displayName || target.customerLabel || "el cliente del QR") + "?";
+            if (window.confirm(description)) recoverIdentity(true);
+            return;
+          }
+          if (!data.ok) return alert("QR de cliente no válido.");
+          pendingIdentityToken = "";
+          currentCustomer = data.customer;
+          updateCustomerBadge(currentCustomer);
+          onboardingSection.hidden = true;
+          promoSection.hidden = false;
+          validateQr();
+        })
+        .catch(function () {
+          recoverCustomerSubmit.disabled = false;
+          alert("No pudimos recuperar tus compras.");
+        });
     }
 
-    recoverCustomerSubmit.addEventListener("click", () => {
+    recoverCustomerSubmit.addEventListener("click", function () {
+      pendingIdentityToken = "";
       recoverIdentity(false);
     });
 
     function showClaim(data) {
       claim.hidden = false;
-      claimQr.innerHTML = data.qrSvg;
-      claimCode.textContent = data.code;
+      claimQr.innerHTML = data.qrSvg || "";
+      claimCode.textContent = data.code || "";
       const expiresAt = new Date(data.expiresAt).getTime();
       if (countdownTimer) clearInterval(countdownTimer);
-      countdownTimer = setInterval(() => {
+      countdownTimer = setInterval(function () {
         const seconds = Math.max(0, Math.floor((expiresAt - Date.now()) / 1000));
         const minutes = String(Math.floor(seconds / 60)).padStart(2, "0");
         const rest = String(seconds % 60).padStart(2, "0");
@@ -354,50 +361,65 @@ export function onRequestGet(context) {
       }, 500);
     }
 
+    function showRewardState(discountPercent) {
+      const shortText = discountShort(discountPercent);
+      title.textContent = shortText + " DESBLOQUEADO";
+      message.textContent = "Tu próxima bebida tiene " + discountLong(discountPercent) + ". Muéstrale este beneficio al vendedor.";
+      state.className = "state ok";
+      state.textContent = shortText + " disponible";
+      registerButton.hidden = true;
+      claimButton.hidden = false;
+      claimButton.textContent = "Mostrar al vendedor";
+    }
+
     function showProgress(data) {
-      const rewardAvailable = data.reward?.available === true;
-      const position = Number(data.cyclePosition ?? 0);
+      const rewardAvailable = data && data.reward && data.reward.available === true;
+      const everyN = Math.max(2, Number(data && data.everyN) || 3);
+      const requiredBeforeReward = Math.max(1, everyN - 1);
+      const position = Math.max(0, Number(data && data.cyclePosition) || 0);
+      const dots = [];
+      for (let index = 0; index < requiredBeforeReward; index += 1) {
+        dots.push(position > index ? "●" : "○");
+      }
       progress.hidden = false;
       progressCopy.hidden = false;
-      progress.textContent = (position >= 1 ? "●" : "○") + " " + (position >= 2 ? "●" : "○") + " 🎁";
+      progress.textContent = dots.join(" ") + " 🎁";
 
       if (rewardAvailable) {
-        progressCopy.textContent = "¡50% DESBLOQUEADO! Tu próxima bebida tiene 50% de descuento. Muéstrale este beneficio al vendedor.";
+        const percent = data.reward.discountPercent;
+        progressCopy.textContent = discountShort(percent) + " DESBLOQUEADO. La próxima bebida correspondiente tiene " + discountLong(percent) + ". Muéstrale este beneficio al vendedor.";
         return;
       }
 
-      progressCopy.textContent = Math.min(position, 2) + " de 2 compras completadas";
+      const completed = Math.min(position, requiredBeforeReward);
+      progressCopy.textContent = completed + " de " + requiredBeforeReward + " compras completadas para desbloquear el beneficio";
     }
 
     function showError(code) {
-      const [heading, copy, className] = labels[code] ?? labels.QR_INVALID;
-      title.textContent = heading;
-      message.textContent = copy;
-      state.className = "state " + className;
-      state.textContent = code ?? "QR_INVALID";
+      const entry = labels[code] || labels.QR_INVALID;
+      title.textContent = entry[0];
+      message.textContent = entry[1];
+      state.className = "state " + entry[2];
+      state.textContent = code || "QR_INVALID";
       registerButton.hidden = true;
-      if (code === "REWARD_REQUIRES_SELLER") {
-        claimButton.hidden = false;
-        claimButton.textContent = "Mostrar al vendedor";
-      } else {
-        claimButton.hidden = true;
-      }
+      claimButton.hidden = code !== "REWARD_REQUIRES_SELLER";
+      if (!claimButton.hidden) claimButton.textContent = "Mostrar al vendedor";
       progress.hidden = true;
       progressCopy.hidden = true;
     }
 
     function validateQr() {
       fetch("/aep/api/qr/" + encodeURIComponent(token), { headers: { accept: "application/json" } })
-        .then((response) => response.json())
-        .then((data) => {
+        .then(function (response) { return response.json(); })
+        .then(function (data) {
           if (data.ok) {
             title.textContent = "Bebida válida";
-            message.textContent = data.product?.name
-              ? "Producto: " + data.product.name
-              : "Este QR está disponible.";
+            message.textContent = data.product && data.product.name ? "Producto: " + data.product.name : "Este QR está disponible.";
             state.className = "state ok";
             state.textContent = "QR #" + data.qr.number + " - " + data.qr.status;
             registerButton.hidden = false;
+            registerButton.disabled = false;
+            registerButton.textContent = "Registrar compra";
             claimButton.hidden = true;
             claim.hidden = true;
             progress.hidden = true;
@@ -406,7 +428,7 @@ export function onRequestGet(context) {
           }
           showError(data.code);
         })
-        .catch(() => {
+        .catch(function () {
           title.textContent = "No pudimos validar";
           message.textContent = "Revisa tu conexión e inténtalo nuevamente.";
           state.className = "state bad";
@@ -416,11 +438,11 @@ export function onRequestGet(context) {
         });
     }
 
-    checkCustomerProfile().then(hasName => {
+    checkCustomerProfile().then(function (hasName) {
       if (hasName) validateQr();
     });
 
-    registerButton.addEventListener("click", () => {
+    registerButton.addEventListener("click", function () {
       registerButton.disabled = true;
       registerButton.textContent = "Registrando...";
 
@@ -428,19 +450,13 @@ export function onRequestGet(context) {
         method: "POST",
         credentials: "same-origin",
         headers: { accept: "application/json", "content-type": "application/json" },
-        body: JSON.stringify({ token })
+        body: JSON.stringify({ token: token })
       })
-        .then((response) => response.json())
-        .then((data) => {
+        .then(function (response) { return response.json(); })
+        .then(function (data) {
           if (!data.ok) {
             if (data.code === "REWARD_REQUIRES_SELLER") {
-              title.textContent = "¡50% DESBLOQUEADO!";
-              message.textContent = "Tienes un 50% de descuento disponible. Muéstrale tu premio al vendedor para comprar esta bebida.";
-              state.className = "state ok";
-              state.textContent = "50% OFF Disponible";
-              registerButton.hidden = true;
-              claimButton.hidden = false;
-              claimButton.textContent = "Mostrar al vendedor";
+              showRewardState(data.reward && data.reward.discountPercent);
               return;
             }
             showError(data.code);
@@ -448,21 +464,21 @@ export function onRequestGet(context) {
           }
 
           title.textContent = "Compra registrada";
-          message.textContent = data.purchase?.product?.name
+          message.textContent = data.purchase && data.purchase.product && data.purchase.product.name
             ? "Producto: " + data.purchase.product.name
             : "Tu compra fue registrada.";
           state.className = "state ok";
-          state.textContent = data.progress.reward?.available ? "50% DESBLOQUEADO" : "Compra registrada";
-          showProgress(data.progress);
-          registerButton.hidden = true;
-          if (data.progress.reward?.available) {
-            claimButton.hidden = false;
-            claimButton.textContent = "Mostrar al vendedor";
+          if (data.progress && data.progress.reward && data.progress.reward.available) {
+            state.textContent = discountShort(data.progress.reward.discountPercent) + " DESBLOQUEADO";
           } else {
-            claimButton.hidden = true;
+            state.textContent = "Compra registrada";
           }
+          showProgress(data.progress || {});
+          registerButton.hidden = true;
+          claimButton.hidden = !(data.progress && data.progress.reward && data.progress.reward.available);
+          if (!claimButton.hidden) claimButton.textContent = "Mostrar al vendedor";
         })
-        .catch(() => {
+        .catch(function () {
           title.textContent = "No pudimos registrar";
           message.textContent = "Revisa tu conexión e inténtalo nuevamente.";
           state.className = "state bad";
@@ -472,7 +488,7 @@ export function onRequestGet(context) {
         });
     });
 
-    claimButton.addEventListener("click", () => {
+    claimButton.addEventListener("click", function () {
       claimButton.disabled = true;
       claimButton.textContent = "Generando...";
 
@@ -482,22 +498,23 @@ export function onRequestGet(context) {
         headers: { accept: "application/json", "content-type": "application/json" },
         body: JSON.stringify({})
       })
-        .then((response) => response.json())
-        .then((data) => {
+        .then(function (response) { return response.json(); })
+        .then(function (data) {
           claimButton.disabled = false;
           if (!data.ok) {
             showError(data.code);
             return;
           }
 
-          title.textContent = "50% DESBLOQUEADO";
-          message.textContent = "Tu próxima bebida tiene 50% de descuento.";
+          const percent = data.claim && data.claim.discountPercent;
+          title.textContent = discountShort(percent) + " DESBLOQUEADO";
+          message.textContent = "Tu próxima bebida tiene " + discountLong(percent) + ".";
           state.className = "state ok";
           state.textContent = "Muéstralo al vendedor.";
           claimButton.hidden = true;
-          showClaim(data.claim);
+          showClaim(data.claim || {});
         })
-        .catch(() => {
+        .catch(function () {
           claimButton.disabled = false;
           claimButton.textContent = "Mostrar al vendedor";
           state.className = "state bad";
