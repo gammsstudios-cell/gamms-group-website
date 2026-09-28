@@ -10,18 +10,26 @@ export function normalizePhysicalQrInput(rawInput) {
     const parts = url.pathname.split("/").filter(Boolean);
     const promoIndex = parts.findIndex((part) => part === "promo");
     if (promoIndex >= 0 && parts[promoIndex + 1] === "r" && parts[promoIndex + 2]) {
+      const routeToken = normalizeToken(parts[promoIndex + 2]).replace(/^GAMMS-AEP-QR:/i, "").trim();
+      if (isValidTokenFormat(routeToken)) {
+        return { type: "token", value: routeToken };
+      }
       value = parts[promoIndex + 2];
     }
   } catch {}
+
+  const prefixedToken = normalizeToken(value).replace(/^GAMMS-AEP-QR:/i, "").trim();
+  if (/^GAMMS-AEP-QR:/i.test(value) && isValidTokenFormat(prefixedToken)) {
+    return { type: "token", value: prefixedToken };
+  }
 
   const publicNumberText = value.replace(/^#/, "").trim();
   if (/^[1-9][0-9]*$/.test(publicNumberText)) {
     return { type: "publicNumber", value: Number(publicNumberText) };
   }
 
-  const token = normalizeToken(value).replace(/^GAMMS-AEP-QR:/i, "").trim();
-  if (isValidTokenFormat(token)) {
-    return { type: "token", value: token };
+  if (isValidTokenFormat(prefixedToken)) {
+    return { type: "token", value: prefixedToken };
   }
 
   return { type: "invalid", value };
