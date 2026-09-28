@@ -4,15 +4,24 @@ export function rewardTypeForProduct(productId) {
   return `product_${Number(productId)}_discount`;
 }
 
+function isMissingPromotionSchemaError(error) {
+  return /no such table:\s*product_promotion_rules/i.test(String(error?.message || error));
+}
+
 export async function getPromotionRuleForProduct(db, productId) {
-  const rule = await db.prepare(
-    `SELECT r.id, r.product_id, r.enabled, r.every_n_purchases, r.discount_percent, r.repeat_cycle,
-            p.name AS product_name
-     FROM product_promotion_rules r
-     JOIN products p ON p.id = r.product_id
-     WHERE r.product_id = ?
-     LIMIT 1`
-  ).bind(productId).first().catch(() => null);
+  let rule = null;
+  try {
+    rule = await db.prepare(
+      `SELECT r.id, r.product_id, r.enabled, r.every_n_purchases, r.discount_percent, r.repeat_cycle,
+              p.name AS product_name
+       FROM product_promotion_rules r
+       JOIN products p ON p.id = r.product_id
+       WHERE r.product_id = ?
+       LIMIT 1`
+    ).bind(productId).first();
+  } catch (error) {
+    if (!isMissingPromotionSchemaError(error)) throw error;
+  }
 
   if (rule) {
     return {
@@ -54,10 +63,16 @@ export async function countValidProductPurchases(db, customerId, productId) {
 
 export function productProgress(purchaseCount, rule) {
   if (!rule?.enabled) {
-    return { purchaseCount, cyclePosition: 0, reward: { available: false } };
+    return { purchaseCount, cyclePosition: 0, everyN: rule?.everyN || null, reward: { available: false } };
   }
   const cyclePosition = ((purchaseCount - 1) % rule.everyN) + 1;
-  return { purchaseCount, cyclePosition, everyN: rule.everyN, reward: { available: false } };
+  return {
+    purchaseCount,
+    cyclePosition,
+    everyN: rule.everyN,
+    repeatCycle: rule.repeatCycle !== false,
+    reward: { available: false }
+  };
 }
 
 export async function lookupAvailableProductReward(db, customerId, productId) {
