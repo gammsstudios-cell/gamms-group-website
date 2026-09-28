@@ -124,14 +124,14 @@ export async function exportEventReportCsv(db) {
   csv += `Ingreso Total (NIO),${(report.totalRevenueCents / 100).toFixed(2)}\n`;
   csv += `Descuentos Otorgados (NIO),${(report.totalDiscountCents / 100).toFixed(2)}\n`;
   csv += `Ventas Normales,${report.normalSalesCount}\n`;
-  csv += `Ventas con 50% OFF,${report.rewardSalesCount}\n`;
+  csv += `Ventas con descuento,${report.rewardSalesCount}\n`;
   csv += `Clientes Unicos,${report.uniqueCustomersCount}\n`;
   csv += `Premios Generados,${report.totalRewardsGenerated}\n`;
   csv += `Premios Canjeados,${report.rewardsRedeemed}\n`;
   csv += `Hora Pico,${csvEscape(report.peakHour)}\n\n`;
 
   csv += "RENDIMIENTO POR VENDEDOR\n";
-  csv += "Vendedor,Unidades,Ingreso (NIO),Ventas 50%\n";
+  csv += "Vendedor,Unidades,Ingreso (NIO),Ventas con descuento\n";
   for (const s of report.salesBySeller) {
     csv += `${csvEscape(s.seller_name)},${s.units_sold},${(s.revenue_cents / 100).toFixed(2)},${s.reward_sales_count}\n`;
   }

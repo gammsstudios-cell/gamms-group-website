@@ -1,7 +1,6 @@
 import { requirePermission } from "../../../_lib/staffAuth.js";
 import { adminError, adminJson, validateCsrf } from "../../../_lib/adminResponses.js";
 import { registerPurchase, sanitizePurchaseError } from "../../../_lib/purchases.js";
-import { ensureCustomerIdentityToken } from "../../../_lib/customerIdentity.js";
 import { getCurrentShift } from "../../../_lib/shifts.js";
 
 export async function onRequestPost({ request, env }) {
@@ -31,6 +30,7 @@ export async function onRequestPost({ request, env }) {
 
   const result = await registerPurchase(db, request, token, {
     customerId,
+    allowPhysicalQrInput: true,
     actor: {
       actorType: "staff",
       actorIdentifier: perm.actor?.identifier || perm.actor?.displayName || "staff",
@@ -42,12 +42,9 @@ export async function onRequestPost({ request, env }) {
 
   if (!result.ok) return adminError(sanitizePurchaseError(result.code), 400, result);
 
-  const identity = await ensureCustomerIdentityToken(db, customerId);
-
   return adminJson({
     ok: true,
     purchase: result.purchase,
-    progress: result.progress,
-    identity: identity.ok ? identity.identity : null
+    progress: result.progress
   });
 }

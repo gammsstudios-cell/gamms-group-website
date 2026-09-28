@@ -1,7 +1,7 @@
 import { requirePermission } from "../../../_lib/staffAuth.js";
 import { adminError, adminJson, validateCsrf } from "../../../_lib/adminResponses.js";
 import { generateCustomerId } from "../../../_lib/cookies.js";
-import { formatFriendlyCustomerId, sanitizeDisplayName, validateDisplayName } from "../../../_lib/customerProfile.js";
+import { formatFriendlyCustomerId, validateDisplayName } from "../../../_lib/customerProfile.js";
 
 export async function onRequestGet({ request, env }) {
   const db = env.DB;
@@ -12,10 +12,12 @@ export async function onRequestGet({ request, env }) {
   const q = String(url.searchParams.get("q") || "").trim();
   const like = `%${q}%`;
   const rows = await db.prepare(
-    `SELECT id, display_name, created_at, last_seen_at
-     FROM customers
-     WHERE (? = '' OR display_name LIKE ? OR id LIKE ?)
-     ORDER BY last_seen_at DESC
+    `SELECT c.id, c.display_name, c.created_at, c.last_seen_at,
+            CASE WHEN t.id IS NULL THEN 0 ELSE 1 END AS identity_issued
+     FROM customers c
+     LEFT JOIN customer_identity_tokens t ON t.customer_id = c.id AND t.active = 1
+     WHERE (? = '' OR c.display_name LIKE ? OR c.id LIKE ?)
+     ORDER BY c.last_seen_at DESC
      LIMIT 25`
   ).bind(q, like, like).all();
 
@@ -23,6 +25,7 @@ export async function onRequestGet({ request, env }) {
     id: row.id,
     displayName: row.display_name || null,
     customerLabel: formatFriendlyCustomerId(row.id),
+    identityIssued: Boolean(row.identity_issued),
     createdAt: row.created_at,
     lastSeenAt: row.last_seen_at
   }));
@@ -49,7 +52,7 @@ export async function onRequestPost({ request, env }) {
   if (!validation.valid) return adminError("INVALID_CUSTOMER_NAME", 400, validation.error);
 
   const customerId = generateCustomerId();
-  const displayName = sanitizeDisplayName(validation.value);
+  const displayName = validation.name;
 
   await db.prepare(
     `INSERT INTO customers (id, display_name, created_at, last_seen_at)
@@ -61,7 +64,8 @@ export async function onRequestPost({ request, env }) {
     customer: {
       id: customerId,
       displayName,
-      customerLabel: formatFriendlyCustomerId(customerId)
+      customerLabel: formatFriendlyCustomerId(customerId),
+      identityIssued: false
     }
   }, { status: 201 });
 }

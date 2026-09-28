@@ -145,7 +145,7 @@ export function onRequestGet() {
     .qr-label-title { position: absolute; left: 0.08in; right: 0.08in; top: 0.06in; font-size: 0.07in; line-height: 1; font-weight: 800; text-align: center; }
     .qr-label-product { position: absolute; left: 0.08in; right: 0.08in; top: 0.17in; font-size: 0.065in; line-height: 1; font-weight: 700; color: #0645ad; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .qr-label-card svg { position: absolute; left: 0.37in; top: 0.29in; width: 0.76in; height: 0.76in; shape-rendering: crispEdges; }
-    .qr-label-num { position: absolute; left: 0.08in; right: 0.08in; bottom: 0.06in; font-size: 0.07in; line-height: 1; font-weight: 800; text-align: center; }
+    .qr-label-num { position: absolute; left: 0.08in; right: 0.08in; bottom: 0.06in; font-size: 0.055in; line-height: 1; font-weight: 800; text-align: center; }
     .print-instructions { margin: 10px 0 12px; padding: 10px 12px; border-radius: 10px; background: var(--badge-amber-bg); color: var(--badge-amber-text); font-size: 12.5px; font-weight: 700; }
     @media print {
       #printable-labels { display: none !important; }
@@ -684,9 +684,10 @@ export function onRequestGet() {
           <div class="card">
             <div class="card-header"><div class="card-title">Compra</div></div>
             <div id="assistedSelectedCustomer" class="badge badge-neutral">Selecciona un cliente</div>
+            <div id="assistedIdentityPanel" style="margin-top:16px;"></div>
             <div class="form-group" style="margin-top:16px;">
               <label class="form-label">QR físico de bebida</label>
-              <input id="assistedQrInput" class="form-control" placeholder="Token o URL del QR">
+              <input id="assistedQrInput" class="form-control" placeholder="Escanea el QR o escribe el codigo #127">
             </div>
             <div class="filter-bar">
               <button class="btn-secondary" onclick="openQrScanner('assisted')">Escanear QR</button>
@@ -714,15 +715,59 @@ export function onRequestGet() {
         <div class="card" style="margin:8px 0; box-shadow:none;">
           <strong>\${escapeHtml(c.displayName || "Cliente")}</strong><br>
           <span style="color:var(--text-muted)">\${escapeHtml(c.customerLabel)}</span>
-          <button class="btn-secondary" style="float:right;" onclick="selectAssistedCustomer('\${c.id}', '\${escapeHtml(c.displayName || "Cliente")}', '\${escapeHtml(c.customerLabel)}')">Seleccionar</button>
+          <button class="btn-secondary" style="float:right;" onclick="selectAssistedCustomer('\${c.id}', '\${escapeHtml(c.displayName || "Cliente")}', '\${escapeHtml(c.customerLabel)}', \${c.identityIssued ? "true" : "false"})">Seleccionar</button>
         </div>
       \`).join("") || '<p style="color:var(--text-muted);">Sin resultados.</p>';
     }
 
-    function selectAssistedCustomer(id, displayName, customerLabel) {
-      assistedCustomer = { id, displayName, customerLabel };
+    function selectAssistedCustomer(id, displayName, customerLabel, identityIssued = false) {
+      assistedCustomer = { id, displayName, customerLabel, identityIssued: Boolean(identityIssued) };
+      assistedIdentity = null;
       const badge = document.getElementById("assistedSelectedCustomer");
+      renderAssistedIdentityPanel();
       if (badge) badge.textContent = displayName + " · " + customerLabel;
+    }
+    function renderAssistedIdentityPanel() {
+      const box = document.getElementById("assistedIdentityPanel");
+      if (!box) return;
+      if (!assistedCustomer) { box.innerHTML = ""; return; }
+      const caps = detectPrintCapabilities();
+      const hasPrintableQr = Boolean(assistedIdentity?.qrSvg);
+      const issued = hasPrintableQr || assistedCustomer.identityIssued;
+      box.innerHTML = \`
+        <div class="card" style="margin:0; box-shadow:none; background:var(--bg-page);">
+          <div class="card-title">Identidad e impresion</div>
+          <p><strong>Cliente:</strong> \${escapeHtml(assistedCustomer.displayName || "Cliente")} · \${escapeHtml(assistedCustomer.customerLabel)}</p>
+          <p>QR: <strong>\${issued ? "Emitido" : "No emitido"}</strong></p>
+          <p>Impresion del sistema: <strong>\${caps.systemPrint ? "Disponible" : "No disponible"}</strong></p>
+          <p>Bluetooth directo: <strong>\${caps.bluetooth ? "Web Bluetooth disponible · requiere impresora compatible" : "No compatible"}</strong></p>
+          <div class="filter-bar" style="margin-top:12px;">
+            <button class="btn-secondary" onclick="emitCustomerIdentityQr(\${issued ? "true" : "false"})">\${issued ? "Reemitir QR" : "Emitir QR del cliente"}</button>
+            <button class="btn-secondary" onclick="showCustomerIdentityQr()" \${hasPrintableQr ? "" : "disabled"}>Mostrar QR</button>
+            <button class="btn-secondary" onclick="printCustomerIdentityTicket()" \${hasPrintableQr ? "" : "disabled"}>Imprimir con sistema</button>
+          </div>
+          \${issued && !hasPrintableQr ? '<p style="color:var(--text-muted); margin-top:10px;">QR ya emitido. Para imprimirlo otra vez, reemite el QR; el anterior dejara de funcionar.</p>' : ''}
+        </div>
+      \`;
+    }
+
+    async function emitCustomerIdentityQr(reissue = false) {
+      if (!assistedCustomer) return showToast("Selecciona un cliente.", true);
+      if (reissue && !confirm("El QR anterior dejara de funcionar. Deseas continuar?")) return;
+      const res = await apiFetch("/admin/customers/" + encodeURIComponent(assistedCustomer.id) + "/identity", {
+        method: "POST",
+        body: JSON.stringify({ rotate: Boolean(reissue) })
+      });
+      if (!res.ok) return showToast(res.code || "No se pudo emitir el QR", true);
+      if (res.alreadyIssued && !res.identity?.qrSvg) {
+        assistedCustomer.identityIssued = true;
+        renderAssistedIdentityPanel();
+        return showToast("QR ya emitido. Reemite para obtener uno imprimible.", true);
+      }
+      assistedIdentity = res.identity;
+      assistedCustomer.identityIssued = true;
+      renderAssistedIdentityPanel();
+      showToast(reissue ? "QR reemitido" : "QR emitido");
     }
 
     function openAssistedCustomerModal() {
@@ -738,7 +783,8 @@ export function onRequestGet() {
         const res = await apiFetch("/admin/assisted/customers", { method: "POST", body: JSON.stringify({ displayName }) });
         if (!res.ok) return showToast(res.details || res.code || "No se pudo crear cliente", true);
         closeModal();
-        selectAssistedCustomer(res.customer.id, res.customer.displayName, res.customer.customerLabel);
+        selectAssistedCustomer(res.customer.id, res.customer.displayName, res.customer.customerLabel, false);
+        await searchAssistedCustomers();
         showToast("Cliente creado");
       });
     }
@@ -746,10 +792,10 @@ export function onRequestGet() {
     async function previewAssistedQr() {
       if (!assistedCustomer) return showToast("Selecciona un cliente.", true);
       assistedQrToken = extractQrPayload(document.getElementById("assistedQrInput")?.value || "", "beverage");
-      if (!assistedQrToken) return showToast("Ingresa o escanea el QR de bebida.", true);
+      if (!assistedQrToken) return showToast("Ingresa o escanea el QR o codigo de bebida.", true);
       const box = document.getElementById("assistedPreview");
       box.innerHTML = '<div class="badge badge-neutral">Validando QR...</div>';
-      const res = await apiFetch("/qr/" + encodeURIComponent(assistedQrToken));
+      const res = await apiFetch("/admin/assisted/qr?input=" + encodeURIComponent(assistedQrToken));
       if (!res.ok) {
         box.innerHTML = \`<div class="badge badge-danger">\${res.code || "QR_INVALID"}</div>\`;
         return;
@@ -758,7 +804,7 @@ export function onRequestGet() {
       box.innerHTML = \`
         <div class="card" style="margin:0; box-shadow:none; background:var(--bg-page);">
           <div class="card-title">\${escapeHtml(res.product?.name || "Producto")}</div>
-          <p>QR #\${res.qr?.number || ""}</p>
+          <p>Codigo de bebida #\${res.qr?.publicNumber || ""}</p>
           <p>El servidor calculará promoción, stock y precio final.</p>
           <button class="btn-primary" onclick="confirmAssistedSale()" style="width:100%; justify-content:center; margin-top:12px;">Confirmar venta asistida</button>
         </div>
@@ -772,22 +818,17 @@ export function onRequestGet() {
         body: JSON.stringify({ customerId: assistedCustomer.id, token: assistedQrToken })
       });
       if (!res.ok) return showToast(res.code || "No se pudo registrar la venta", true);
-      assistedIdentity = res.identity;
       document.getElementById("assistedPreview").innerHTML = \`
         <div class="card" style="margin:0; box-shadow:none; background:var(--bg-page);">
           <div class="card-title">Compra registrada</div>
           <p>\${escapeHtml(assistedIdentity?.customer?.displayName || assistedCustomer.displayName)} · \${escapeHtml(assistedIdentity?.customer?.customerLabel || assistedCustomer.customerLabel)}</p>
           <p><strong>\${escapeHtml(res.purchase?.product?.name || "Producto")}</strong> · \${formatMoney(res.purchase?.finalPriceCents)}</p>
-          <div class="filter-bar" style="margin-top:12px;">
-            <button class="btn-secondary" onclick="showCustomerIdentityQr()">Mostrar QR en pantalla</button>
-            <button class="btn-secondary" onclick="printCustomerIdentityTicket()">Imprimir QR del cliente</button>
-          </div>
         </div>
       \`;
     }
 
     function showCustomerIdentityQr() {
-      if (!assistedIdentity) return;
+      if (!assistedIdentity?.qrSvg) return showToast("No hay QR imprimible en esta sesion. Reemite el QR si necesitas imprimirlo.", true);
       openModal("QR del cliente", \`
         <div style="text-align:center;">
           <div style="font-weight:800;">GAMMS AEP</div>
@@ -802,7 +843,7 @@ export function onRequestGet() {
 
     async function printCustomerIdentityTicket() {
       const caps = detectPrintCapabilities();
-      if (!assistedIdentity) return;
+      if (!assistedIdentity?.qrSvg) return showToast("No hay QR imprimible en esta sesion. Reemite el QR si necesitas imprimirlo.", true);
       if (!caps.bluetooth) {
         showToast("Impresión Bluetooth no compatible. Usa la impresión del sistema o muestra el QR en pantalla.", true);
       }
@@ -830,7 +871,7 @@ export function onRequestGet() {
         <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(340px, 1fr)); gap:24px;">
           <div class="card">
             <div class="card-header">
-              <div class="card-title">Canje POS 50%</div>
+              <div class="card-title">Canje POS</div>
               <span class="badge badge-success">POS ONLINE</span>
             </div>
             <div class="form-group">
@@ -898,7 +939,7 @@ export function onRequestGet() {
       box.innerHTML = \`
         <div class="card" style="margin:0; box-shadow:none; background:var(--bg-page);">
           <div class="card-title">\${res.customer?.displayName || 'Cliente'} (\${res.customer?.customerLabel || ''})</div>
-          <p style="margin-top:8px;">Estado: <strong>\${res.claim.status}</strong> · Descuento: <strong>50% OFF</strong></p>
+          <p style="margin-top:8px;">Estado: <strong>\${res.claim.status}</strong> · Descuento disponible</p>
         </div>
       \`;
     }
@@ -1067,10 +1108,12 @@ export function onRequestGet() {
       posProductPreview = null;
       if (step2Box) step2Box.hidden = false;
       if (confirmBox) confirmBox.hidden = true;
+      const discountPercent = res.reward?.discountPercent ?? res.pricing?.discountPercent ?? 50;
+      const discountText = discountPercent === 100 ? "GRATIS" : discountPercent + " % OFF";
       if (box) box.innerHTML = \`
         <div class="card" style="margin:0; box-shadow:none; background:var(--bg-page);">
           <div class="card-title">\${res.customer?.displayName || 'Cliente'} (\${res.customer?.customerLabel || ''})</div>
-          <p style="margin-top:8px;">Estado: <strong>Premio válido</strong> · Descuento: <strong>50% OFF</strong></p>
+          <p style="margin-top:8px;">Estado: <strong>Premio válido</strong> · Descuento: <strong>\${discountText}</strong></p>
           <p style="margin-top:8px; color:var(--text-muted);">Ahora escanea el QR fisico de la bebida. La venta no se confirma hasta pulsar Confirmar compra.</p>
         </div>
       \`;
@@ -1625,7 +1668,7 @@ export function onRequestGet() {
       const productName = escapePrintText(item?.product?.name || "Producto");
       const publicNumber = Number.parseInt(item?.publicNumber, 10);
       const numberText = Number.isSafeInteger(publicNumber) && publicNumber > 0 ? publicNumber : "-";
-      return \`<div class="qr-label-card"><div class="qr-label-title">GAMMS AEP</div><div class="qr-label-product">\${productName}</div>\${item.svg || ""}<div class="qr-label-num">#\${numberText}</div></div>\`;
+      return \`<div class="qr-label-card"><div class="qr-label-title">GAMMS AEP</div><div class="qr-label-product">\${productName}</div>\${item.svg || ""}<div class="qr-label-num">Codigo: #\${numberText}</div></div>\`;
     }
 
     function getOrderedBrowserSlots(profile) {
@@ -2055,7 +2098,7 @@ export function onRequestGet() {
             <div class="stat-card">
               <div class="stat-header"><span>REVENUE TOTAL</span></div>
               <div class="stat-value">\${formatMoney(r.totalRevenueCents)}</div>
-              <div class="stat-sub">Normal: \${formatMoney(r.normalRevenueCents)} | 50% OFF: \${formatMoney(r.rewardRevenueCents)}</div>
+              <div class="stat-sub">Normal: \${formatMoney(r.normalRevenueCents)} | Con descuento: \${formatMoney(r.rewardRevenueCents)}</div>
             </div>
             <div class="stat-card">
               <div class="stat-header"><span>DESCUENTOS OTORGADOS</span></div>
@@ -2065,7 +2108,7 @@ export function onRequestGet() {
             <div class="stat-card">
               <div class="stat-header"><span>UNIDADES VENDIDAS</span></div>
               <div class="stat-value">\${r.totalUnits} ud.</div>
-              <div class="stat-sub">Normales: \${r.normalSalesCount} | Con 50%: \${r.rewardSalesCount}</div>
+              <div class="stat-sub">Normales: \${r.normalSalesCount} | Con descuento: \${r.rewardSalesCount}</div>
             </div>
             <div class="stat-card">
               <div class="stat-header"><span>CLIENTES ÚNICOS</span></div>
@@ -2079,7 +2122,7 @@ export function onRequestGet() {
               <div class="card-title">Rendimiento por Vendedor</div>
               <div class="table-container">
                 <table>
-                  <thead><tr><th>Vendedor</th><th>Unidades</th><th>Ingreso</th><th>Ventas 50%</th></tr></thead>
+                  <thead><tr><th>Vendedor</th><th>Unidades</th><th>Ingreso</th><th>Ventas con descuento</th></tr></thead>
                   <tbody>
                     \${(r.salesBySeller || []).map(s => \`
                       <tr>

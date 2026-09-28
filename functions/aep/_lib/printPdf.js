@@ -88,10 +88,10 @@ function drawLabel(page, fonts, slotBox, label) {
     color: rgb(0.18, 0.18, 0.18),
     maxWidth: textWidth
   });
-  page.drawText(`#${label.publicNumber}`, {
+  page.drawText(`Codigo: #${label.publicNumber}`, {
     x: textX,
     y: slotBox.y + 7,
-    size: 8,
+    size: 5.6,
     font: fonts.bold,
     color: rgb(0, 0, 0),
     maxWidth: textWidth

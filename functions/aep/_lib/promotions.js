@@ -118,6 +118,13 @@ export async function upsertProductPromotionRule(db, data) {
      RETURNING id, product_id, enabled, every_n_purchases, discount_percent, repeat_cycle`
   ).bind(productId, enabled, everyN, discountPercent, repeatCycle).first();
 
+  await db.prepare(
+    `UPDATE rewards
+     SET discount_percent = ?
+     WHERE status = 'available'
+       AND promotion_rule_id = ?`
+  ).bind(discountPercent, row.id).run();
+
   return { ok: true, rule: row };
 }
 

@@ -27,8 +27,11 @@ export function formatFriendlyCustomerId(customerId) {
   if (!customerId || typeof customerId !== "string") {
     return "Cliente #0000";
   }
-  const clean = customerId.replace(/^customer-/, "").replace(/-/g, "");
-  const code = clean.substring(0, 4).toUpperCase();
+  const clean = customerId
+    .replace(/^cust[_-]/i, "")
+    .replace(/^customer-/, "")
+    .replace(/[^a-z0-9]/gi, "");
+  const code = (clean || "0000").substring(0, 4).toUpperCase().padEnd(4, "0");
   return `Cliente #${code}`;
 }
 

@@ -19,7 +19,7 @@ export async function onRequestPost(context) {
   const result = await redeemClaim(context.env.DB, body?.code, {
     actorType: "admin",
     actorIdentifier: auth.payload.sub ?? "admin",
-    movementReason: "Canje POS admin 50% reward",
+    movementReason: "Canje POS admin con descuento reward",
     audit: true
   });
 

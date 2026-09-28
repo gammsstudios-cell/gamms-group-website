@@ -10,9 +10,16 @@ export async function onRequestPost({ request, env, params }) {
   const csrf = validateCsrf(request);
   if (!csrf.ok) return adminError(csrf.code, csrf.status);
 
-  const result = await ensureCustomerIdentityToken(db, params.id);
+  let body = {};
+  try {
+    body = await request.json();
+  } catch {}
+
+  const result = await ensureCustomerIdentityToken(db, params.id, {
+    rotate: body?.rotate === true
+  });
   if (!result.ok) return adminError(result.code, 400);
-  return adminJson({ ok: true, identity: result.identity });
+  return adminJson({ ok: true, alreadyIssued: Boolean(result.alreadyIssued), identity: result.identity });
 }
 
 export async function onRequestDelete({ request, env, params }) {

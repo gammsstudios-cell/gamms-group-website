@@ -25,6 +25,7 @@ import { buildLabelsPdfFilename, validateBatchPdfLabels } from "./printPdfSecuri
 import { getPrintProfile, getOrderedPhysicalSlots, getSlotPosition, paginateLabels, profileCapacity, updatePrintProfile, validateProfileInput } from "./printProfiles.js";
 import { onRequestPost as pdfPost } from "../api/admin/print/pdf.js";
 import { formatFriendlyCustomerId, listSales } from "./sales.js";
+import { formatFriendlyCustomerId as formatCustomerLabel } from "./customerProfile.js";
 import { getDashboardStats } from "./dashboard.js";
 import { cancelReward, listRewards } from "./rewardsAdmin.js";
 import { listCustomers } from "./customersAdmin.js";
@@ -46,8 +47,12 @@ import { onRequestGet as eventGet, onRequestPut as eventPut } from "../api/admin
 import { onRequestGet as promotionsGet, onRequestPut as promotionsPut } from "../api/admin/promotions.js";
 import { onRequestPost as identityPost } from "../api/customer/identity.js";
 import { onRequestPost as assistedSalePost } from "../api/admin/assisted/sale.js";
+import { onRequestGet as assistedCustomersGet, onRequestPost as assistedCustomersPost } from "../api/admin/assisted/customers.js";
+import { onRequestGet as assistedQrGet } from "../api/admin/assisted/qr.js";
+import { onRequestPost as adminCustomerIdentityPost } from "../api/admin/customers/[id]/identity.js";
 import { createRewardClaim } from "./claims.js";
-import { previewClaimProduct } from "./redemption.js";
+import { previewClaimProduct, redeemClaim } from "./redemption.js";
+import { resolvePhysicalQrInput } from "./physicalQr.js";
 
 // Helper SQLite to D1 Adapter for testing migrations and queries
 class TestD1 {
@@ -1016,7 +1021,7 @@ test("getDashboardStats and listSales compute correct aggregates", async () => {
   const salesList = await listSales(db);
   assert.equal(salesList.items.length, 1);
   assert.equal(salesList.items[0].qrPublicNumber, 501);
-  assert.equal(salesList.items[0].customerLabel, "Cliente TEST");
+  assert.equal(salesList.items[0].customerLabel, "Cliente #TEST");
 });
 
 // ----------------------------------------------------
@@ -1044,7 +1049,7 @@ test("listCustomers masks customer UUID into friendly label and counts progress"
 
   const custRes = await listCustomers(db);
   assert.equal(custRes.items.length, 1);
-  assert.equal(custRes.items[0].idMasked, "Cliente A7F2");
+  assert.equal(custRes.items[0].idMasked, "Cliente #A7F2");
 });
 
 // ----------------------------------------------------
@@ -1148,7 +1153,16 @@ test("Control Center product and inventory renderers use the correct contracts a
   assert.doesNotMatch(inventoryBlock, /res\.movements/);
 });
 
-test("customer identity token can be rotated, resolved to cookie, and revoked", async () => {
+test("friendly customer IDs understand real cust_ identifiers", () => {
+  assert.equal(formatCustomerLabel("cust_a7f2abcdef"), "Cliente #A7F2");
+  assert.equal(formatFriendlyCustomerId("cust_a7f2abcdef"), "Cliente #A7F2");
+  assert.equal(formatCustomerLabel("cust_b8c3abcdef"), "Cliente #B8C3");
+  assert.notEqual(formatCustomerLabel("cust_a7f2abcdef"), formatCustomerLabel("cust_b8c3abcdef"));
+  assert.equal(formatCustomerLabel(null), "Cliente #0000");
+  assert.equal(formatCustomerLabel(""), "Cliente #0000");
+});
+
+test("customer identity token can be emitted, explicitly rotated, resolved to cookie, and revoked", async () => {
   const db = await createTestDb();
   await db.prepare("INSERT INTO customers (id, display_name) VALUES ('cust_identity_1', 'Cliente Uno')").run();
 
@@ -1163,6 +1177,22 @@ test("customer identity token can be rotated, resolved to cookie, and revoked", 
     generateToken: () => "b".repeat(64)
   });
   assert.equal(second.ok, true);
+  assert.equal(second.alreadyIssued, true);
+  assert.equal(second.identity.token, undefined);
+
+  const stillResolved = await resolveCustomerIdentityToken(
+    db,
+    `${CUSTOMER_IDENTITY_PREFIX}${"a".repeat(64)}`,
+    new Request("https://example.com/aep/promo")
+  );
+  assert.equal(stillResolved.ok, true);
+
+  const rotated = await ensureCustomerIdentityToken(db, "cust_identity_1", {
+    rotate: true,
+    generateToken: () => "b".repeat(64)
+  });
+  assert.equal(rotated.ok, true);
+  assert.equal(rotated.identity.token, `${CUSTOMER_IDENTITY_PREFIX}${"b".repeat(64)}`);
 
   const oldResolve = await resolveCustomerIdentityToken(
     db,
@@ -1173,7 +1203,7 @@ test("customer identity token can be rotated, resolved to cookie, and revoked", 
 
   const resolved = await resolveCustomerIdentityToken(
     db,
-    second.identity.token,
+    rotated.identity.token,
     new Request("https://example.com/aep/promo")
   );
   assert.equal(resolved.ok, true);
@@ -1183,7 +1213,7 @@ test("customer identity token can be rotated, resolved to cookie, and revoked", 
   await revokeCustomerIdentityToken(db, "cust_identity_1");
   const revoked = await resolveCustomerIdentityToken(
     db,
-    second.identity.token,
+    rotated.identity.token,
     new Request("https://example.com/aep/promo")
   );
   assert.equal(revoked.ok, false);
@@ -1272,6 +1302,161 @@ function jsonRequest(url, { method = "PUT", cookie = "", body = {}, origin = "ht
   if (cookie) headers.cookie = cookie;
   return new Request(url, { method, headers, body: JSON.stringify(body) });
 }
+
+test("assisted customer creation persists display_name and UI contract refreshes the list", async () => {
+  const db = await createTestDb();
+  const staffCookie = await createStaffCookieWithRole(db, { id: 703, username: "assisted_creator", roleId: 5 });
+  const env = { DB: db };
+
+  const created = await assistedCustomersPost({
+    request: jsonRequest("https://example.com/aep/api/admin/assisted/customers", {
+      method: "POST",
+      cookie: staffCookie,
+      body: { displayName: "Edith Potoy" }
+    }),
+    env
+  });
+  assert.equal(created.status, 201);
+  const createdBody = await created.json();
+  assert.equal(createdBody.customer.displayName, "Edith Potoy");
+  assert.match(createdBody.customer.customerLabel, /^Cliente #[A-Z0-9]{4}$/);
+
+  const saved = await db.prepare("SELECT display_name FROM customers WHERE id = ?").bind(createdBody.customer.id).first();
+  assert.equal(saved.display_name, "Edith Potoy");
+
+  const listed = await assistedCustomersGet({
+    request: new Request("https://example.com/aep/api/admin/assisted/customers?q=Edith", {
+      headers: { cookie: staffCookie }
+    }),
+    env
+  });
+  const listBody = await listed.json();
+  assert.ok(listBody.items.some((item) => item.id === createdBody.customer.id && item.displayName === "Edith Potoy"));
+
+  const source = readFileSync(resolve(process.cwd(), "functions/aep/controlcenter/[[path]].js"), "utf8");
+  assert.match(source, /await searchAssistedCustomers\(\);/);
+  assert.match(source, /Identidad e impresion/);
+  assert.match(source, /Escanea el QR o escribe el codigo #127/);
+  assert.match(source, /Web Bluetooth disponible/);
+  assert.match(source, /No compatible/);
+});
+
+test("staff physical QR resolver accepts token URL and public_number inputs", async () => {
+  const db = await createTestDb();
+  const product = await createProduct(db, { name: "Manual", priceCents: 4100, stockQuantity: 5 });
+  await insertAvailableQr(db, "MANUALQR0001", 127, product.product.id);
+
+  for (const input of [
+    "MANUALQR0001",
+    "https://example.com/aep/promo/r/MANUALQR0001",
+    "127",
+    "#127"
+  ]) {
+    const resolved = await resolvePhysicalQrInput(db, input);
+    assert.equal(resolved.ok, true, input);
+    assert.equal(resolved.qr.publicNumber, 127);
+    assert.equal(resolved.qr.product.name, "Manual");
+  }
+
+  assert.equal((await resolvePhysicalQrInput(db, "#99999")).code, "QR_INVALID");
+  await db.prepare("UPDATE qr_codes SET status = 'used' WHERE public_number = 127").run();
+  assert.equal((await resolvePhysicalQrInput(db, "#127")).code, "QR_ALREADY_USED");
+  await insertAvailableQr(db, "DISABLEDMAN1", 128, product.product.id);
+  await db.prepare("UPDATE qr_codes SET status = 'disabled' WHERE public_number = 128").run();
+  assert.equal((await resolvePhysicalQrInput(db, "#128")).code, "QR_DISABLED");
+});
+
+test("assisted sale accepts public_number manually and remains one-use without rotating identity", async () => {
+  const db = await createTestDb();
+  const product = await createProduct(db, { name: "Manual Sale", priceCents: 4300, stockQuantity: 2 });
+  await db.prepare("INSERT INTO customers (id, display_name) VALUES ('cust_manual_sale', 'Manual User')").run();
+  await insertAvailableQr(db, "PUBLICSALE01", 129, product.product.id);
+  const identity = await ensureCustomerIdentityToken(db, "cust_manual_sale", {
+    generateToken: () => "e".repeat(64)
+  });
+  const staffCookie = await createStaffCookieWithRole(db, { id: 704, username: "manual_staff", roleId: 5, openShift: true });
+  const env = { DB: db };
+
+  const preview = await assistedQrGet({
+    request: new Request("https://example.com/aep/api/admin/assisted/qr?input=%23129", {
+      headers: { cookie: staffCookie }
+    }),
+    env
+  });
+  assert.equal(preview.status, 200);
+  assert.equal((await preview.json()).qr.publicNumber, 129);
+
+  const context = () => ({
+    request: jsonRequest("https://example.com/aep/api/admin/assisted/sale", {
+      method: "POST",
+      cookie: staffCookie,
+      body: { customerId: "cust_manual_sale", token: "#129" }
+    }),
+    env
+  });
+
+  const first = await assistedSalePost(context());
+  assert.equal(first.status, 200);
+  const firstBody = await first.json();
+  assert.equal(firstBody.identity, undefined);
+  const resolvedOld = await resolveCustomerIdentityToken(db, identity.identity.token, new Request("https://example.com/aep/promo"));
+  assert.equal(resolvedOld.ok, true);
+
+  const second = await assistedSalePost(context());
+  assert.equal(second.status, 400);
+  const secondBody = await second.json();
+  assert.equal(secondBody.code, "QR_ALREADY_USED");
+  assert.equal((await db.prepare("SELECT COUNT(*) AS count FROM purchases WHERE qr_code_id = (SELECT id FROM qr_codes WHERE public_number = 129)").first()).count, 1);
+});
+
+test("customer identity emit is explicit and reissue rotates the previous QR", async () => {
+  const db = await createTestDb();
+  await db.prepare("INSERT INTO customers (id, display_name) VALUES ('cust_emit', 'Emit User')").run();
+  const staffCookie = await createStaffCookieWithRole(db, { id: 705, username: "identity_staff", roleId: 5 });
+  const env = { DB: db };
+
+  const initial = await adminCustomerIdentityPost({
+    request: jsonRequest("https://example.com/aep/api/admin/customers/cust_emit/identity", {
+      method: "POST",
+      cookie: staffCookie,
+      body: {}
+    }),
+    env,
+    params: { id: "cust_emit" }
+  });
+  assert.equal(initial.status, 200);
+  const initialBody = await initial.json();
+  assert.ok(initialBody.identity.token);
+
+  const repeated = await adminCustomerIdentityPost({
+    request: jsonRequest("https://example.com/aep/api/admin/customers/cust_emit/identity", {
+      method: "POST",
+      cookie: staffCookie,
+      body: {}
+    }),
+    env,
+    params: { id: "cust_emit" }
+  });
+  const repeatedBody = await repeated.json();
+  assert.equal(repeatedBody.alreadyIssued, true);
+  assert.equal(repeatedBody.identity.token, undefined);
+
+  const rotated = await adminCustomerIdentityPost({
+    request: jsonRequest("https://example.com/aep/api/admin/customers/cust_emit/identity", {
+      method: "POST",
+      cookie: staffCookie,
+      body: { rotate: true }
+    }),
+    env,
+    params: { id: "cust_emit" }
+  });
+  const rotatedBody = await rotated.json();
+  assert.ok(rotatedBody.identity.token);
+  assert.notEqual(rotatedBody.identity.token, initialBody.identity.token);
+
+  assert.equal((await resolveCustomerIdentityToken(db, initialBody.identity.token, new Request("https://example.com/aep/promo"))).ok, false);
+  assert.equal((await resolveCustomerIdentityToken(db, rotatedBody.identity.token, new Request("https://example.com/aep/promo"))).ok, true);
+});
 
 test("event_active blocks purchases and reactivation allows them again", async () => {
   const db = await createTestDb();
@@ -1387,6 +1572,65 @@ test("product promotion cycles support N=2, N=3, N=5, repeat=false, disabled, an
   const free = await buy(pFree.product.id, "FREEPROMO001", 8601, "cust_free");
   assert.equal(free.progress.reward.available, true);
   assert.equal(free.progress.reward.discountPercent, 100);
+});
+
+test("available product reward follows updated rule discount without changing redeemed history", async () => {
+  const db = await createTestDb();
+  const product = await createProduct(db, { name: "Promo Variable", priceCents: 4000, stockQuantity: 5 });
+  await upsertProductPromotionRule(db, {
+    productId: product.product.id,
+    enabled: true,
+    everyN: 2,
+    discountPercent: 50,
+    repeatCycle: true
+  });
+  await insertAvailableQr(db, "VARPROMO0001", 8601, product.product.id);
+  const first = await registerPurchase(db, new Request("https://example.com/aep/api/purchases", {
+    headers: { cookie: "GAMMS-AEP-Customer=cust_variable_discount" }
+  }), "VARPROMO0001");
+  assert.equal(first.ok, true);
+  assert.equal(first.progress.reward.discountPercent, 50);
+
+  const available = await db.prepare("SELECT id, promotion_rule_id, discount_percent FROM rewards WHERE customer_id = 'cust_variable_discount' AND status = 'available'").first();
+  assert.equal(available.discount_percent, 50);
+
+  await upsertProductPromotionRule(db, {
+    productId: product.product.id,
+    enabled: true,
+    everyN: 2,
+    discountPercent: 25,
+    repeatCycle: true
+  });
+  const updated = await db.prepare("SELECT discount_percent FROM rewards WHERE id = ?").bind(available.id).first();
+  assert.equal(updated.discount_percent, 25);
+
+  const claim = await createRewardClaim(db, new Request("https://example.com/aep/api/rewards/claim", {
+    headers: { cookie: "GAMMS-AEP-Customer=cust_variable_discount" }
+  }), null, {
+    generateClaimCode: () => "ZXCVBNMKLH"
+  });
+  assert.equal(claim.ok, true);
+  await insertAvailableQr(db, "VARPROMO0002", 8602, product.product.id);
+
+  const preview = await previewClaimProduct(db, "ZXCVBNMKLH", "#8602");
+  assert.equal(preview.ok, true);
+  assert.equal(preview.pricing.discountPercent, 25);
+  assert.equal(preview.pricing.finalPriceCents, 3000);
+
+  const redeemed = await redeemClaim(db, "ZXCVBNMKLH", { physicalQrToken: "#8602" });
+  assert.equal(redeemed.ok, true);
+  assert.equal(redeemed.purchase.discountPercent, 25);
+  assert.equal(redeemed.purchase.finalPriceCents, 3000);
+
+  await upsertProductPromotionRule(db, {
+    productId: product.product.id,
+    enabled: true,
+    everyN: 2,
+    discountPercent: 75,
+    repeatCycle: true
+  });
+  const redeemedReward = await db.prepare("SELECT discount_percent FROM rewards WHERE id = ?").bind(available.id).first();
+  assert.equal(redeemedReward.discount_percent, 25);
 });
 
 test("customer identity switch requires explicit confirmation and plaintext token is not persisted", async () => {

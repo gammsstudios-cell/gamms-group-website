@@ -13,6 +13,7 @@ import {
   productProgress,
   rewardTypeForProduct
 } from "./promotions.js";
+import { resolvePhysicalQrInput } from "./physicalQr.js";
 
 const REWARD_TYPE = "third_drink_50";
 const REWARD_DISCOUNT_PERCENT = 50;
@@ -131,6 +132,19 @@ async function lookupAvailableQrProduct(db, tokenHash) {
      WHERE q.token_hash = ?
      LIMIT 1`
   ).bind(tokenHash).first();
+}
+
+function previewFromResolvedQr(resolved) {
+  return {
+    id: resolved.id,
+    public_number: resolved.publicNumber,
+    product_id: resolved.productId,
+    status: resolved.status,
+    valid_product_id: resolved.product?.id || null,
+    name: resolved.product?.name || null,
+    price_cents: resolved.product?.priceCents || 0,
+    stock_quantity: resolved.product?.stockQuantity || 0
+  };
 }
 
 async function createPurchaseAndConsumeQr(db, tokenHash, customerId, productId, rule = null, actor = {}) {
@@ -519,14 +533,23 @@ export async function registerPurchase(db, request, rawToken, options = {}) {
   const event = await requireEventActive(db);
   if (!event.ok) return { ok: false, code: event.code };
 
-  const token = normalizeToken(rawToken);
-  if (!isValidTokenFormat(token)) {
-    return { ok: false, code: "QR_INVALID" };
+  let tokenHash;
+  let qrPreview;
+  if (options.allowPhysicalQrInput) {
+    const resolved = await resolvePhysicalQrInput(db, rawToken);
+    if (!resolved.ok) return { ok: false, code: resolved.code };
+    tokenHash = resolved.qr.tokenHash;
+    qrPreview = previewFromResolvedQr(resolved.qr);
+  } else {
+    const token = normalizeToken(rawToken);
+    if (!isValidTokenFormat(token)) {
+      return { ok: false, code: "QR_INVALID" };
+    }
+    tokenHash = await hashQrToken(token);
+    qrPreview = await lookupAvailableQrProduct(db, tokenHash);
   }
 
-  const tokenHash = await hashQrToken(token);
   const customer = await getOrCreateCustomer(db, request, options);
-  const qrPreview = await lookupAvailableQrProduct(db, tokenHash);
   if (!qrPreview || qrPreview.status !== "available" || !qrPreview.valid_product_id || qrPreview.stock_quantity <= 0) {
     return {
       ok: false,

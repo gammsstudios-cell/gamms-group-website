@@ -43,6 +43,13 @@ export async function ensureCustomerIdentityToken(db, customerId, options = {}) 
   ).bind(customerId).first();
 
   if (!existing) return { ok: false, code: "CUSTOMER_NOT_FOUND" };
+  if (existing.token_id && options.rotate !== true) {
+    return {
+      ok: true,
+      alreadyIssued: true,
+      identity: publicIdentity(existing)
+    };
+  }
 
   const token = options.generateToken?.() ?? generateCustomerIdentityToken();
   const tokenHash = await hashCustomerIdentityToken(token);

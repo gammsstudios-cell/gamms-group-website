@@ -1,9 +1,9 @@
 import { calculateProgress } from "./progress.js";
 import { hashClaimCode, isValidClaimCode, normalizeClaimCode } from "./claims.js";
-import { hashQrToken, isValidTokenFormat, normalizeToken } from "./crypto.js";
 import { formatFriendlyCustomerId } from "./customerProfile.js";
 import { recordPurchaseAttribution } from "./purchaseAttribution.js";
 import { requireEventActive } from "./eventGate.js";
+import { resolvePhysicalQrInput } from "./physicalQr.js";
 
 const EXPECTED_REDEMPTION_ERRORS = new Set([
   "CLAIM_INVALID",
@@ -166,44 +166,27 @@ export async function previewClaimProduct(db, rawCode, physicalQrToken) {
   const claimPrev = await previewClaim(db, rawCode);
   if (!claimPrev.ok) return claimPrev;
 
-  const token = normalizeToken(physicalQrToken);
-  if (!isValidTokenFormat(token)) {
-    return { ok: false, code: "QR_INVALID" };
-  }
+  const resolved = await resolvePhysicalQrInput(db, physicalQrToken);
+  if (!resolved.ok) return { ok: false, code: resolved.code };
+  const qr = resolved.qr;
 
-  const tokenHash = await hashQrToken(token);
-  const qr = await db
-    .prepare(
-      `SELECT q.id, q.public_number, q.status, q.product_id, p.name AS product_name, p.price_cents, COALESCE(p.stock_quantity, 0) AS stock_quantity
-       FROM qr_codes q
-       JOIN products p ON p.id = q.product_id AND p.active = 1
-       WHERE q.token_hash = ?
-       LIMIT 1`
-    )
-    .bind(tokenHash)
-    .first();
-
-  if (!qr) return { ok: false, code: "QR_INVALID" };
-  if (qr.status === "used") return { ok: false, code: "QR_ALREADY_USED" };
-  if (qr.status === "disabled") return { ok: false, code: "QR_DISABLED" };
-  if (qr.stock_quantity <= 0) return { ok: false, code: "OUT_OF_STOCK" };
-  if (claimPrev.qr?.number && Number(claimPrev.qr.number) !== Number(qr.public_number)) {
+  if (claimPrev.qr?.number && Number(claimPrev.qr.number) !== Number(qr.publicNumber)) {
     return { ok: false, code: "REWARD_NOT_AVAILABLE" };
   }
-  if (claimPrev.reward?.productId && Number(claimPrev.reward.productId) !== Number(qr.product_id)) {
+  if (claimPrev.reward?.productId && Number(claimPrev.reward.productId) !== Number(qr.productId)) {
     return { ok: false, code: "REWARD_NOT_AVAILABLE" };
   }
 
   const discountPercent = claimPrev.reward?.discountPercent || 50;
-  const regularPriceCents = qr.price_cents;
+  const regularPriceCents = qr.product.priceCents;
   const finalPriceCents = finalPrice(regularPriceCents, discountPercent);
 
   return {
     ok: true,
     claim: claimPrev.claim,
     customer: claimPrev.customer,
-    qr: { id: qr.id, publicNumber: qr.public_number, token },
-    product: { id: qr.product_id, name: qr.product_name, stockQuantity: qr.stock_quantity },
+    qr: { id: qr.id, publicNumber: qr.publicNumber, token: qr.token },
+    product: { id: qr.productId, name: qr.product.name, stockQuantity: qr.product.stockQuantity },
     pricing: { regularPriceCents, discountPercent, finalPriceCents }
   };
 }
@@ -222,13 +205,13 @@ export async function redeemClaim(db, rawCode, options = {}) {
 
   const actorType = String(options.actorType ?? "seller").slice(0, 40);
   const actorIdentifier = String(options.actorIdentifier ?? actorType).slice(0, 120);
-  const movementReason = String(options.movementReason ?? "Canje vendedor 50% reward").slice(0, 240);
+  const movementReason = String(options.movementReason ?? "Canje vendedor con descuento reward").slice(0, 240);
 
   let targetQrTokenHash = null;
   if (options.physicalQrToken) {
-    const norm = normalizeToken(options.physicalQrToken);
-    if (!isValidTokenFormat(norm)) return { ok: false, code: "QR_INVALID" };
-    targetQrTokenHash = await hashQrToken(norm);
+    const resolved = await resolvePhysicalQrInput(db, options.physicalQrToken);
+    if (!resolved.ok) return { ok: false, code: resolved.code };
+    targetQrTokenHash = resolved.qr.tokenHash;
   }
 
   try {

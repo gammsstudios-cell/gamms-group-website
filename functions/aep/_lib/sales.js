@@ -2,9 +2,12 @@ import { csvEscape } from "./adminResponses.js";
 
 export function formatFriendlyCustomerId(uuid) {
   if (!uuid) return "Cliente Anónimo";
-  const str = String(uuid).replace(/^cust_/, "");
-  const suffix = str.slice(0, 4).toUpperCase();
-  return `Cliente ${suffix}`;
+  const str = String(uuid)
+    .replace(/^cust[_-]/i, "")
+    .replace(/^customer-/, "")
+    .replace(/[^a-z0-9]/gi, "");
+  const suffix = (str || "0000").slice(0, 4).toUpperCase().padEnd(4, "0");
+  return `Cliente #${suffix}`;
 }
 
 export async function listSales(
