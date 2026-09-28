@@ -195,22 +195,34 @@ class FakeStatement {
         customerId,
         rewardType,
         discountPercent,
+        productId,
+        promotionRuleId,
+        everyN,
         purchaseCustomerId,
+        purchaseProductId,
+        rewardEnabled,
+        repeatCycle,
+        moduloEveryN,
+        moduloTarget,
         uniqueCustomerId,
         uniqueRewardType
       ] = this.params;
       assert.equal(customerId, purchaseCustomerId);
       assert.equal(customerId, uniqueCustomerId);
+      assert.equal(productId, purchaseProductId);
       assert.equal(rewardType, uniqueRewardType);
 
       const purchaseCount = this.db.purchases
-        .filter((purchase) => purchase.customer_id === customerId).length;
+        .filter((purchase) => purchase.customer_id === customerId && purchase.product_id === productId).length;
 
-      if (purchaseCount <= 0 || purchaseCount % 3 !== 2) {
+      if (!rewardEnabled || purchaseCount <= 0 || purchaseCount % moduloEveryN !== (moduloTarget - 1)) {
         return { meta: { changes: 0 }, results: [] };
       }
 
-      const cycleNumber = Math.floor((purchaseCount - 1) / 3) + 1;
+      const cycleNumber = Math.floor((purchaseCount - 1) / everyN) + 1;
+      if (!repeatCycle && cycleNumber !== 1) {
+        return { meta: { changes: 0 }, results: [] };
+      }
       const existing = this.db.rewards.find((reward) =>
         reward.customer_id === customerId &&
         reward.reward_type === rewardType &&
@@ -236,7 +248,9 @@ class FakeStatement {
         reward_type: rewardType,
         discount_percent: discountPercent,
         status: "available",
-        cycle_number: cycleNumber
+        cycle_number: cycleNumber,
+        product_id: productId,
+        promotion_rule_id: promotionRuleId ?? null
       };
       this.db.rewards.push(reward);
 
@@ -272,7 +286,7 @@ class FakeStatement {
         this.db.failNextInventoryInsert = false;
         throw new Error("artificial inventory insert failure");
       }
-      const [actorIdentifier, tokenHash] = this.params;
+      const [reason, actorType, actorIdentifier, tokenHash] = this.params;
       const qr = this.db.qrCodes.get(tokenHash);
       const purchase = qr ? this.db.purchases.find((p) => p.qr_code_id === qr.id) : null;
       if (qr && purchase) {
@@ -281,7 +295,10 @@ class FakeStatement {
           product_id: qr.product_id,
           movement_type: "sale",
           quantity_delta: -1,
-          purchase_id: purchase.id
+          reason,
+          purchase_id: purchase.id,
+          actor_type: actorType,
+          actor_identifier: actorIdentifier
         });
         return { meta: { changes: 1 }, results: [] };
       }

@@ -2,6 +2,7 @@ import { hashQrToken, sha256Hex } from "./crypto.js";
 import { getCustomerIdFromRequest } from "./cookies.js";
 import { renderQrSvg } from "./qrSvg.js";
 import { formatFriendlyCustomerId } from "./customerProfile.js";
+import { requireEventActive } from "./eventGate.js";
 
 export const CLAIM_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 export const CLAIM_CODE_LENGTH = 10;
@@ -74,6 +75,9 @@ function changes(result) {
 }
 
 export async function createRewardClaim(db, request, qrToken = null, options = {}) {
+  const event = await requireEventActive(db);
+  if (!event.ok) return { ok: false, code: event.code };
+
   const customerId = getCustomerIdFromRequest(request);
   if (!customerId) return { ok: false, code: "CLAIM_INVALID" };
 
@@ -101,25 +105,44 @@ export async function createRewardClaim(db, request, qrToken = null, options = {
            r.id AS reward_id,
            r.discount_percent AS discount_percent,
            r.cycle_number AS cycle_number,
+           r.product_id AS reward_product_id,
            q.id AS qr_code_id,
            q.public_number AS public_number,
            p.name AS product_name
          FROM rewards r
+         LEFT JOIN product_promotion_rules pr ON pr.id = r.promotion_rule_id
          JOIN qr_codes q ON q.token_hash = ? AND q.status = 'available'
          JOIN products p ON p.id = q.product_id AND p.active = 1
          WHERE r.customer_id = ?
-           AND r.reward_type = 'third_drink_50'
            AND r.status = 'available'
-           AND r.cycle_number = (
-             SELECT CAST(((COUNT(*) - 1) / 3) + 1 AS INTEGER)
-             FROM purchases
-             WHERE customer_id = ?
-               AND NOT EXISTS (SELECT 1 FROM purchase_voids pv WHERE pv.purchase_id = purchases.id)
+           AND (r.product_id IS NULL OR r.product_id = q.product_id)
+           AND (
+             (
+               r.product_id IS NULL
+               AND r.promotion_rule_id IS NULL
+               AND r.cycle_number = (
+                 SELECT CAST(((COUNT(*) - 1) / 3) + 1 AS INTEGER)
+                 FROM purchases
+                 WHERE customer_id = ?
+                   AND NOT EXISTS (SELECT 1 FROM purchase_voids pv WHERE pv.purchase_id = purchases.id)
+               )
+             )
+             OR
+             (
+               r.product_id = q.product_id
+               AND r.cycle_number = (
+                 SELECT CAST(((COUNT(*) - 1) / COALESCE(pr.every_n_purchases, 3)) + 1 AS INTEGER)
+                 FROM purchases
+                 WHERE customer_id = ?
+                   AND product_id = q.product_id
+                   AND NOT EXISTS (SELECT 1 FROM purchase_voids pv WHERE pv.purchase_id = purchases.id)
+               )
+             )
            )
          ORDER BY r.cycle_number ASC
          LIMIT 1`
       )
-      .bind(qrTokenHash, customerId, customerId)
+      .bind(qrTokenHash, customerId, customerId, customerId)
       .first();
 
     if (!preview) return { ok: false, code: "REWARD_NOT_AVAILABLE" };
@@ -155,19 +178,37 @@ export async function createRewardClaim(db, request, qrToken = null, options = {
              'available',
              strftime('%Y-%m-%dT%H:%M:%SZ', 'now', '+5 minutes')
            FROM rewards r
+            LEFT JOIN product_promotion_rules pr ON pr.id = r.promotion_rule_id
            JOIN qr_codes q ON q.token_hash = ? AND q.status = 'available'
            JOIN products p ON p.id = q.product_id AND p.active = 1
            WHERE r.customer_id = ?
-             AND r.reward_type = 'third_drink_50'
              AND r.status = 'available'
-             AND r.cycle_number = (
-               SELECT CAST(((COUNT(*) - 1) / 3) + 1 AS INTEGER)
-               FROM purchases
-               WHERE customer_id = ?
-                 AND NOT EXISTS (SELECT 1 FROM purchase_voids pv WHERE pv.purchase_id = purchases.id)
+             AND (r.product_id IS NULL OR r.product_id = q.product_id)
+              AND (
+                (
+                  r.product_id IS NULL
+                  AND r.promotion_rule_id IS NULL
+                  AND r.cycle_number = (
+                    SELECT CAST(((COUNT(*) - 1) / 3) + 1 AS INTEGER)
+                    FROM purchases
+                    WHERE customer_id = ?
+                      AND NOT EXISTS (SELECT 1 FROM purchase_voids pv WHERE pv.purchase_id = purchases.id)
+                  )
+                )
+                OR
+                (
+                  r.product_id = q.product_id
+                  AND r.cycle_number = (
+                    SELECT CAST(((COUNT(*) - 1) / COALESCE(pr.every_n_purchases, 3)) + 1 AS INTEGER)
+                    FROM purchases
+                    WHERE customer_id = ?
+                      AND product_id = q.product_id
+                      AND NOT EXISTS (SELECT 1 FROM purchase_voids pv WHERE pv.purchase_id = purchases.id)
+                  )
+                )
              )
            RETURNING expires_at`
-        ).bind(customerId, codeHash, qrTokenHash, customerId, customerId)
+        ).bind(customerId, codeHash, qrTokenHash, customerId, customerId, customerId)
       ]);
 
       const insertedRow = firstRow(insertResult);
@@ -196,10 +237,10 @@ export async function createRewardClaim(db, request, qrToken = null, options = {
       `SELECT
          r.id AS reward_id,
          r.discount_percent AS discount_percent,
-         r.cycle_number AS cycle_number
+         r.cycle_number AS cycle_number,
+         r.product_id AS product_id
        FROM rewards r
        WHERE r.customer_id = ?
-         AND r.reward_type = 'third_drink_50'
          AND r.status = 'available'
        ORDER BY r.cycle_number ASC
        LIMIT 1`

@@ -5,7 +5,8 @@ const CLAIM_ERRORS = new Set([
   "CLAIM_INVALID",
   "CLAIM_CONFLICT",
   "QR_INVALID",
-  "REWARD_NOT_AVAILABLE"
+  "REWARD_NOT_AVAILABLE",
+  "EVENT_CLOSED"
 ]);
 
 export async function onRequestPost(context) {

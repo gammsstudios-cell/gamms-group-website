@@ -257,6 +257,7 @@ export function onRequestGet() {
     const NAV_ITEMS = [
       { id: "overview", label: "Overview", perm: "dashboard.read", icon: '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>' },
       { id: "pos", label: "POS Operativo", perm: "pos.access", icon: '<rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/>' },
+      { id: "venta-asistida", label: "Venta Asistida", perm: "pos.access", icon: '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>' },
       { id: "my-sales", label: "Mis Ventas", perm: "sales.read_own", icon: '<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>' },
       { id: "sales", label: "Ventas", perm: "sales.read", icon: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>' },
       { id: "products", label: "Productos", perm: "products.read", icon: '<path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/>' },
@@ -270,6 +271,7 @@ export function onRequestGet() {
       { id: "shifts", label: "Turnos", perm: "shifts.use", icon: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>' },
       { id: "reports", label: "Reportes", perm: "reports.read", icon: '<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>' },
       { id: "audit", label: "Auditoría", perm: "audit.read", icon: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>' },
+      { id: "configuracion-evento", label: "Configuración del Evento", perm: "settings.read", icon: '<path d="M8 2v4"/><path d="M16 2v4"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/>' },
       { id: "settings", label: "Configuración", perm: "settings.read", icon: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>' },
       { id: "system", label: "Sistema", perm: "system.read", icon: '<rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>' }
     ];
@@ -531,6 +533,7 @@ export function onRequestGet() {
       switch (route) {
         case "overview": return renderOverview();
         case "pos": return renderPos();
+        case "venta-asistida": return renderAssistedSales();
         case "my-sales": return renderMySales();
         case "sales": return renderSales();
         case "products": return renderProducts();
@@ -544,6 +547,7 @@ export function onRequestGet() {
         case "shifts": return renderShifts();
         case "reports": return renderReports();
         case "audit": return renderActivity();
+        case "configuracion-evento": return renderEventConfig();
         case "settings": return renderSettings();
         case "system": return renderSystem();
         default: return renderOverview();
@@ -641,6 +645,176 @@ export function onRequestGet() {
           </div>
         </div>
       \`;
+    }
+
+    // VENTA ASISTIDA
+    let assistedCustomer = null;
+    let assistedQrToken = "";
+    let assistedQrPreview = null;
+    let assistedIdentity = null;
+
+    function detectPrintCapabilities() {
+      return {
+        systemPrint: typeof window.print === "function",
+        bluetooth: Boolean(navigator.bluetooth && window.isSecureContext),
+        secureContext: Boolean(window.isSecureContext),
+        platform: navigator.userAgentData?.platform || navigator.platform || "unknown"
+      };
+    }
+
+    async function renderAssistedSales() {
+      assistedCustomer = null;
+      assistedQrToken = "";
+      assistedQrPreview = null;
+      assistedIdentity = null;
+      contentArea.innerHTML = \`
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(340px, 1fr)); gap:24px;">
+          <div class="card">
+            <div class="card-header"><div class="card-title">Venta Asistida</div><span class="badge badge-success">STAFF</span></div>
+            <div class="form-group">
+              <label class="form-label">Buscar cliente</label>
+              <input id="assistedCustomerSearch" class="form-control" placeholder="Nombre o Cliente #A7F2">
+            </div>
+            <div class="filter-bar">
+              <button class="btn-secondary" onclick="searchAssistedCustomers()">Buscar</button>
+              <button class="btn-primary" onclick="openAssistedCustomerModal()">Crear cliente</button>
+            </div>
+            <div id="assistedCustomerResults" style="margin-top:16px;"></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">Compra</div></div>
+            <div id="assistedSelectedCustomer" class="badge badge-neutral">Selecciona un cliente</div>
+            <div class="form-group" style="margin-top:16px;">
+              <label class="form-label">QR físico de bebida</label>
+              <input id="assistedQrInput" class="form-control" placeholder="Token o URL del QR">
+            </div>
+            <div class="filter-bar">
+              <button class="btn-secondary" onclick="openQrScanner('assisted')">Escanear QR</button>
+              <button class="btn-secondary" onclick="previewAssistedQr()">Validar QR</button>
+            </div>
+            <div id="assistedPreview" style="margin-top:16px;"></div>
+          </div>
+        </div>
+      \`;
+      document.getElementById("assistedCustomerSearch")?.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") { event.preventDefault(); searchAssistedCustomers(); }
+      });
+      document.getElementById("assistedQrInput")?.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") { event.preventDefault(); previewAssistedQr(); }
+      });
+    }
+
+    async function searchAssistedCustomers() {
+      const q = document.getElementById("assistedCustomerSearch")?.value || "";
+      const box = document.getElementById("assistedCustomerResults");
+      box.innerHTML = '<div class="badge badge-neutral">Buscando...</div>';
+      const res = await apiFetch("/admin/assisted/customers?q=" + encodeURIComponent(q));
+      if (!res.ok) { box.innerHTML = '<div class="badge badge-danger">Error</div>'; return; }
+      box.innerHTML = (res.items || []).map(c => \`
+        <div class="card" style="margin:8px 0; box-shadow:none;">
+          <strong>\${escapeHtml(c.displayName || "Cliente")}</strong><br>
+          <span style="color:var(--text-muted)">\${escapeHtml(c.customerLabel)}</span>
+          <button class="btn-secondary" style="float:right;" onclick="selectAssistedCustomer('\${c.id}', '\${escapeHtml(c.displayName || "Cliente")}', '\${escapeHtml(c.customerLabel)}')">Seleccionar</button>
+        </div>
+      \`).join("") || '<p style="color:var(--text-muted);">Sin resultados.</p>';
+    }
+
+    function selectAssistedCustomer(id, displayName, customerLabel) {
+      assistedCustomer = { id, displayName, customerLabel };
+      const badge = document.getElementById("assistedSelectedCustomer");
+      if (badge) badge.textContent = displayName + " · " + customerLabel;
+    }
+
+    function openAssistedCustomerModal() {
+      openModal("Crear cliente", \`
+        <form id="assistedCustomerForm">
+          <div class="form-group"><label class="form-label">Nombre o alias</label><input id="assistedNewCustomerName" class="form-control" required maxlength="60"></div>
+          <button class="btn-primary" type="submit" style="width:100%; justify-content:center;">Crear cliente</button>
+        </form>
+      \`);
+      document.getElementById("assistedCustomerForm").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const displayName = document.getElementById("assistedNewCustomerName").value.trim();
+        const res = await apiFetch("/admin/assisted/customers", { method: "POST", body: JSON.stringify({ displayName }) });
+        if (!res.ok) return showToast(res.details || res.code || "No se pudo crear cliente", true);
+        closeModal();
+        selectAssistedCustomer(res.customer.id, res.customer.displayName, res.customer.customerLabel);
+        showToast("Cliente creado");
+      });
+    }
+
+    async function previewAssistedQr() {
+      if (!assistedCustomer) return showToast("Selecciona un cliente.", true);
+      assistedQrToken = extractQrPayload(document.getElementById("assistedQrInput")?.value || "", "beverage");
+      if (!assistedQrToken) return showToast("Ingresa o escanea el QR de bebida.", true);
+      const box = document.getElementById("assistedPreview");
+      box.innerHTML = '<div class="badge badge-neutral">Validando QR...</div>';
+      const res = await apiFetch("/qr/" + encodeURIComponent(assistedQrToken));
+      if (!res.ok) {
+        box.innerHTML = \`<div class="badge badge-danger">\${res.code || "QR_INVALID"}</div>\`;
+        return;
+      }
+      assistedQrPreview = res;
+      box.innerHTML = \`
+        <div class="card" style="margin:0; box-shadow:none; background:var(--bg-page);">
+          <div class="card-title">\${escapeHtml(res.product?.name || "Producto")}</div>
+          <p>QR #\${res.qr?.number || ""}</p>
+          <p>El servidor calculará promoción, stock y precio final.</p>
+          <button class="btn-primary" onclick="confirmAssistedSale()" style="width:100%; justify-content:center; margin-top:12px;">Confirmar venta asistida</button>
+        </div>
+      \`;
+    }
+
+    async function confirmAssistedSale() {
+      if (!assistedCustomer || !assistedQrToken) return showToast("Falta cliente o QR.", true);
+      const res = await apiFetch("/admin/assisted/sale", {
+        method: "POST",
+        body: JSON.stringify({ customerId: assistedCustomer.id, token: assistedQrToken })
+      });
+      if (!res.ok) return showToast(res.code || "No se pudo registrar la venta", true);
+      assistedIdentity = res.identity;
+      document.getElementById("assistedPreview").innerHTML = \`
+        <div class="card" style="margin:0; box-shadow:none; background:var(--bg-page);">
+          <div class="card-title">Compra registrada</div>
+          <p>\${escapeHtml(assistedIdentity?.customer?.displayName || assistedCustomer.displayName)} · \${escapeHtml(assistedIdentity?.customer?.customerLabel || assistedCustomer.customerLabel)}</p>
+          <p><strong>\${escapeHtml(res.purchase?.product?.name || "Producto")}</strong> · \${formatMoney(res.purchase?.finalPriceCents)}</p>
+          <div class="filter-bar" style="margin-top:12px;">
+            <button class="btn-secondary" onclick="showCustomerIdentityQr()">Mostrar QR en pantalla</button>
+            <button class="btn-secondary" onclick="printCustomerIdentityTicket()">Imprimir QR del cliente</button>
+          </div>
+        </div>
+      \`;
+    }
+
+    function showCustomerIdentityQr() {
+      if (!assistedIdentity) return;
+      openModal("QR del cliente", \`
+        <div style="text-align:center;">
+          <div style="font-weight:800;">GAMMS AEP</div>
+          <p>\${escapeHtml(assistedIdentity.customer.displayName || "Cliente")}</p>
+          <p>\${escapeHtml(assistedIdentity.customer.customerLabel)}</p>
+          <div style="background:#fff; padding:12px; display:inline-block;">\${assistedIdentity.qrSvg}</div>
+          <p style="margin-top:12px;">Conserva este código. Te servirá para mantener tus compras y recompensas.</p>
+          <div class="gamms-byline">By <strong>GAMMS GROUP</strong></div>
+        </div>
+      \`);
+    }
+
+    async function printCustomerIdentityTicket() {
+      const caps = detectPrintCapabilities();
+      if (!assistedIdentity) return;
+      if (!caps.bluetooth) {
+        showToast("Impresión Bluetooth no compatible. Usa la impresión del sistema o muestra el QR en pantalla.", true);
+      }
+      const html = \`<html><head><title>GAMMS AEP Cliente</title><style>@page{size:58mm auto;margin:4mm}body{font-family:system-ui;text-align:center;width:50mm}.qr svg{width:42mm;height:42mm}</style></head><body><strong>GAMMS AEP</strong><hr><div>\${escapeHtml(assistedIdentity.customer.displayName || "Cliente")}</div><div>\${escapeHtml(assistedIdentity.customer.customerLabel)}</div><div class="qr">\${assistedIdentity.qrSvg}</div><p>Conserva este código.<br>Te servirá para mantener tus compras y recompensas.</p><strong>By GAMMS GROUP</strong></body></html>\`;
+      const w = window.open("", "_blank", "noopener");
+      if (w) {
+        w.document.write(html);
+        w.document.close();
+        if (caps.systemPrint) w.print();
+      } else {
+        showCustomerIdentityQr();
+      }
     }
 
     // POS CONTROL CENTER
@@ -847,6 +1021,12 @@ export function onRequestGet() {
         stopQrScanner();
         closeModal();
         await previewPosClaim();
+      } else if (mode === "assisted") {
+        const input = document.getElementById("assistedQrInput");
+        if (input) input.value = payload;
+        stopQrScanner();
+        closeModal();
+        await previewAssistedQr();
       } else {
         const input = document.getElementById("posPhysicalQrInput");
         if (input) input.value = payload;
@@ -1964,7 +2144,102 @@ export function onRequestGet() {
       \`;
     }
 
-    // 14. SETTINGS
+    // 14. EVENT CONFIG
+    async function renderEventConfig() {
+      const [eventRes, promoRes, productRes] = await Promise.all([
+        apiFetch("/admin/event"),
+        apiFetch("/admin/promotions"),
+        apiFetch("/admin/products")
+      ]);
+      if (!eventRes.ok || !promoRes.ok || !productRes.ok) return;
+      const active = eventRes.event?.active !== false;
+      const products = productRes.items || [];
+      const rules = promoRes.items || [];
+      contentArea.innerHTML = \`
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Estado del Evento</div>
+            <span class="badge \${active ? 'badge-success' : 'badge-danger'}">\${active ? 'ACTIVO' : 'EVENTO DESACTIVADO'}</span>
+          </div>
+          <p style="color:var(--text-muted);">Al desactivar el evento se bloquean compras de clientes, POS, redemptions y Venta Asistida. El Control Center sigue disponible.</p>
+          <button class="\${active ? 'btn-danger' : 'btn-primary'}" onclick="toggleEventActive(\${active ? 'false' : 'true'})" style="margin-top:14px;">\${active ? 'Desactivar evento' : 'Activar evento'}</button>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Promociones por Producto</div></div>
+          <div class="form-group">
+            <label class="form-label">Producto</label>
+            <select id="promoProductSelect" class="form-control" onchange="loadPromotionEditor()">
+              <option value="">Selecciona producto</option>
+              \${products.map(p => \`<option value="\${p.id}">\${escapeHtml(p.name)}</option>\`).join('')}
+            </select>
+          </div>
+          <div id="promotionEditor"></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Promociones Activas</div></div>
+          \${rules.filter(r => r.enabled).map(r => \`
+            <div class="card" style="margin:8px 0; box-shadow:none; background:var(--bg-page);">
+              <strong>\${escapeHtml(r.productName)}</strong><br>
+              Cada \${r.everyN}. compra → \${r.discountPercent === 100 ? 'GRATIS' : r.discountPercent + ' % OFF'}
+              <button class="btn-secondary" style="float:right;" onclick="selectPromotionProduct(\${r.productId})">Editar</button>
+            </div>
+          \`).join('') || '<p style="color:var(--text-muted);">No hay promociones activas.</p>'}
+        </div>
+      \`;
+      window.__promoRules = rules;
+    }
+
+    async function toggleEventActive(nextActive) {
+      const active = nextActive === true || nextActive === "true";
+      if (!active && !confirm("¿Desactivar el evento?\\n\\nLos clientes no podrán registrar nuevas compras y los vendedores no podrán procesar ventas.")) return;
+      const res = await apiFetch("/admin/event", { method: "PUT", body: JSON.stringify({ active }) });
+      if (!res.ok) return showToast(res.code || "No se pudo actualizar evento", true);
+      showToast(active ? "Evento activado" : "Evento desactivado");
+      renderEventConfig();
+    }
+
+    function selectPromotionProduct(productId) {
+      const select = document.getElementById("promoProductSelect");
+      if (select) {
+        select.value = String(productId);
+        loadPromotionEditor();
+      }
+    }
+
+    function loadPromotionEditor() {
+      const productId = Number(document.getElementById("promoProductSelect")?.value || 0);
+      const box = document.getElementById("promotionEditor");
+      if (!productId) { box.innerHTML = ""; return; }
+      const rule = (window.__promoRules || []).find(r => Number(r.productId) === productId) || {};
+      const productName = document.getElementById("promoProductSelect").selectedOptions[0]?.textContent || "Producto";
+      box.innerHTML = \`
+        <div class="card" style="margin:0; box-shadow:none; background:var(--bg-page);">
+          <div class="card-title">\${escapeHtml(productName)}</div>
+          <label class="form-label" style="margin-top:12px;"><input id="promoEnabled" type="checkbox" \${rule.enabled ? 'checked' : ''}> Activar promoción para este producto</label>
+          <div class="form-group"><label class="form-label">Compra que recibe descuento</label><input id="promoEveryN" class="form-control" type="number" min="2" value="\${rule.everyN || 3}"></div>
+          <div class="form-group"><label class="form-label">Porcentaje de descuento</label><input id="promoDiscount" class="form-control" type="number" min="1" max="100" value="\${rule.discountPercent || 50}"></div>
+          <label class="form-label"><input id="promoRepeat" type="checkbox" \${rule.repeatCycle === false ? '' : 'checked'}> Repetir ciclo</label>
+          <p style="margin:12px 0; color:var(--text-muted);">Promoción activa: cada \${rule.everyN || 3} compras de \${escapeHtml(productName)}, el cliente obtiene \${(rule.discountPercent || 50) === 100 ? 'GRATIS' : (rule.discountPercent || 50) + ' % de descuento'} en la compra correspondiente.</p>
+          <button class="btn-primary" onclick="savePromotionRule(\${productId})">Guardar configuración</button>
+        </div>
+      \`;
+    }
+
+    async function savePromotionRule(productId) {
+      const body = {
+        productId,
+        enabled: document.getElementById("promoEnabled").checked,
+        everyN: Number(document.getElementById("promoEveryN").value),
+        discountPercent: Number(document.getElementById("promoDiscount").value),
+        repeatCycle: document.getElementById("promoRepeat").checked
+      };
+      const res = await apiFetch("/admin/promotions", { method: "PUT", body: JSON.stringify(body) });
+      if (!res.ok) return showToast(res.code || "No se pudo guardar promoción", true);
+      showToast("Promoción guardada");
+      renderEventConfig();
+    }
+
+    // 15. SETTINGS
     async function renderSettings() {
       const res = await apiFetch("/admin/settings");
       if (!res.ok) return;

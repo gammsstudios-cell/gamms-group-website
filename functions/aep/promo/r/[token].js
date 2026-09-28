@@ -141,6 +141,15 @@ export function onRequestGet(context) {
     <div id="onboardingSection" hidden>
       <h1>¡Bienvenido!</h1>
       <p>¿Cómo te llamas?</p>
+      <div class="actions" style="margin-bottom:14px;">
+        <button id="recoverCustomerButton" type="button">Si, tengo mi QR de cliente</button>
+      </div>
+      <div id="recoverCustomerBox" hidden>
+        <p>Escanea o pega el codigo de tu QR de cliente para recuperar tus compras.</p>
+        <input type="text" id="customerQrInput" class="input-field" placeholder="GAMMS-AEP-CUSTOMER:...">
+        <button id="recoverCustomerSubmit" type="button">Recuperar mis compras</button>
+      </div>
+      <p style="margin-top:14px;">No, soy cliente nuevo:</p>
       <input type="text" id="nameInput" class="input-field" placeholder="Tu nombre" maxlength="60" autocomplete="given-name">
       <button id="saveNameButton" type="button">Continuar</button>
     </div>
@@ -188,9 +197,14 @@ export function onRequestGet(context) {
     const promoSection = document.getElementById("promoSection");
     const nameInput = document.getElementById("nameInput");
     const saveNameButton = document.getElementById("saveNameButton");
+    const recoverCustomerButton = document.getElementById("recoverCustomerButton");
+    const recoverCustomerBox = document.getElementById("recoverCustomerBox");
+    const recoverCustomerSubmit = document.getElementById("recoverCustomerSubmit");
+    const customerQrInput = document.getElementById("customerQrInput");
 
     let currentCustomer = null;
     let countdownTimer;
+    let pendingIdentityToken = "";
 
     const labels = {
       QR_ALREADY_USED: ["QR ya utilizado", "Este código ya fue utilizado.", "bad"],
@@ -266,6 +280,59 @@ export function onRequestGet(context) {
         saveNameButton.disabled = false;
         alert("Error al guardar tu nombre.");
       });
+    });
+
+    recoverCustomerButton.addEventListener("click", () => {
+      recoverCustomerBox.hidden = !recoverCustomerBox.hidden;
+      if (!recoverCustomerBox.hidden) customerQrInput.focus();
+    });
+
+    function recoverIdentity(confirmSwitch = false) {
+      const identityToken = customerQrInput.value.trim();
+      if (!identityToken) return alert("Escanea o pega tu QR de cliente.");
+      pendingIdentityToken = identityToken;
+      recoverCustomerSubmit.disabled = true;
+      fetch("/aep/api/customer/identity", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "content-type": "application/json", accept: "application/json" },
+        body: JSON.stringify({ token: identityToken, confirmSwitch })
+      })
+      .then(res => res.json())
+      .then(data => {
+        recoverCustomerSubmit.disabled = false;
+        if (!data.ok && data.code === "IDENTITY_SWITCH_CONFIRMATION_REQUIRED") {
+          const current = data.details?.currentCustomer || data.currentCustomer || {};
+          const target = data.details?.targetCustomer || data.targetCustomer || {};
+          recoverCustomerBox.innerHTML = '<p><strong>Este telefono ya esta vinculado a otro cliente.</strong></p>' +
+            '<p>Cliente actual:<br>' + (current.displayName || 'Cliente') + ' · ' + (current.customerLabel || '') + '</p>' +
+            '<p>Cliente del QR:<br>' + (target.displayName || 'Cliente') + ' · ' + (target.customerLabel || '') + '</p>' +
+            '<button id="cancelIdentitySwitch" type="button">Cancelar</button>' +
+            '<button id="confirmIdentitySwitch" type="button" style="margin-top:10px;">Cambiar cliente</button>';
+          document.getElementById("cancelIdentitySwitch").addEventListener("click", () => {
+            recoverCustomerBox.hidden = true;
+          });
+          document.getElementById("confirmIdentitySwitch").addEventListener("click", () => {
+            customerQrInput.value = pendingIdentityToken;
+            recoverIdentity(true);
+          });
+          return;
+        }
+        if (!data.ok) return alert("QR de cliente no valido.");
+        currentCustomer = data.customer;
+        updateCustomerBadge(currentCustomer);
+        onboardingSection.hidden = true;
+        promoSection.hidden = false;
+        validateQr();
+      })
+      .catch(() => {
+        recoverCustomerSubmit.disabled = false;
+        alert("No pudimos recuperar tus compras.");
+      });
+    }
+
+    recoverCustomerSubmit.addEventListener("click", () => {
+      recoverIdentity(false);
     });
 
     function showClaim(data) {

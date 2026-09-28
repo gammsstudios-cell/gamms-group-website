@@ -3,6 +3,7 @@ import { hashClaimCode, isValidClaimCode, normalizeClaimCode } from "./claims.js
 import { hashQrToken, isValidTokenFormat, normalizeToken } from "./crypto.js";
 import { formatFriendlyCustomerId } from "./customerProfile.js";
 import { recordPurchaseAttribution } from "./purchaseAttribution.js";
+import { requireEventActive } from "./eventGate.js";
 
 const EXPECTED_REDEMPTION_ERRORS = new Set([
   "CLAIM_INVALID",
@@ -101,7 +102,7 @@ export async function previewClaim(db, rawCode) {
         `SELECT
            c.id AS claim_id, c.status AS claim_status, c.expires_at AS expires_at,
            c.expires_at <= CURRENT_TIMESTAMP AS expired, c.customer_id,
-           r.status AS reward_status, r.discount_percent, r.cycle_number
+           r.status AS reward_status, r.discount_percent, r.cycle_number, r.product_id
          FROM reward_claims c
          JOIN rewards r ON r.id = c.reward_id
          WHERE c.token_hash = ?
@@ -122,7 +123,7 @@ export async function previewClaim(db, rawCode) {
       ok: true,
       claim: { id: v2Row.claim_id, status: "available", expiresAt: v2Row.expires_at, code },
       customer: { displayName: cust?.display_name || null, customerLabel: formatFriendlyCustomerId(v2Row.customer_id) },
-      reward: { discountPercent: v2Row.discount_percent, cycleNumber: v2Row.cycle_number },
+      reward: { discountPercent: v2Row.discount_percent, cycleNumber: v2Row.cycle_number, productId: v2Row.product_id || null },
       preLinkedQr: null
     };
   }
@@ -159,6 +160,9 @@ export async function previewClaim(db, rawCode) {
  * POS Step 2 Scan: Previews product pricing when physical 3rd drink QR is scanned.
  */
 export async function previewClaimProduct(db, rawCode, physicalQrToken) {
+  const event = await requireEventActive(db);
+  if (!event.ok) return { ok: false, code: event.code };
+
   const claimPrev = await previewClaim(db, rawCode);
   if (!claimPrev.ok) return claimPrev;
 
@@ -183,6 +187,12 @@ export async function previewClaimProduct(db, rawCode, physicalQrToken) {
   if (qr.status === "used") return { ok: false, code: "QR_ALREADY_USED" };
   if (qr.status === "disabled") return { ok: false, code: "QR_DISABLED" };
   if (qr.stock_quantity <= 0) return { ok: false, code: "OUT_OF_STOCK" };
+  if (claimPrev.qr?.number && Number(claimPrev.qr.number) !== Number(qr.public_number)) {
+    return { ok: false, code: "REWARD_NOT_AVAILABLE" };
+  }
+  if (claimPrev.reward?.productId && Number(claimPrev.reward.productId) !== Number(qr.product_id)) {
+    return { ok: false, code: "REWARD_NOT_AVAILABLE" };
+  }
 
   const discountPercent = claimPrev.reward?.discountPercent || 50;
   const regularPriceCents = qr.price_cents;
@@ -202,6 +212,9 @@ export async function previewClaimProduct(db, rawCode, physicalQrToken) {
  * POS Step 3 Confirmation: Redeems reward claim.
  */
 export async function redeemClaim(db, rawCode, options = {}) {
+  const event = await requireEventActive(db);
+  if (!event.ok) return { ok: false, code: event.code };
+
   const code = normalizeClaimCode(rawCode);
   if (!isValidClaimCode(code)) return { ok: false, code: "CLAIM_INVALID" };
 
@@ -235,6 +248,7 @@ export async function redeemClaim(db, rawCode, options = {}) {
            JOIN qr_codes q ON q.token_hash = ? AND q.status = 'available'
            JOIN products p ON p.id = q.product_id AND p.active = 1
            WHERE c.token_hash = ? AND c.status = 'available' AND c.expires_at > CURRENT_TIMESTAMP AND COALESCE(p.stock_quantity, 0) > 0
+             AND (r.product_id IS NULL OR r.product_id = p.id)
            RETURNING id, customer_id, product_id, qr_code_id, regular_price_cents, discount_percent, final_price_cents`
         ).bind(targetQrTokenHash, claimHash),
 
