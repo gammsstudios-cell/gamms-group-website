@@ -3,6 +3,13 @@ import { adminError, adminJson, validateCsrf } from "../../../_lib/adminResponse
 import { generateCustomerId } from "../../../_lib/cookies.js";
 import { formatFriendlyCustomerId, validateDisplayName } from "../../../_lib/customerProfile.js";
 
+function customerIdSearchPattern(query) {
+  const value = String(query || "").trim();
+  const friendly = value.match(/^(?:cliente\s*)?#?([a-z0-9]{1,32})$/i);
+  if (friendly) return `cust_${friendly[1]}%`;
+  return `%${value}%`;
+}
+
 export async function onRequestGet({ request, env }) {
   const db = env.DB;
   const perm = await requirePermission(request, env, db, "pos.access");
@@ -11,6 +18,7 @@ export async function onRequestGet({ request, env }) {
   const url = new URL(request.url);
   const q = String(url.searchParams.get("q") || "").trim();
   const like = `%${q}%`;
+  const idLike = customerIdSearchPattern(q);
   const rows = await db.prepare(
     `SELECT c.id, c.display_name, c.created_at, c.last_seen_at,
             CASE WHEN t.id IS NULL THEN 0 ELSE 1 END AS identity_issued
@@ -19,7 +27,7 @@ export async function onRequestGet({ request, env }) {
      WHERE (? = '' OR c.display_name LIKE ? OR c.id LIKE ?)
      ORDER BY c.last_seen_at DESC
      LIMIT 25`
-  ).bind(q, like, like).all();
+  ).bind(q, like, idLike).all();
 
   const items = (rows?.results || []).map((row) => ({
     id: row.id,
