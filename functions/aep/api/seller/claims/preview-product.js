@@ -3,7 +3,7 @@ import { previewClaim, previewClaimProduct, sanitizeRedemptionError } from "../.
 import { requirePosActor } from "../../../_lib/posAuth.js";
 import { jsonResponse, errorJson } from "../../../_lib/adminResponses.js";
 
-function normalizePricing(result, claimPreview) {
+export function normalizePricing(result, claimPreview) {
   const regularPriceCents = Number(result?.pricing?.regularPriceCents ?? 0);
   const rawDiscount = claimPreview?.reward?.discountPercent
     ?? claimPreview?.pricing?.discountPercent
