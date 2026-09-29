@@ -13,6 +13,11 @@ import {
 import { generateClaimCode, hashClaimCode } from "../../../_lib/claims.js";
 import { redeemClaim, sanitizeRedemptionError } from "../../../_lib/redemption.js";
 
+function sanitizeAssistedRewardError(code) {
+  if (code === "REWARD_REQUIRES_SELLER") return code;
+  return sanitizeRedemptionError(code);
+}
+
 async function createInternalAssistedClaim(db, { rewardId, customerId, qrId }) {
   // Do not replace an active customer-facing claim. If one already exists,
   // the seller should use the normal POS claim flow instead of invalidating it.
@@ -121,7 +126,7 @@ export async function onRequestPost({ request, env }) {
     });
 
     if (!internalClaim.ok) {
-      return adminError(sanitizePurchaseError(internalClaim.code), 409, internalClaim);
+      return adminError(sanitizeAssistedRewardError(internalClaim.code), 409, internalClaim);
     }
 
     const redeemed = await redeemClaim(db, internalClaim.code, {
@@ -140,7 +145,7 @@ export async function onRequestPost({ request, env }) {
 
     const rule = await getPromotionRuleForProduct(db, resolved.qr.productId);
     const purchaseCount = await countValidProductPurchases(db, customerId, resolved.qr.productId);
-    const progress = rule?.enabled && !rule.legacy
+    const progress = availableReward.promotion_rule_id && rule?.enabled && !rule.legacy
       ? productProgress(purchaseCount, rule)
       : redeemed.progress;
 
