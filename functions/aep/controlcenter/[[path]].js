@@ -656,10 +656,310 @@ export function onRequestGet() {
     function detectPrintCapabilities() {
       return {
         systemPrint: typeof window.print === "function",
-        bluetooth: Boolean(navigator.bluetooth && window.isSecureContext),
+        webSerial: Boolean(navigator.serial && window.isSecureContext),
+        gammsBridge: Boolean(window.GAMMSPrinter && typeof window.GAMMSPrinter.postMessage === "function"),
         secureContext: Boolean(window.isSecureContext),
         platform: navigator.userAgentData?.platform || navigator.platform || "unknown"
       };
+    }
+
+    const thermalPrinterState = {
+      port: null,
+      writer: null,
+      connected: false
+    };
+
+    function thermalPrinterCapabilities() {
+      const caps = detectPrintCapabilities();
+      return {
+        bridge: caps.gammsBridge,
+        webSerial: caps.webSerial,
+        systemPrint: caps.systemPrint,
+        technology: "Web Serial · ESC/POS · 58 mm"
+      };
+    }
+
+    function updateThermalPrinterStatus() {
+      const status = document.getElementById("thermalPrinterStatus");
+      if (!status) return;
+      const caps = thermalPrinterCapabilities();
+      status.innerHTML = \`
+        <p>Impresora térmica: <strong>\${thermalPrinterState.connected ? "● Conectada" : "○ No conectada"}</strong></p>
+        <p>Tecnología: <strong>\${caps.webSerial ? caps.technology : "Web Serial no disponible · usa impresión del sistema"}</strong></p>
+        \${caps.bridge ? '<p>Impresión directa Android: <strong>● GAMMS Print Bridge disponible</strong></p>' : ''}
+      \`;
+    }
+
+    function encoderBytes(text) {
+      return new TextEncoder().encode(String(text || ""));
+    }
+
+    function concatBytes(chunks) {
+      const total = chunks.reduce((sum, item) => sum + item.length, 0);
+      const out = new Uint8Array(total);
+      let offset = 0;
+      for (const item of chunks) {
+        out.set(item, offset);
+        offset += item.length;
+      }
+      return out;
+    }
+
+    function escPosTextTicket(lines) {
+      const ESC = 0x1b;
+      const GS = 0x1d;
+      const chunks = [
+        new Uint8Array([ESC, 0x40]),
+        new Uint8Array([ESC, 0x61, 0x01]),
+        new Uint8Array([ESC, 0x45, 0x01]),
+        encoderBytes("GAMMS AEP\\n"),
+        new Uint8Array([ESC, 0x45, 0x00])
+      ];
+      for (const line of lines) chunks.push(encoderBytes(line + "\\n"));
+      chunks.push(encoderBytes("\\n"));
+      chunks.push(new Uint8Array([GS, 0x56, 0x42, 0x00]));
+      return concatBytes(chunks);
+    }
+
+    function escPosQrTicket(customer) {
+      const qrData = String(customer?.qrData || customer?.identityToken || "");
+      const name = String(customer?.displayName || "Cliente").slice(0, 60);
+      const label = String(customer?.customerLabel || "Cliente").slice(0, 40);
+      if (!qrData) {
+        return escPosTextTicket([name, label, "", "Conserva este codigo.", "By GAMMS GROUP"]);
+      }
+      const ESC = 0x1b;
+      const GS = 0x1d;
+      const data = encoderBytes(qrData);
+      const len = data.length + 3;
+      const pL = len & 0xff;
+      const pH = (len >> 8) & 0xff;
+      return concatBytes([
+        new Uint8Array([ESC, 0x40, ESC, 0x61, 0x01, ESC, 0x45, 0x01]),
+        encoderBytes("GAMMS AEP\\n"),
+        new Uint8Array([ESC, 0x45, 0x00]),
+        encoderBytes(name + "\\n" + label + "\\n\\n"),
+        new Uint8Array([GS, 0x28, 0x6b, 0x04, 0x00, 0x31, 0x41, 0x32, 0x00]),
+        new Uint8Array([GS, 0x28, 0x6b, 0x03, 0x00, 0x31, 0x43, 0x07]),
+        new Uint8Array([GS, 0x28, 0x6b, 0x03, 0x00, 0x31, 0x45, 0x30]),
+        new Uint8Array([GS, 0x28, 0x6b, pL, pH, 0x31, 0x50, 0x30]),
+        data,
+        new Uint8Array([GS, 0x28, 0x6b, 0x03, 0x00, 0x31, 0x51, 0x30]),
+        encoderBytes("\\nConserva este codigo.\\nTe servira para mantener\\ntus compras y recompensas.\\n\\nBy GAMMS GROUP\\n\\n"),
+        new Uint8Array([GS, 0x56, 0x42, 0x00])
+      ]);
+    }
+
+    async function writeEscPosBytes(bytes) {
+      if (!thermalPrinterState.port) throw new Error("NO_SERIAL_PORT");
+      if (!thermalPrinterState.connected) {
+        await thermalPrinterState.port.open({ baudRate: 9600, dataBits: 8, stopBits: 1, parity: "none", flowControl: "none" });
+        thermalPrinterState.connected = true;
+      }
+      thermalPrinterState.writer = thermalPrinterState.port.writable.getWriter();
+      try {
+        await thermalPrinterState.writer.write(bytes);
+      } finally {
+        thermalPrinterState.writer.releaseLock();
+        thermalPrinterState.writer = null;
+      }
+      updateThermalPrinterStatus();
+    }
+
+    async function connectThermalPrinter() {
+      if (!navigator.serial) return showToast("Web Serial no está disponible en este navegador.", true);
+      thermalPrinterState.port = await navigator.serial.requestPort();
+      await thermalPrinterState.port.open({ baudRate: 9600, dataBits: 8, stopBits: 1, parity: "none", flowControl: "none" });
+      thermalPrinterState.connected = true;
+      updateThermalPrinterStatus();
+      showToast("Impresora térmica conectada");
+    }
+
+    async function reconnectThermalPrinterIfAllowed() {
+      if (!navigator.serial || thermalPrinterState.port) return;
+      const ports = await navigator.serial.getPorts();
+      if (ports.length > 0) {
+        thermalPrinterState.port = ports[0];
+        updateThermalPrinterStatus();
+      }
+    }
+
+    async function disconnectThermalPrinter() {
+      if (thermalPrinterState.port && thermalPrinterState.connected) await thermalPrinterState.port.close();
+      thermalPrinterState.connected = false;
+      thermalPrinterState.port = null;
+      updateThermalPrinterStatus();
+    }
+
+    async function printThermalTest() {
+      await reconnectThermalPrinterIfAllowed();
+      await writeEscPosBytes(escPosTextTicket(["PRUEBA MP58-01", "58 mm ESC/POS", "By GAMMS GROUP"]));
+      showToast("Prueba enviada a impresora térmica");
+    }
+
+    function normalizeCustomerIdentityForPrint() {
+      if (!assistedIdentity?.qrSvg) return null;
+      return {
+        displayName: assistedIdentity.customer?.displayName || assistedCustomer?.displayName || "Cliente",
+        customerLabel: assistedIdentity.customer?.customerLabel || assistedCustomer?.customerLabel || "Cliente",
+        qrSvg: assistedIdentity.qrSvg,
+        qrData: assistedIdentity.token || ""
+      };
+    }
+
+    function buildCustomerIdentityTicketHtml(customer) {
+      return \`<!doctype html><html><head><meta charset="utf-8"><title>GAMMS AEP Cliente</title><style>
+        @page{size:58mm auto;margin:3mm}
+        *{box-sizing:border-box}
+        body{margin:0;width:52mm;background:#fff;color:#000;font-family:Arial,Helvetica,sans-serif;text-align:center;font-size:11px;line-height:1.25}
+        .title{font-weight:800;font-size:14px;margin:0 0 2mm}
+        .line{border-top:1px dashed #000;margin:2mm 0}
+        .name{font-weight:700;font-size:12px}
+        .label{font-size:12px;margin-top:1mm}
+        .qr{width:42mm;height:42mm;margin:3mm auto;background:#fff;display:flex;align-items:center;justify-content:center}
+        .qr svg{width:40mm!important;height:40mm!important;display:block;background:#fff;shape-rendering:crispEdges}
+        .qr svg *{fill:#000}
+        .copy{font-size:10px;margin-top:2mm}
+        .by{font-weight:800;margin-top:3mm}
+      </style></head><body>
+        <div class="title">GAMMS AEP</div>
+        <div class="line"></div>
+        <div class="name">\${escapeHtml(customer.displayName || "Cliente")}</div>
+        <div class="label">\${escapeHtml(customer.customerLabel || "Cliente")}</div>
+        <div class="qr">\${customer.qrSvg || ""}</div>
+        <div class="copy">Conserva este código.<br>Te servirá para mantener<br>tus compras y recompensas.</div>
+        <div class="by">By GAMMS GROUP</div>
+      </body></html>\`;
+    }
+
+    function systemPrintHtml(html) {
+      return new Promise((resolve) => {
+        try {
+          const iframe = document.createElement("iframe");
+          iframe.setAttribute("aria-hidden", "true");
+          iframe.style.position = "fixed";
+          iframe.style.right = "0";
+          iframe.style.bottom = "0";
+          iframe.style.width = "0";
+          iframe.style.height = "0";
+          iframe.style.border = "0";
+          iframe.onload = () => {
+            setTimeout(() => {
+              try {
+                iframe.contentWindow.focus();
+                iframe.contentWindow.print();
+                resolve(true);
+              } catch {
+                resolve(false);
+              } finally {
+                setTimeout(() => iframe.remove(), 1000);
+              }
+            }, 250);
+          };
+          iframe.srcdoc = html;
+          document.body.appendChild(iframe);
+        } catch {
+          resolve(false);
+        }
+      });
+    }
+
+    function svgToEscPosRasterBytes(svgMarkup, targetPx = 384) {
+      return new Promise((resolve, reject) => {
+        if (!svgMarkup || !window.Blob || !window.URL || !document.createElement) {
+          reject(new Error("RASTER_UNAVAILABLE"));
+          return;
+        }
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d", { willReadFrequently: true });
+        if (!ctx) {
+          reject(new Error("CANVAS_UNAVAILABLE"));
+          return;
+        }
+        canvas.width = targetPx;
+        canvas.height = targetPx;
+        const image = new Image();
+        const blob = new Blob([svgMarkup], { type: "image/svg+xml;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        image.onload = () => {
+          try {
+            ctx.fillStyle = "#fff";
+            ctx.fillRect(0, 0, targetPx, targetPx);
+            ctx.imageSmoothingEnabled = false;
+            ctx.drawImage(image, 0, 0, targetPx, targetPx);
+            const pixels = ctx.getImageData(0, 0, targetPx, targetPx).data;
+            const widthBytes = Math.ceil(targetPx / 8);
+            const raster = new Uint8Array(widthBytes * targetPx);
+            for (let y = 0; y < targetPx; y += 1) {
+              for (let x = 0; x < targetPx; x += 1) {
+                const offset = (y * targetPx + x) * 4;
+                const alpha = pixels[offset + 3];
+                const gray = (pixels[offset] + pixels[offset + 1] + pixels[offset + 2]) / 3;
+                if (alpha > 32 && gray < 160) {
+                  raster[y * widthBytes + (x >> 3)] |= 0x80 >> (x & 7);
+                }
+              }
+            }
+            const xL = widthBytes & 0xff;
+            const xH = (widthBytes >> 8) & 0xff;
+            const yL = targetPx & 0xff;
+            const yH = (targetPx >> 8) & 0xff;
+            resolve(concatBytes([new Uint8Array([0x1d, 0x76, 0x30, 0x00, xL, xH, yL, yH]), raster]));
+          } catch (error) {
+            reject(error);
+          } finally {
+            URL.revokeObjectURL(url);
+          }
+        };
+        image.onerror = () => {
+          URL.revokeObjectURL(url);
+          reject(new Error("RASTER_LOAD_FAILED"));
+        };
+        image.src = url;
+      });
+    }
+
+    async function escPosRasterQrTicket(customer) {
+      const name = String(customer?.displayName || "Cliente").slice(0, 60);
+      const label = String(customer?.customerLabel || "Cliente").slice(0, 40);
+      const qrRaster = await svgToEscPosRasterBytes(customer?.qrSvg || "");
+      return concatBytes([
+        new Uint8Array([0x1b, 0x40, 0x1b, 0x61, 0x01, 0x1b, 0x45, 0x01]),
+        encoderBytes("GAMMS AEP\n"),
+        new Uint8Array([0x1b, 0x45, 0x00]),
+        encoderBytes(name + "\n" + label + "\n\n"),
+        qrRaster,
+        encoderBytes("\nConserva este codigo.\nTe servira para mantener\ntus compras y recompensas.\n\nBy GAMMS GROUP\n\n"),
+        new Uint8Array([0x1d, 0x56, 0x42, 0x00])
+      ]);
+    }
+
+    async function printCustomerIdentityEscPos(customer) {
+      await reconnectThermalPrinterIfAllowed();
+      const bytes = customer?.qrSvg ? await escPosRasterQrTicket(customer) : escPosQrTicket(customer);
+      await writeEscPosBytes(bytes);
+      return true;
+    }
+
+    async function printCustomerIdentity(customer, options = {}) {
+      try {
+        if (window.GAMMSPrinter && typeof window.GAMMSPrinter.postMessage === "function") {
+          window.GAMMSPrinter.postMessage(JSON.stringify({ type: "PRINT_CUSTOMER_QR", payload: {
+            displayName: customer.displayName,
+            customerLabel: customer.customerLabel,
+            qrData: customer.qrData
+          }}));
+          return "android-bridge";
+        }
+        if (options.preferSerial && thermalPrinterState.port) {
+          await printCustomerIdentityEscPos(customer);
+          return "web-serial";
+        }
+        const printed = await systemPrintHtml(buildCustomerIdentityTicketHtml(customer));
+        if (printed) return "system-print";
+      } catch {}
+      showCustomerIdentityQr();
+      return "show-qr";
     }
 
     async function renderAssistedSales() {
@@ -734,21 +1034,24 @@ export function onRequestGet() {
       const caps = detectPrintCapabilities();
       const hasPrintableQr = Boolean(assistedIdentity?.qrSvg);
       const issued = hasPrintableQr || assistedCustomer.identityIssued;
-      box.innerHTML = \`
-        <div class="card" style="margin:0; box-shadow:none; background:var(--bg-page);">
-          <div class="card-title">Identidad e impresion</div>
-          <p><strong>Cliente:</strong> \${escapeHtml(assistedCustomer.displayName || "Cliente")} · \${escapeHtml(assistedCustomer.customerLabel)}</p>
-          <p>QR: <strong>\${issued ? "Emitido" : "No emitido"}</strong></p>
-          <p>Impresion del sistema: <strong>\${caps.systemPrint ? "Disponible" : "No disponible"}</strong></p>
-          <p>Bluetooth directo: <strong>\${caps.bluetooth ? "Web Bluetooth disponible · requiere impresora compatible" : "No compatible"}</strong></p>
-          <div class="filter-bar" style="margin-top:12px;">
-            <button class="btn-secondary" onclick="emitCustomerIdentityQr(\${issued ? "true" : "false"})">\${issued ? "Reemitir QR" : "Emitir QR del cliente"}</button>
-            <button class="btn-secondary" onclick="showCustomerIdentityQr()" \${hasPrintableQr ? "" : "disabled"}>Mostrar QR</button>
-            <button class="btn-secondary" onclick="printCustomerIdentityTicket()" \${hasPrintableQr ? "" : "disabled"}>Imprimir con sistema</button>
-          </div>
-          \${issued && !hasPrintableQr ? '<p style="color:var(--text-muted); margin-top:10px;">QR ya emitido. Para imprimirlo otra vez, reemite el QR; el anterior dejara de funcionar.</p>' : ''}
-        </div>
-      \`;
+      box.innerHTML = [
+        '<div class="card" style="margin:0; box-shadow:none; background:var(--bg-page);">',
+        '<div class="card-title">Identidad e impresion</div>',
+        '<p><strong>Cliente:</strong> ' + escapeHtml(assistedCustomer.displayName || "Cliente") + ' - ' + escapeHtml(assistedCustomer.customerLabel) + '</p>',
+        '<p>QR: <strong>' + (issued ? "Emitido" : "No emitido") + '</strong></p>',
+        '<p>Impresion del sistema: <strong>' + (caps.systemPrint ? "Disponible" : "No disponible") + '</strong></p>',
+        '<div id="thermalPrinterStatus"></div>',
+        '<div class="filter-bar" style="margin-top:12px;">',
+        '<button class="btn-secondary" onclick="emitCustomerIdentityQr(' + (issued ? "true" : "false") + ')">' + (issued ? "Reemitir QR" : "Emitir QR del cliente") + '</button>',
+        '<button class="btn-secondary" onclick="showCustomerIdentityQr()" ' + (hasPrintableQr ? "" : "disabled") + '>Mostrar QR</button>',
+        '<button class="btn-secondary" onclick="connectThermalPrinter()">Conectar impresora termica</button>',
+        '<button class="btn-secondary" onclick="printThermalTest()">Prueba de impresion</button>',
+        '<button class="btn-secondary" onclick="printCustomerIdentityTicket()" ' + (hasPrintableQr ? "" : "disabled") + '>Imprimir QR cliente</button>',
+        '</div>',
+        issued && !hasPrintableQr ? '<p style="color:var(--text-muted); margin-top:10px;">QR ya emitido. Para imprimirlo otra vez, reemite el QR; el anterior dejara de funcionar.</p>' : '',
+        '</div>'
+      ].join("");
+      updateThermalPrinterStatus();
     }
 
     async function emitCustomerIdentityQr(reissue = false) {
@@ -834,28 +1137,22 @@ export function onRequestGet() {
           <div style="font-weight:800;">GAMMS AEP</div>
           <p>\${escapeHtml(assistedIdentity.customer.displayName || "Cliente")}</p>
           <p>\${escapeHtml(assistedIdentity.customer.customerLabel)}</p>
-          <div style="background:#fff; padding:12px; display:inline-block;">\${assistedIdentity.qrSvg}</div>
-          <p style="margin-top:12px;">Conserva este código. Te servirá para mantener tus compras y recompensas.</p>
+          <div style="background:#fff; padding:14px; display:inline-flex; width:220px; height:220px; align-items:center; justify-content:center;">
+            \${assistedIdentity.qrSvg}
+          </div>
+          <style>.modal-content svg{width:190px!important;height:190px!important;background:#fff;shape-rendering:crispEdges}.modal-content svg *{fill:#000!important}</style>
+          <p style="margin-top:12px;">Conserva este codigo. Te servira para mantener tus compras y recompensas.</p>
           <div class="gamms-byline">By <strong>GAMMS GROUP</strong></div>
         </div>
       \`);
     }
 
     async function printCustomerIdentityTicket() {
-      const caps = detectPrintCapabilities();
       if (!assistedIdentity?.qrSvg) return showToast("No hay QR imprimible en esta sesion. Reemite el QR si necesitas imprimirlo.", true);
-      if (!caps.bluetooth) {
-        showToast("Impresión Bluetooth no compatible. Usa la impresión del sistema o muestra el QR en pantalla.", true);
-      }
-      const html = \`<html><head><title>GAMMS AEP Cliente</title><style>@page{size:58mm auto;margin:4mm}body{font-family:system-ui;text-align:center;width:50mm}.qr svg{width:42mm;height:42mm}</style></head><body><strong>GAMMS AEP</strong><hr><div>\${escapeHtml(assistedIdentity.customer.displayName || "Cliente")}</div><div>\${escapeHtml(assistedIdentity.customer.customerLabel)}</div><div class="qr">\${assistedIdentity.qrSvg}</div><p>Conserva este código.<br>Te servirá para mantener tus compras y recompensas.</p><strong>By GAMMS GROUP</strong></body></html>\`;
-      const w = window.open("", "_blank", "noopener");
-      if (w) {
-        w.document.write(html);
-        w.document.close();
-        if (caps.systemPrint) w.print();
-      } else {
-        showCustomerIdentityQr();
-      }
+      const customer = normalizeCustomerIdentityForPrint();
+      const result = await printCustomerIdentity(customer, { preferSerial: Boolean(thermalPrinterState.port) });
+      if (result === "show-qr") showToast("No se pudo imprimir. Mostrando QR.", true);
+      else showToast("Impresion enviada");
     }
 
     // POS CONTROL CENTER

@@ -22,10 +22,10 @@ test("staff physical QR input accepts manual public numbers without weakening ro
 test("Control Center exposes variable discounts and manual beverage code UX", () => {
   const source = readFileSync(resolve(process.cwd(), "functions/aep/controlcenter/[[path]].js"), "utf8");
   assert.doesNotMatch(source, /Canje POS 50%/);
-  assert.match(source, /Escanea el QR o escribe el codigo #127/);
-  assert.match(source, /Identidad e impresion/);
-  assert.match(source, /Web Bluetooth disponible/);
-  assert.match(source, /Imprimir con sistema/);
+  assert.match(source, /Escanea el QR o escribe el c.digo #127/);
+  assert.match(source, /Identidad e impresi.n/);
+  assert.match(source, /Conectar impresora t.rmica/);
+  assert.match(source, /Imprimir QR cliente/);
 });
 
 test("Print Studio visibly labels the manual beverage code", () => {

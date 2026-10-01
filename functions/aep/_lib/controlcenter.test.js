@@ -1335,10 +1335,57 @@ test("assisted customer creation persists display_name and UI contract refreshes
 
   const source = readFileSync(resolve(process.cwd(), "functions/aep/controlcenter/[[path]].js"), "utf8");
   assert.match(source, /await searchAssistedCustomers\(\);/);
-  assert.match(source, /Identidad e impresion/);
-  assert.match(source, /Escanea el QR o escribe el codigo #127/);
-  assert.match(source, /Web Bluetooth disponible/);
-  assert.match(source, /No compatible/);
+  assert.match(source, /Identidad e impresi.n/);
+  assert.match(source, /Escanea el QR o escribe el c.digo #127/);
+  assert.match(source, /Conectar impresora t.rmica/);
+  assert.match(source, /Imprimir QR cliente/);
+});
+
+test("assisted customer identity printing uses 58mm ESC/POS and safe browser fallbacks", () => {
+  const source = readFileSync(resolve(process.cwd(), "functions/aep/controlcenter/[[path]].js"), "utf8");
+  const printingBlock = source.slice(
+    source.indexOf("function detectPrintCapabilities()"),
+    source.indexOf("async function renderAssistedSales()")
+  );
+  const connectBlock = source.slice(
+    source.indexOf("async function connectThermalPrinter()"),
+    source.indexOf("async function reconnectThermalPrinterIfAllowed()")
+  );
+  const printDispatcher = source.slice(
+    source.indexOf("async function printCustomerIdentity(customer"),
+    source.indexOf("async function renderAssistedSales()")
+  );
+
+  assert.match(printingBlock, /@page\{size:58mm auto;margin:3mm\}/);
+  assert.match(printingBlock, /\.qr\{width:42mm;height:42mm/);
+  assert.match(printingBlock, /\.qr svg\{width:40mm!important;height:40mm!important/);
+  assert.match(printingBlock, /function systemPrintHtml\(html\)/);
+  assert.match(printingBlock, /document\.createElement\("iframe"\)/);
+  assert.match(printingBlock, /iframe\.srcdoc = html/);
+  assert.doesNotMatch(printingBlock, /window\.open\("", "_blank", "noopener"\)/);
+
+  assert.match(printingBlock, /webSerial: Boolean\(navigator\.serial && window\.isSecureContext\)/);
+  assert.match(printingBlock, /baudRate: 9600, dataBits: 8, stopBits: 1, parity: "none", flowControl: "none"/);
+  assert.match(connectBlock, /navigator\.serial\.requestPort\(\)/);
+  assert.equal((source.match(/navigator\.serial\.requestPort\(\)/g) || []).length, 1);
+  assert.match(printingBlock, /Web Serial no est/);
+
+  assert.match(printingBlock, /function svgToEscPosRasterBytes/);
+  assert.match(printingBlock, /targetPx = 384/);
+  assert.match(printingBlock, /new Uint8Array\(\[0x1d, 0x76, 0x30/);
+  assert.match(printingBlock, /function escPosQrTicket/);
+  assert.match(printingBlock, /async function escPosRasterQrTicket/);
+
+  assert.match(printDispatcher, /window\.GAMMSPrinter\.postMessage/);
+  assert.match(printDispatcher, /return "android-bridge"/);
+  assert.match(printDispatcher, /await printCustomerIdentityEscPos\(customer\)/);
+  assert.match(printDispatcher, /return "web-serial"/);
+  assert.match(printDispatcher, /systemPrintHtml\(buildCustomerIdentityTicketHtml\(customer\)\)/);
+  assert.match(printDispatcher, /return "system-print"/);
+  assert.match(printDispatcher, /showCustomerIdentityQr\(\)/);
+  assert.match(printDispatcher, /return "show-qr"/);
+  assert.doesNotMatch(printDispatcher, /apiFetch\("/);
+  assert.doesNotMatch(printDispatcher, /\/admin\/assisted\/sale|\/admin\/promotions|\/seller\/claims/);
 });
 
 test("staff physical QR resolver accepts token URL and public_number inputs", async () => {
