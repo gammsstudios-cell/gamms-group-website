@@ -107,6 +107,30 @@ export async function lookupAvailableProductReward(db, customerId, productId) {
   }
 }
 
+export async function listAvailableCustomerRewards(db, customerId) {
+  const rows = await db.prepare(
+    `SELECT r.id, r.customer_id, r.reward_type, r.discount_percent, r.cycle_number,
+            r.product_id, r.promotion_rule_id, r.unlocked_at, p.name AS product_name
+     FROM rewards r
+     LEFT JOIN products p ON p.id = r.product_id
+     WHERE r.customer_id = ?
+       AND r.status = 'available'
+     ORDER BY COALESCE(r.product_id, 0) ASC, r.unlocked_at ASC, r.id ASC`
+  ).bind(customerId).all();
+
+  return (rows?.results || []).map((row) => ({
+    id: row.id,
+    customerId: row.customer_id,
+    rewardType: row.reward_type,
+    discountPercent: Number(row.discount_percent || 0),
+    cycleNumber: row.cycle_number ?? null,
+    productId: row.product_id ?? null,
+    promotionRuleId: row.promotion_rule_id ?? null,
+    productName: row.product_name || "GAMMS AEP",
+    unlockedAt: row.unlocked_at
+  }));
+}
+
 export async function upsertProductPromotionRule(db, data) {
   const productId = Number.parseInt(data.productId, 10);
   const everyN = Number.parseInt(data.everyN ?? data.every_n_purchases, 10);
