@@ -1,7 +1,27 @@
 // POST /aep/api/seller/claims/preview-product
-import { previewClaimProduct, sanitizeRedemptionError } from "../../../_lib/redemption.js";
+import { previewClaim, previewClaimProduct, sanitizeRedemptionError } from "../../../_lib/redemption.js";
 import { requirePosActor } from "../../../_lib/posAuth.js";
 import { jsonResponse, errorJson } from "../../../_lib/adminResponses.js";
+
+export function normalizePricing(result, claimPreview) {
+  const regularPriceCents = Number(result?.pricing?.regularPriceCents ?? 0);
+  const rawDiscount = claimPreview?.reward?.discountPercent
+    ?? claimPreview?.pricing?.discountPercent
+    ?? result?.pricing?.discountPercent;
+  const discountPercent = Number(rawDiscount);
+
+  if (!Number.isFinite(regularPriceCents) || !Number.isFinite(discountPercent)) {
+    return result?.pricing || null;
+  }
+
+  const safeDiscount = Math.min(100, Math.max(0, discountPercent));
+  return {
+    ...result.pricing,
+    regularPriceCents,
+    discountPercent: safeDiscount,
+    finalPriceCents: Math.round(regularPriceCents * (100 - safeDiscount) / 100)
+  };
+}
 
 export async function onRequestPost({ request, env }) {
   const db = env.DB;
@@ -19,7 +39,18 @@ export async function onRequestPost({ request, env }) {
   const physicalQrToken = body.physicalQrToken || body.qrToken || "";
 
   if (!claimCode || !physicalQrToken) {
-    return errorJson("Código de premio y token de QR físico requeridos", 400, "FIELDS_REQUIRED");
+    return errorJson("Código de premio y QR físico requeridos", 400, "FIELDS_REQUIRED");
+  }
+
+  // Read the claim separately so legacy pre-linked claims use the reward's
+  // current percentage instead of any historical UI/default fallback.
+  const claimPreview = await previewClaim(db, claimCode);
+  if (!claimPreview.ok) {
+    return jsonResponse({
+      ok: false,
+      code: sanitizeRedemptionError(claimPreview.code),
+      error: claimPreview.error || "No se pudo validar el premio"
+    }, 200);
   }
 
   const result = await previewClaimProduct(db, claimCode, physicalQrToken);
@@ -34,9 +65,9 @@ export async function onRequestPost({ request, env }) {
   return jsonResponse({
     ok: true,
     claim: result.claim,
-    customer: result.customer,
+    customer: result.customer || claimPreview.customer || null,
     qr: result.qr,
     product: result.product,
-    pricing: result.pricing
+    pricing: normalizePricing(result, claimPreview)
   });
 }

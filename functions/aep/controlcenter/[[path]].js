@@ -145,7 +145,7 @@ export function onRequestGet() {
     .qr-label-title { position: absolute; left: 0.08in; right: 0.08in; top: 0.06in; font-size: 0.07in; line-height: 1; font-weight: 800; text-align: center; }
     .qr-label-product { position: absolute; left: 0.08in; right: 0.08in; top: 0.17in; font-size: 0.065in; line-height: 1; font-weight: 700; color: #0645ad; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .qr-label-card svg { position: absolute; left: 0.37in; top: 0.29in; width: 0.76in; height: 0.76in; shape-rendering: crispEdges; }
-    .qr-label-num { position: absolute; left: 0.08in; right: 0.08in; bottom: 0.06in; font-size: 0.07in; line-height: 1; font-weight: 800; text-align: center; }
+    .qr-label-num { position: absolute; left: 0.08in; right: 0.08in; bottom: 0.06in; font-size: 0.055in; line-height: 1; font-weight: 800; text-align: center; }
     .print-instructions { margin: 10px 0 12px; padding: 10px 12px; border-radius: 10px; background: var(--badge-amber-bg); color: var(--badge-amber-text); font-size: 12.5px; font-weight: 700; }
     @media print {
       #printable-labels { display: none !important; }
@@ -257,6 +257,7 @@ export function onRequestGet() {
     const NAV_ITEMS = [
       { id: "overview", label: "Overview", perm: "dashboard.read", icon: '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>' },
       { id: "pos", label: "POS Operativo", perm: "pos.access", icon: '<rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/>' },
+      { id: "venta-asistida", label: "Venta Asistida", perm: "pos.access", icon: '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>' },
       { id: "my-sales", label: "Mis Ventas", perm: "sales.read_own", icon: '<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>' },
       { id: "sales", label: "Ventas", perm: "sales.read", icon: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>' },
       { id: "products", label: "Productos", perm: "products.read", icon: '<path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/>' },
@@ -270,6 +271,7 @@ export function onRequestGet() {
       { id: "shifts", label: "Turnos", perm: "shifts.use", icon: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>' },
       { id: "reports", label: "Reportes", perm: "reports.read", icon: '<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>' },
       { id: "audit", label: "Auditoría", perm: "audit.read", icon: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>' },
+      { id: "configuracion-evento", label: "Configuración del Evento", perm: "settings.read", icon: '<path d="M8 2v4"/><path d="M16 2v4"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/>' },
       { id: "settings", label: "Configuración", perm: "settings.read", icon: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>' },
       { id: "system", label: "Sistema", perm: "system.read", icon: '<rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>' }
     ];
@@ -531,6 +533,7 @@ export function onRequestGet() {
       switch (route) {
         case "overview": return renderOverview();
         case "pos": return renderPos();
+        case "venta-asistida": return renderAssistedSales();
         case "my-sales": return renderMySales();
         case "sales": return renderSales();
         case "products": return renderProducts();
@@ -544,6 +547,7 @@ export function onRequestGet() {
         case "shifts": return renderShifts();
         case "reports": return renderReports();
         case "audit": return renderActivity();
+        case "configuracion-evento": return renderEventConfig();
         case "settings": return renderSettings();
         case "system": return renderSystem();
         default: return renderOverview();
@@ -643,6 +647,514 @@ export function onRequestGet() {
       \`;
     }
 
+    // VENTA ASISTIDA
+    let assistedCustomer = null;
+    let assistedQrToken = "";
+    let assistedQrPreview = null;
+    let assistedIdentity = null;
+
+    function detectPrintCapabilities() {
+      return {
+        systemPrint: typeof window.print === "function",
+        webSerial: Boolean(navigator.serial && window.isSecureContext),
+        gammsBridge: Boolean(window.GAMMSPrinter && typeof window.GAMMSPrinter.postMessage === "function"),
+        secureContext: Boolean(window.isSecureContext),
+        platform: navigator.userAgentData?.platform || navigator.platform || "unknown"
+      };
+    }
+
+    const thermalPrinterState = {
+      port: null,
+      writer: null,
+      connected: false
+    };
+
+    function thermalPrinterCapabilities() {
+      const caps = detectPrintCapabilities();
+      return {
+        bridge: caps.gammsBridge,
+        webSerial: caps.webSerial,
+        systemPrint: caps.systemPrint,
+        technology: "Web Serial · ESC/POS · 58 mm"
+      };
+    }
+
+    function updateThermalPrinterStatus() {
+      const status = document.getElementById("thermalPrinterStatus");
+      if (!status) return;
+      const caps = thermalPrinterCapabilities();
+      status.innerHTML = \`
+        <p>Impresora térmica: <strong>\${thermalPrinterState.connected ? "● Conectada" : "○ No conectada"}</strong></p>
+        <p>Tecnología: <strong>\${caps.webSerial ? caps.technology : "Web Serial no disponible · usa impresión del sistema"}</strong></p>
+        \${caps.bridge ? '<p>Impresión directa Android: <strong>● GAMMS Print Bridge disponible</strong></p>' : ''}
+      \`;
+    }
+
+    function encoderBytes(text) {
+      return new TextEncoder().encode(String(text || ""));
+    }
+
+    function concatBytes(chunks) {
+      const total = chunks.reduce((sum, item) => sum + item.length, 0);
+      const out = new Uint8Array(total);
+      let offset = 0;
+      for (const item of chunks) {
+        out.set(item, offset);
+        offset += item.length;
+      }
+      return out;
+    }
+
+    function escPosTextTicket(lines) {
+      const ESC = 0x1b;
+      const GS = 0x1d;
+      const chunks = [
+        new Uint8Array([ESC, 0x40]),
+        new Uint8Array([ESC, 0x61, 0x01]),
+        new Uint8Array([ESC, 0x45, 0x01]),
+        encoderBytes("GAMMS AEP\\n"),
+        new Uint8Array([ESC, 0x45, 0x00])
+      ];
+      for (const line of lines) chunks.push(encoderBytes(line + "\\n"));
+      chunks.push(encoderBytes("\\n"));
+      chunks.push(new Uint8Array([GS, 0x56, 0x42, 0x00]));
+      return concatBytes(chunks);
+    }
+
+    function escPosQrTicket(customer) {
+      const qrData = String(customer?.qrData || customer?.identityToken || "");
+      const name = String(customer?.displayName || "Cliente").slice(0, 60);
+      const label = String(customer?.customerLabel || "Cliente").slice(0, 40);
+      if (!qrData) {
+        return escPosTextTicket([name, label, "", "Conserva este codigo.", "By GAMMS GROUP"]);
+      }
+      const ESC = 0x1b;
+      const GS = 0x1d;
+      const data = encoderBytes(qrData);
+      const len = data.length + 3;
+      const pL = len & 0xff;
+      const pH = (len >> 8) & 0xff;
+      return concatBytes([
+        new Uint8Array([ESC, 0x40, ESC, 0x61, 0x01, ESC, 0x45, 0x01]),
+        encoderBytes("GAMMS AEP\\n"),
+        new Uint8Array([ESC, 0x45, 0x00]),
+        encoderBytes(name + "\\n" + label + "\\n\\n"),
+        new Uint8Array([GS, 0x28, 0x6b, 0x04, 0x00, 0x31, 0x41, 0x32, 0x00]),
+        new Uint8Array([GS, 0x28, 0x6b, 0x03, 0x00, 0x31, 0x43, 0x07]),
+        new Uint8Array([GS, 0x28, 0x6b, 0x03, 0x00, 0x31, 0x45, 0x30]),
+        new Uint8Array([GS, 0x28, 0x6b, pL, pH, 0x31, 0x50, 0x30]),
+        data,
+        new Uint8Array([GS, 0x28, 0x6b, 0x03, 0x00, 0x31, 0x51, 0x30]),
+        encoderBytes("\\nConserva este codigo.\\nTe servira para mantener\\ntus compras y recompensas.\\n\\nBy GAMMS GROUP\\n\\n"),
+        new Uint8Array([GS, 0x56, 0x42, 0x00])
+      ]);
+    }
+
+    async function writeEscPosBytes(bytes) {
+      if (!thermalPrinterState.port) throw new Error("NO_SERIAL_PORT");
+      if (!thermalPrinterState.connected) {
+        await thermalPrinterState.port.open({ baudRate: 9600, dataBits: 8, stopBits: 1, parity: "none", flowControl: "none" });
+        thermalPrinterState.connected = true;
+      }
+      thermalPrinterState.writer = thermalPrinterState.port.writable.getWriter();
+      try {
+        await thermalPrinterState.writer.write(bytes);
+      } finally {
+        thermalPrinterState.writer.releaseLock();
+        thermalPrinterState.writer = null;
+      }
+      updateThermalPrinterStatus();
+    }
+
+    async function connectThermalPrinter() {
+      if (!navigator.serial) return showToast("Web Serial no está disponible en este navegador.", true);
+      thermalPrinterState.port = await navigator.serial.requestPort();
+      await thermalPrinterState.port.open({ baudRate: 9600, dataBits: 8, stopBits: 1, parity: "none", flowControl: "none" });
+      thermalPrinterState.connected = true;
+      updateThermalPrinterStatus();
+      showToast("Impresora térmica conectada");
+    }
+
+    async function reconnectThermalPrinterIfAllowed() {
+      if (!navigator.serial || thermalPrinterState.port) return;
+      const ports = await navigator.serial.getPorts();
+      if (ports.length > 0) {
+        thermalPrinterState.port = ports[0];
+        updateThermalPrinterStatus();
+      }
+    }
+
+    async function disconnectThermalPrinter() {
+      if (thermalPrinterState.port && thermalPrinterState.connected) await thermalPrinterState.port.close();
+      thermalPrinterState.connected = false;
+      thermalPrinterState.port = null;
+      updateThermalPrinterStatus();
+    }
+
+    async function printThermalTest() {
+      await reconnectThermalPrinterIfAllowed();
+      await writeEscPosBytes(escPosTextTicket(["PRUEBA MP58-01", "58 mm ESC/POS", "By GAMMS GROUP"]));
+      showToast("Prueba enviada a impresora térmica");
+    }
+
+    function normalizeCustomerIdentityForPrint() {
+      if (!assistedIdentity?.qrSvg) return null;
+      return {
+        displayName: assistedIdentity.customer?.displayName || assistedCustomer?.displayName || "Cliente",
+        customerLabel: assistedIdentity.customer?.customerLabel || assistedCustomer?.customerLabel || "Cliente",
+        qrSvg: assistedIdentity.qrSvg,
+        qrData: assistedIdentity.recoveryUrl || assistedIdentity.token || ""
+      };
+    }
+
+    function buildCustomerIdentityTicketHtml(customer) {
+      return \`<!doctype html><html><head><meta charset="utf-8"><title>GAMMS AEP Cliente</title><style>
+        @page{size:58mm auto;margin:3mm}
+        *{box-sizing:border-box}
+        body{margin:0;width:52mm;background:#fff;color:#000;font-family:Arial,Helvetica,sans-serif;text-align:center;font-size:11px;line-height:1.25}
+        .title{font-weight:800;font-size:14px;margin:0 0 2mm}
+        .line{border-top:1px dashed #000;margin:2mm 0}
+        .name{font-weight:700;font-size:12px}
+        .label{font-size:12px;margin-top:1mm}
+        .qr{width:42mm;height:42mm;margin:3mm auto;background:#fff;display:flex;align-items:center;justify-content:center}
+        .qr svg{width:40mm!important;height:40mm!important;display:block;background:#fff;shape-rendering:crispEdges}
+        .qr svg *{fill:#000}
+        .copy{font-size:10px;margin-top:2mm}
+        .by{font-weight:800;margin-top:3mm}
+      </style></head><body>
+        <div class="title">GAMMS AEP</div>
+        <div class="line"></div>
+        <div class="name">\${escapeHtml(customer.displayName || "Cliente")}</div>
+        <div class="label">\${escapeHtml(customer.customerLabel || "Cliente")}</div>
+        <div class="qr">\${customer.qrSvg || ""}</div>
+        <div class="copy">Conserva este código.<br>Te servirá para mantener<br>tus compras y recompensas.</div>
+        <div class="by">By GAMMS GROUP</div>
+      </body></html>\`;
+    }
+
+    function systemPrintHtml(html) {
+      return new Promise((resolve) => {
+        try {
+          const iframe = document.createElement("iframe");
+          iframe.setAttribute("aria-hidden", "true");
+          iframe.style.position = "fixed";
+          iframe.style.right = "0";
+          iframe.style.bottom = "0";
+          iframe.style.width = "0";
+          iframe.style.height = "0";
+          iframe.style.border = "0";
+          iframe.onload = () => {
+            setTimeout(() => {
+              try {
+                iframe.contentWindow.focus();
+                iframe.contentWindow.print();
+                resolve(true);
+              } catch {
+                resolve(false);
+              } finally {
+                setTimeout(() => iframe.remove(), 1000);
+              }
+            }, 250);
+          };
+          iframe.srcdoc = html;
+          document.body.appendChild(iframe);
+        } catch {
+          resolve(false);
+        }
+      });
+    }
+
+    function svgToEscPosRasterBytes(svgMarkup, targetPx = 384) {
+      return new Promise((resolve, reject) => {
+        if (!svgMarkup || !window.Blob || !window.URL || !document.createElement) {
+          reject(new Error("RASTER_UNAVAILABLE"));
+          return;
+        }
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d", { willReadFrequently: true });
+        if (!ctx) {
+          reject(new Error("CANVAS_UNAVAILABLE"));
+          return;
+        }
+        canvas.width = targetPx;
+        canvas.height = targetPx;
+        const image = new Image();
+        const blob = new Blob([svgMarkup], { type: "image/svg+xml;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        image.onload = () => {
+          try {
+            ctx.fillStyle = "#fff";
+            ctx.fillRect(0, 0, targetPx, targetPx);
+            ctx.imageSmoothingEnabled = false;
+            ctx.drawImage(image, 0, 0, targetPx, targetPx);
+            const pixels = ctx.getImageData(0, 0, targetPx, targetPx).data;
+            const widthBytes = Math.ceil(targetPx / 8);
+            const raster = new Uint8Array(widthBytes * targetPx);
+            for (let y = 0; y < targetPx; y += 1) {
+              for (let x = 0; x < targetPx; x += 1) {
+                const offset = (y * targetPx + x) * 4;
+                const alpha = pixels[offset + 3];
+                const gray = (pixels[offset] + pixels[offset + 1] + pixels[offset + 2]) / 3;
+                if (alpha > 32 && gray < 160) {
+                  raster[y * widthBytes + (x >> 3)] |= 0x80 >> (x & 7);
+                }
+              }
+            }
+            const xL = widthBytes & 0xff;
+            const xH = (widthBytes >> 8) & 0xff;
+            const yL = targetPx & 0xff;
+            const yH = (targetPx >> 8) & 0xff;
+            resolve(concatBytes([new Uint8Array([0x1d, 0x76, 0x30, 0x00, xL, xH, yL, yH]), raster]));
+          } catch (error) {
+            reject(error);
+          } finally {
+            URL.revokeObjectURL(url);
+          }
+        };
+        image.onerror = () => {
+          URL.revokeObjectURL(url);
+          reject(new Error("RASTER_LOAD_FAILED"));
+        };
+        image.src = url;
+      });
+    }
+
+    async function escPosRasterQrTicket(customer) {
+      const name = String(customer?.displayName || "Cliente").slice(0, 60);
+      const label = String(customer?.customerLabel || "Cliente").slice(0, 40);
+      const qrRaster = await svgToEscPosRasterBytes(customer?.qrSvg || "");
+      return concatBytes([
+        new Uint8Array([0x1b, 0x40, 0x1b, 0x61, 0x01, 0x1b, 0x45, 0x01]),
+        encoderBytes("GAMMS AEP\\n"),
+        new Uint8Array([0x1b, 0x45, 0x00]),
+        encoderBytes(name + "\\n" + label + "\\n\\n"),
+        qrRaster,
+        encoderBytes("\\nConserva este codigo.\\nTe servira para mantener\\ntus compras y recompensas.\\n\\nBy GAMMS GROUP\\n\\n"),
+        new Uint8Array([0x1d, 0x56, 0x42, 0x00])
+      ]);
+    }
+
+    async function printCustomerIdentityEscPos(customer) {
+      await reconnectThermalPrinterIfAllowed();
+      const bytes = customer?.qrSvg ? await escPosRasterQrTicket(customer) : escPosQrTicket(customer);
+      await writeEscPosBytes(bytes);
+      return true;
+    }
+
+    async function printCustomerIdentity(customer, options = {}) {
+      try {
+        if (window.GAMMSPrinter && typeof window.GAMMSPrinter.postMessage === "function") {
+          window.GAMMSPrinter.postMessage(JSON.stringify({ type: "PRINT_CUSTOMER_QR", payload: {
+            displayName: customer.displayName,
+            customerLabel: customer.customerLabel,
+            qrData: customer.qrData
+          }}));
+          return "android-bridge";
+        }
+        if (options.preferSerial && thermalPrinterState.port) {
+          await printCustomerIdentityEscPos(customer);
+          return "web-serial";
+        }
+        const printed = await systemPrintHtml(buildCustomerIdentityTicketHtml(customer));
+        if (printed) return "system-print";
+      } catch {}
+      showCustomerIdentityQr();
+      return "show-qr";
+    }
+
+    async function renderAssistedSales() {
+      assistedCustomer = null;
+      assistedQrToken = "";
+      assistedQrPreview = null;
+      assistedIdentity = null;
+      contentArea.innerHTML = \`
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(340px, 1fr)); gap:24px;">
+          <div class="card">
+            <div class="card-header"><div class="card-title">Venta Asistida</div><span class="badge badge-success">STAFF</span></div>
+            <div class="form-group">
+              <label class="form-label">Buscar cliente</label>
+              <input id="assistedCustomerSearch" class="form-control" placeholder="Nombre o Cliente #A7F2">
+            </div>
+            <div class="filter-bar">
+              <button class="btn-secondary" onclick="searchAssistedCustomers()">Buscar</button>
+              <button class="btn-primary" onclick="openAssistedCustomerModal()">Crear cliente</button>
+            </div>
+            <div id="assistedCustomerResults" style="margin-top:16px;"></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">Compra</div></div>
+            <div id="assistedSelectedCustomer" class="badge badge-neutral">Selecciona un cliente</div>
+            <div id="assistedIdentityPanel" style="margin-top:16px;"></div>
+            <div class="form-group" style="margin-top:16px;">
+              <label class="form-label">QR físico de bebida</label>
+              <input id="assistedQrInput" class="form-control" placeholder="Escanea el QR o escribe el codigo #127">
+            </div>
+            <div class="filter-bar">
+              <button class="btn-secondary" onclick="openQrScanner('assisted')">Escanear QR</button>
+              <button class="btn-secondary" onclick="previewAssistedQr()">Validar QR</button>
+            </div>
+            <div id="assistedPreview" style="margin-top:16px;"></div>
+          </div>
+        </div>
+      \`;
+      document.getElementById("assistedCustomerSearch")?.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") { event.preventDefault(); searchAssistedCustomers(); }
+      });
+      document.getElementById("assistedQrInput")?.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") { event.preventDefault(); previewAssistedQr(); }
+      });
+    }
+
+    async function searchAssistedCustomers() {
+      const q = document.getElementById("assistedCustomerSearch")?.value || "";
+      const box = document.getElementById("assistedCustomerResults");
+      box.innerHTML = '<div class="badge badge-neutral">Buscando...</div>';
+      const res = await apiFetch("/admin/assisted/customers?q=" + encodeURIComponent(q));
+      if (!res.ok) { box.innerHTML = '<div class="badge badge-danger">Error</div>'; return; }
+      box.innerHTML = (res.items || []).map(c => \`
+        <div class="card" style="margin:8px 0; box-shadow:none;">
+          <strong>\${escapeHtml(c.displayName || "Cliente")}</strong><br>
+          <span style="color:var(--text-muted)">\${escapeHtml(c.customerLabel)}</span>
+          <button class="btn-secondary" style="float:right;" onclick="selectAssistedCustomer('\${c.id}', '\${escapeHtml(c.displayName || "Cliente")}', '\${escapeHtml(c.customerLabel)}', \${c.identityIssued ? "true" : "false"})">Seleccionar</button>
+        </div>
+      \`).join("") || '<p style="color:var(--text-muted);">Sin resultados.</p>';
+    }
+
+    function selectAssistedCustomer(id, displayName, customerLabel, identityIssued = false) {
+      assistedCustomer = { id, displayName, customerLabel, identityIssued: Boolean(identityIssued) };
+      assistedIdentity = null;
+      const badge = document.getElementById("assistedSelectedCustomer");
+      renderAssistedIdentityPanel();
+      if (badge) badge.textContent = displayName + " · " + customerLabel;
+    }
+    function renderAssistedIdentityPanel() {
+      const box = document.getElementById("assistedIdentityPanel");
+      if (!box) return;
+      if (!assistedCustomer) { box.innerHTML = ""; return; }
+      const caps = detectPrintCapabilities();
+      const hasPrintableQr = Boolean(assistedIdentity?.qrSvg);
+      const issued = hasPrintableQr || assistedCustomer.identityIssued;
+      box.innerHTML = [
+        '<div class="card" style="margin:0; box-shadow:none; background:var(--bg-page);">',
+        '<div class="card-title">Identidad e impresion</div>',
+        '<p><strong>Cliente:</strong> ' + escapeHtml(assistedCustomer.displayName || "Cliente") + ' - ' + escapeHtml(assistedCustomer.customerLabel) + '</p>',
+        '<p>QR: <strong>' + (issued ? "Emitido" : "No emitido") + '</strong></p>',
+        '<p>Impresion del sistema: <strong>' + (caps.systemPrint ? "Disponible" : "No disponible") + '</strong></p>',
+        '<div id="thermalPrinterStatus"></div>',
+        '<div class="filter-bar" style="margin-top:12px;">',
+        '<button class="btn-secondary" onclick="emitCustomerIdentityQr(' + (issued ? "true" : "false") + ')">' + (issued ? "Reemitir QR" : "Emitir QR del cliente") + '</button>',
+        '<button class="btn-secondary" onclick="showCustomerIdentityQr()" ' + (hasPrintableQr ? "" : "disabled") + '>Mostrar QR</button>',
+        '<button class="btn-secondary" onclick="connectThermalPrinter()">Conectar impresora termica</button>',
+        '<button class="btn-secondary" onclick="printThermalTest()">Prueba de impresion</button>',
+        '<button class="btn-secondary" onclick="printCustomerIdentityTicket()" ' + (hasPrintableQr ? "" : "disabled") + '>Imprimir QR cliente</button>',
+        '</div>',
+        issued && !hasPrintableQr ? '<p style="color:var(--text-muted); margin-top:10px;">QR ya emitido. Para imprimirlo otra vez, reemite el QR; el anterior dejara de funcionar.</p>' : '',
+        '</div>'
+      ].join("");
+      updateThermalPrinterStatus();
+    }
+
+    async function emitCustomerIdentityQr(reissue = false) {
+      if (!assistedCustomer) return showToast("Selecciona un cliente.", true);
+      if (reissue && !confirm("El QR anterior dejara de funcionar. Deseas continuar?")) return;
+      const res = await apiFetch("/admin/customers/" + encodeURIComponent(assistedCustomer.id) + "/identity", {
+        method: "POST",
+        body: JSON.stringify({ rotate: Boolean(reissue) })
+      });
+      if (!res.ok) return showToast(res.code || "No se pudo emitir el QR", true);
+      if (res.alreadyIssued && !res.identity?.qrSvg) {
+        assistedCustomer.identityIssued = true;
+        renderAssistedIdentityPanel();
+        return showToast("QR ya emitido. Reemite para obtener uno imprimible.", true);
+      }
+      assistedIdentity = res.identity;
+      assistedCustomer.identityIssued = true;
+      renderAssistedIdentityPanel();
+      showToast(reissue ? "QR reemitido" : "QR emitido");
+    }
+
+    function openAssistedCustomerModal() {
+      openModal("Crear cliente", \`
+        <form id="assistedCustomerForm">
+          <div class="form-group"><label class="form-label">Nombre o alias</label><input id="assistedNewCustomerName" class="form-control" required maxlength="60"></div>
+          <button class="btn-primary" type="submit" style="width:100%; justify-content:center;">Crear cliente</button>
+        </form>
+      \`);
+      document.getElementById("assistedCustomerForm").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const displayName = document.getElementById("assistedNewCustomerName").value.trim();
+        const res = await apiFetch("/admin/assisted/customers", { method: "POST", body: JSON.stringify({ displayName }) });
+        if (!res.ok) return showToast(res.details || res.code || "No se pudo crear cliente", true);
+        closeModal();
+        selectAssistedCustomer(res.customer.id, res.customer.displayName, res.customer.customerLabel, false);
+        await searchAssistedCustomers();
+        showToast("Cliente creado");
+      });
+    }
+
+    async function previewAssistedQr() {
+      if (!assistedCustomer) return showToast("Selecciona un cliente.", true);
+      assistedQrToken = extractQrPayload(document.getElementById("assistedQrInput")?.value || "", "beverage");
+      if (!assistedQrToken) return showToast("Ingresa o escanea el QR o codigo de bebida.", true);
+      const box = document.getElementById("assistedPreview");
+      box.innerHTML = '<div class="badge badge-neutral">Validando QR...</div>';
+      const res = await apiFetch("/admin/assisted/qr?input=" + encodeURIComponent(assistedQrToken));
+      if (!res.ok) {
+        box.innerHTML = \`<div class="badge badge-danger">\${res.code || "QR_INVALID"}</div>\`;
+        return;
+      }
+      assistedQrPreview = res;
+      box.innerHTML = \`
+        <div class="card" style="margin:0; box-shadow:none; background:var(--bg-page);">
+          <div class="card-title">\${escapeHtml(res.product?.name || "Producto")}</div>
+          <p>Codigo de bebida #\${res.qr?.publicNumber || ""}</p>
+          <p>El servidor calculará promoción, stock y precio final.</p>
+          <button class="btn-primary" onclick="confirmAssistedSale()" style="width:100%; justify-content:center; margin-top:12px;">Confirmar venta asistida</button>
+        </div>
+      \`;
+    }
+
+    async function confirmAssistedSale() {
+      if (!assistedCustomer || !assistedQrToken) return showToast("Falta cliente o QR.", true);
+      const res = await apiFetch("/admin/assisted/sale", {
+        method: "POST",
+        body: JSON.stringify({ customerId: assistedCustomer.id, token: assistedQrToken })
+      });
+      if (!res.ok) return showToast(res.code || "No se pudo registrar la venta", true);
+      document.getElementById("assistedPreview").innerHTML = \`
+        <div class="card" style="margin:0; box-shadow:none; background:var(--bg-page);">
+          <div class="card-title">Compra registrada</div>
+          <p>\${escapeHtml(assistedIdentity?.customer?.displayName || assistedCustomer.displayName)} · \${escapeHtml(assistedIdentity?.customer?.customerLabel || assistedCustomer.customerLabel)}</p>
+          <p><strong>\${escapeHtml(res.purchase?.product?.name || "Producto")}</strong> · \${formatMoney(res.purchase?.finalPriceCents)}</p>
+        </div>
+      \`;
+    }
+
+    function showCustomerIdentityQr() {
+      if (!assistedIdentity?.qrSvg) return showToast("No hay QR imprimible en esta sesion. Reemite el QR si necesitas imprimirlo.", true);
+      openModal("QR del cliente", \`
+        <div style="text-align:center;">
+          <div style="font-weight:800;">GAMMS AEP</div>
+          <p>\${escapeHtml(assistedIdentity.customer.displayName || "Cliente")}</p>
+          <p>\${escapeHtml(assistedIdentity.customer.customerLabel)}</p>
+          <div style="background:#fff; padding:14px; display:inline-flex; width:220px; height:220px; align-items:center; justify-content:center;">
+            \${assistedIdentity.qrSvg}
+          </div>
+          <style>.modal-content svg{width:190px!important;height:190px!important;background:#fff;shape-rendering:crispEdges}.modal-content svg *{fill:#000!important}</style>
+          <p style="margin-top:12px;">Conserva este codigo. Te servira para mantener tus compras y recompensas.</p>
+          <div class="gamms-byline">By <strong>GAMMS GROUP</strong></div>
+        </div>
+      \`);
+    }
+
+    async function printCustomerIdentityTicket() {
+      if (!assistedIdentity?.qrSvg) return showToast("No hay QR imprimible en esta sesion. Reemite el QR si necesitas imprimirlo.", true);
+      const customer = normalizeCustomerIdentityForPrint();
+      const result = await printCustomerIdentity(customer, { preferSerial: Boolean(thermalPrinterState.port) });
+      if (result === "show-qr") showToast("No se pudo imprimir. Mostrando QR.", true);
+      else showToast("Impresion enviada");
+    }
+
     // POS CONTROL CENTER
     async function renderPos() {
       posClaimPreview = null;
@@ -656,7 +1168,7 @@ export function onRequestGet() {
         <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(340px, 1fr)); gap:24px;">
           <div class="card">
             <div class="card-header">
-              <div class="card-title">Canje POS 50%</div>
+              <div class="card-title">Canje POS</div>
               <span class="badge badge-success">POS ONLINE</span>
             </div>
             <div class="form-group">
@@ -724,7 +1236,7 @@ export function onRequestGet() {
       box.innerHTML = \`
         <div class="card" style="margin:0; box-shadow:none; background:var(--bg-page);">
           <div class="card-title">\${res.customer?.displayName || 'Cliente'} (\${res.customer?.customerLabel || ''})</div>
-          <p style="margin-top:8px;">Estado: <strong>\${res.claim.status}</strong> · Descuento: <strong>50% OFF</strong></p>
+          <p style="margin-top:8px;">Estado: <strong>\${res.claim.status}</strong> · Descuento disponible</p>
         </div>
       \`;
     }
@@ -847,6 +1359,12 @@ export function onRequestGet() {
         stopQrScanner();
         closeModal();
         await previewPosClaim();
+      } else if (mode === "assisted") {
+        const input = document.getElementById("assistedQrInput");
+        if (input) input.value = payload;
+        stopQrScanner();
+        closeModal();
+        await previewAssistedQr();
       } else {
         const input = document.getElementById("posPhysicalQrInput");
         if (input) input.value = payload;
@@ -887,10 +1405,12 @@ export function onRequestGet() {
       posProductPreview = null;
       if (step2Box) step2Box.hidden = false;
       if (confirmBox) confirmBox.hidden = true;
+      const discountPercent = res.reward?.discountPercent ?? res.pricing?.discountPercent ?? 50;
+      const discountText = discountPercent === 100 ? "GRATIS" : discountPercent + " % OFF";
       if (box) box.innerHTML = \`
         <div class="card" style="margin:0; box-shadow:none; background:var(--bg-page);">
           <div class="card-title">\${res.customer?.displayName || 'Cliente'} (\${res.customer?.customerLabel || ''})</div>
-          <p style="margin-top:8px;">Estado: <strong>Premio válido</strong> · Descuento: <strong>50% OFF</strong></p>
+          <p style="margin-top:8px;">Estado: <strong>Premio válido</strong> · Descuento: <strong>\${discountText}</strong></p>
           <p style="margin-top:8px; color:var(--text-muted);">Ahora escanea el QR fisico de la bebida. La venta no se confirma hasta pulsar Confirmar compra.</p>
         </div>
       \`;
@@ -1445,7 +1965,7 @@ export function onRequestGet() {
       const productName = escapePrintText(item?.product?.name || "Producto");
       const publicNumber = Number.parseInt(item?.publicNumber, 10);
       const numberText = Number.isSafeInteger(publicNumber) && publicNumber > 0 ? publicNumber : "-";
-      return \`<div class="qr-label-card"><div class="qr-label-title">GAMMS AEP</div><div class="qr-label-product">\${productName}</div>\${item.svg || ""}<div class="qr-label-num">#\${numberText}</div></div>\`;
+      return \`<div class="qr-label-card"><div class="qr-label-title">GAMMS AEP</div><div class="qr-label-product">\${productName}</div>\${item.svg || ""}<div class="qr-label-num">Codigo: #\${numberText}</div></div>\`;
     }
 
     function getOrderedBrowserSlots(profile) {
@@ -1875,7 +2395,7 @@ export function onRequestGet() {
             <div class="stat-card">
               <div class="stat-header"><span>REVENUE TOTAL</span></div>
               <div class="stat-value">\${formatMoney(r.totalRevenueCents)}</div>
-              <div class="stat-sub">Normal: \${formatMoney(r.normalRevenueCents)} | 50% OFF: \${formatMoney(r.rewardRevenueCents)}</div>
+              <div class="stat-sub">Normal: \${formatMoney(r.normalRevenueCents)} | Con descuento: \${formatMoney(r.rewardRevenueCents)}</div>
             </div>
             <div class="stat-card">
               <div class="stat-header"><span>DESCUENTOS OTORGADOS</span></div>
@@ -1885,7 +2405,7 @@ export function onRequestGet() {
             <div class="stat-card">
               <div class="stat-header"><span>UNIDADES VENDIDAS</span></div>
               <div class="stat-value">\${r.totalUnits} ud.</div>
-              <div class="stat-sub">Normales: \${r.normalSalesCount} | Con 50%: \${r.rewardSalesCount}</div>
+              <div class="stat-sub">Normales: \${r.normalSalesCount} | Con descuento: \${r.rewardSalesCount}</div>
             </div>
             <div class="stat-card">
               <div class="stat-header"><span>CLIENTES ÚNICOS</span></div>
@@ -1899,7 +2419,7 @@ export function onRequestGet() {
               <div class="card-title">Rendimiento por Vendedor</div>
               <div class="table-container">
                 <table>
-                  <thead><tr><th>Vendedor</th><th>Unidades</th><th>Ingreso</th><th>Ventas 50%</th></tr></thead>
+                  <thead><tr><th>Vendedor</th><th>Unidades</th><th>Ingreso</th><th>Ventas con descuento</th></tr></thead>
                   <tbody>
                     \${(r.salesBySeller || []).map(s => \`
                       <tr>
@@ -1964,7 +2484,102 @@ export function onRequestGet() {
       \`;
     }
 
-    // 14. SETTINGS
+    // 14. EVENT CONFIG
+    async function renderEventConfig() {
+      const [eventRes, promoRes, productRes] = await Promise.all([
+        apiFetch("/admin/event"),
+        apiFetch("/admin/promotions"),
+        apiFetch("/admin/products")
+      ]);
+      if (!eventRes.ok || !promoRes.ok || !productRes.ok) return;
+      const active = eventRes.event?.active !== false;
+      const products = productRes.items || [];
+      const rules = promoRes.items || [];
+      contentArea.innerHTML = \`
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Estado del Evento</div>
+            <span class="badge \${active ? 'badge-success' : 'badge-danger'}">\${active ? 'ACTIVO' : 'EVENTO DESACTIVADO'}</span>
+          </div>
+          <p style="color:var(--text-muted);">Al desactivar el evento se bloquean compras de clientes, POS, redemptions y Venta Asistida. El Control Center sigue disponible.</p>
+          <button class="\${active ? 'btn-danger' : 'btn-primary'}" onclick="toggleEventActive(\${active ? 'false' : 'true'})" style="margin-top:14px;">\${active ? 'Desactivar evento' : 'Activar evento'}</button>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Promociones por Producto</div></div>
+          <div class="form-group">
+            <label class="form-label">Producto</label>
+            <select id="promoProductSelect" class="form-control" onchange="loadPromotionEditor()">
+              <option value="">Selecciona producto</option>
+              \${products.map(p => \`<option value="\${p.id}">\${escapeHtml(p.name)}</option>\`).join('')}
+            </select>
+          </div>
+          <div id="promotionEditor"></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Promociones Activas</div></div>
+          \${rules.filter(r => r.enabled).map(r => \`
+            <div class="card" style="margin:8px 0; box-shadow:none; background:var(--bg-page);">
+              <strong>\${escapeHtml(r.productName)}</strong><br>
+              Cada \${r.everyN}. compra → \${r.discountPercent === 100 ? 'GRATIS' : r.discountPercent + ' % OFF'}
+              <button class="btn-secondary" style="float:right;" onclick="selectPromotionProduct(\${r.productId})">Editar</button>
+            </div>
+          \`).join('') || '<p style="color:var(--text-muted);">No hay promociones activas.</p>'}
+        </div>
+      \`;
+      window.__promoRules = rules;
+    }
+
+    async function toggleEventActive(nextActive) {
+      const active = nextActive === true || nextActive === "true";
+      if (!active && !confirm("¿Desactivar el evento?\\n\\nLos clientes no podrán registrar nuevas compras y los vendedores no podrán procesar ventas.")) return;
+      const res = await apiFetch("/admin/event", { method: "PUT", body: JSON.stringify({ active }) });
+      if (!res.ok) return showToast(res.code || "No se pudo actualizar evento", true);
+      showToast(active ? "Evento activado" : "Evento desactivado");
+      renderEventConfig();
+    }
+
+    function selectPromotionProduct(productId) {
+      const select = document.getElementById("promoProductSelect");
+      if (select) {
+        select.value = String(productId);
+        loadPromotionEditor();
+      }
+    }
+
+    function loadPromotionEditor() {
+      const productId = Number(document.getElementById("promoProductSelect")?.value || 0);
+      const box = document.getElementById("promotionEditor");
+      if (!productId) { box.innerHTML = ""; return; }
+      const rule = (window.__promoRules || []).find(r => Number(r.productId) === productId) || {};
+      const productName = document.getElementById("promoProductSelect").selectedOptions[0]?.textContent || "Producto";
+      box.innerHTML = \`
+        <div class="card" style="margin:0; box-shadow:none; background:var(--bg-page);">
+          <div class="card-title">\${escapeHtml(productName)}</div>
+          <label class="form-label" style="margin-top:12px;"><input id="promoEnabled" type="checkbox" \${rule.enabled ? 'checked' : ''}> Activar promoción para este producto</label>
+          <div class="form-group"><label class="form-label">Compra que recibe descuento</label><input id="promoEveryN" class="form-control" type="number" min="2" value="\${rule.everyN || 3}"></div>
+          <div class="form-group"><label class="form-label">Porcentaje de descuento</label><input id="promoDiscount" class="form-control" type="number" min="1" max="100" value="\${rule.discountPercent || 50}"></div>
+          <label class="form-label"><input id="promoRepeat" type="checkbox" \${rule.repeatCycle === false ? '' : 'checked'}> Repetir ciclo</label>
+          <p style="margin:12px 0; color:var(--text-muted);">Promoción activa: cada \${rule.everyN || 3} compras de \${escapeHtml(productName)}, el cliente obtiene \${(rule.discountPercent || 50) === 100 ? 'GRATIS' : (rule.discountPercent || 50) + ' % de descuento'} en la compra correspondiente.</p>
+          <button class="btn-primary" onclick="savePromotionRule(\${productId})">Guardar configuración</button>
+        </div>
+      \`;
+    }
+
+    async function savePromotionRule(productId) {
+      const body = {
+        productId,
+        enabled: document.getElementById("promoEnabled").checked,
+        everyN: Number(document.getElementById("promoEveryN").value),
+        discountPercent: Number(document.getElementById("promoDiscount").value),
+        repeatCycle: document.getElementById("promoRepeat").checked
+      };
+      const res = await apiFetch("/admin/promotions", { method: "PUT", body: JSON.stringify(body) });
+      if (!res.ok) return showToast(res.code || "No se pudo guardar promoción", true);
+      showToast("Promoción guardada");
+      renderEventConfig();
+    }
+
+    // 15. SETTINGS
     async function renderSettings() {
       const res = await apiFetch("/admin/settings");
       if (!res.ok) return;
