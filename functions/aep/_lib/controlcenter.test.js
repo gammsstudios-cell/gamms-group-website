@@ -44,6 +44,7 @@ import { listProductPromotionRules, upsertProductPromotionRule } from "./promoti
 import { registerPurchase } from "./purchases.js";
 import { getPurchaseAttribution } from "./purchaseAttribution.js";
 import { onRequestGet as eventGet, onRequestPut as eventPut } from "../api/admin/event.js";
+import { onRequestGet as controlCenterGet } from "../controlcenter/[[path]].js";
 import { onRequestGet as promotionsGet, onRequestPut as promotionsPut } from "../api/admin/promotions.js";
 import { onRequestPost as identityPost } from "../api/customer/identity.js";
 import { onRequestPost as assistedSalePost } from "../api/admin/assisted/sale.js";
@@ -777,6 +778,15 @@ test("Control Center auth gate and 401/403 handling stop protected rendering", (
   assert.match(source, /function renderAccessDenied\(\)/);
   assert.match(source, /return \{ ok: false, code: "ACCESS_DENIED", halt: true \};/);
   assert.match(source, /if \(navObj && !userHasPerm\(navObj\.perm\)\) \{ renderAccessDenied\(\); return; \}/);
+});
+
+test("Control Center generated browser script remains syntactically valid", async () => {
+  const response = controlCenterGet();
+  const html = await response.text();
+  const match = html.match(/<script>([\s\S]*)<\/script>\s*<\/body>/);
+
+  assert.ok(match, "main script tag should be present");
+  assert.doesNotThrow(() => new Function(match[1]));
 });
 
 test("Control Center essential routes and RBAC menu definitions remain present", () => {

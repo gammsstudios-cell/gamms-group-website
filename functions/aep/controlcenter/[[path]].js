@@ -925,11 +925,11 @@ export function onRequestGet() {
       const qrRaster = await svgToEscPosRasterBytes(customer?.qrSvg || "");
       return concatBytes([
         new Uint8Array([0x1b, 0x40, 0x1b, 0x61, 0x01, 0x1b, 0x45, 0x01]),
-        encoderBytes("GAMMS AEP\n"),
+        encoderBytes("GAMMS AEP\\n"),
         new Uint8Array([0x1b, 0x45, 0x00]),
-        encoderBytes(name + "\n" + label + "\n\n"),
+        encoderBytes(name + "\\n" + label + "\\n\\n"),
         qrRaster,
-        encoderBytes("\nConserva este codigo.\nTe servira para mantener\ntus compras y recompensas.\n\nBy GAMMS GROUP\n\n"),
+        encoderBytes("\\nConserva este codigo.\\nTe servira para mantener\\ntus compras y recompensas.\\n\\nBy GAMMS GROUP\\n\\n"),
         new Uint8Array([0x1d, 0x56, 0x42, 0x00])
       ]);
     }
