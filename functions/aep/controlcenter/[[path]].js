@@ -803,7 +803,7 @@ export function onRequestGet() {
         displayName: assistedIdentity.customer?.displayName || assistedCustomer?.displayName || "Cliente",
         customerLabel: assistedIdentity.customer?.customerLabel || assistedCustomer?.customerLabel || "Cliente",
         qrSvg: assistedIdentity.qrSvg,
-        qrData: assistedIdentity.token || ""
+        qrData: assistedIdentity.recoveryUrl || assistedIdentity.token || ""
       };
     }
 

@@ -793,6 +793,51 @@ test("Control Center generated browser script remains syntactically valid", asyn
   assert.doesNotThrow(() => new Function(match[1]));
 });
 
+test("Control Center Android customer QR uses recovery URL while PC keeps SVG", async () => {
+  const response = controlCenterGet();
+  const html = await response.text();
+  const match = html.match(/<script>([\s\S]*)<\/script>\s*<\/body>/);
+
+  assert.ok(match, "main script tag should be present");
+  const script = match[1];
+  assert.doesNotThrow(() => new Function(script));
+
+  const normalizeMatch = script.match(/function normalizeCustomerIdentityForPrint\(\) \{[\s\S]*?\n    \}/);
+  assert.ok(normalizeMatch, "normalizeCustomerIdentityForPrint should be present in generated script");
+
+  const runNormalize = new Function("identity", "customer", `
+    let assistedIdentity = identity;
+    let assistedCustomer = customer;
+    ${normalizeMatch[0]}
+    return normalizeCustomerIdentityForPrint();
+  `);
+
+  const recoveryUrl = "https://preview.gammsgroup.pages.dev/aep/cliente/r/RECOVERY123";
+  const svg = "<svg><path d='M0 0h1v1z'/></svg>";
+  const withRecovery = runNormalize({
+    qrSvg: svg,
+    recoveryUrl,
+    token: "GAMMS-AEP-CUSTOMER:LEGACY123",
+    customer: { displayName: "Edith Potoy", customerLabel: "Cliente #127" }
+  }, null);
+
+  assert.equal(withRecovery.qrData, recoveryUrl);
+  assert.notEqual(withRecovery.qrData, "GAMMS-AEP-CUSTOMER:LEGACY123");
+  assert.equal(withRecovery.qrSvg, svg);
+
+  const legacy = runNormalize({
+    qrSvg: svg,
+    token: "GAMMS-AEP-CUSTOMER:LEGACY123",
+    customer: { displayName: "Edith Potoy", customerLabel: "Cliente #127" }
+  }, null);
+
+  assert.equal(legacy.qrData, "GAMMS-AEP-CUSTOMER:LEGACY123");
+  assert.match(script, /window\.GAMMSPrinter\.postMessage\(JSON\.stringify\(\{ type: "PRINT_CUSTOMER_QR"/);
+  assert.match(script, /qrData: customer\.qrData/);
+  assert.match(script, /buildCustomerIdentityTicketHtml\(customer\)/);
+  assert.match(script, /<div class="qr">\$\{customer\.qrSvg \|\| ""\}<\/div>/);
+});
+
 test("Control Center essential routes and RBAC menu definitions remain present", () => {
   const source = readFileSync(resolve(process.cwd(), "functions/aep/controlcenter/[[path]].js"), "utf8");
   const expectedRoutes = [
