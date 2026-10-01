@@ -29,7 +29,10 @@ function firstRow(result) {
 }
 
 function changes(result) {
-  return Number(result?.meta?.changes ?? 0);
+  if (Array.isArray(result?.results) && result.results.length > 0) return result.results.length;
+  const metaChanges = Number(result?.meta?.changes);
+  if (Number.isFinite(metaChanges)) return metaChanges;
+  return 0;
 }
 
 async function classifyClaimFailure(db, claimHash) {
@@ -205,6 +208,8 @@ export async function redeemClaim(db, rawCode, options = {}) {
 
   const actorType = String(options.actorType ?? "seller").slice(0, 40);
   const actorIdentifier = String(options.actorIdentifier ?? actorType).slice(0, 120);
+  const inventoryActorType = actorType === "staff" ? "seller" : actorType;
+  const auditActorType = actorType === "staff" ? "seller" : actorType;
   const movementReason = String(options.movementReason ?? "Canje vendedor con descuento reward").slice(0, 240);
 
   let targetQrTokenHash = null;
@@ -216,58 +221,63 @@ export async function redeemClaim(db, rawCode, options = {}) {
 
   try {
     let insertResult, qrResult, rewardResult, claimResult, stockResult, inventoryResult;
+    let v2InsertedPurchaseId = null;
 
     if (targetQrTokenHash) {
-      // Reward V2: Bind physical QR scanned by seller to claim during redemption
-      [insertResult, qrResult, rewardResult, claimResult, stockResult, inventoryResult] = await db.batch([
-        db.prepare(
-          `INSERT INTO purchases (
-             customer_id, product_id, qr_code_id, regular_price_cents, discount_percent, final_price_cents
-           )
-           SELECT
-             c.customer_id, p.id, q.id, p.price_cents, r.discount_percent, ROUND(p.price_cents * (100 - r.discount_percent) / 100.0)
-           FROM reward_claims c
-           JOIN rewards r ON r.id = c.reward_id AND r.status = 'available'
-           JOIN qr_codes q ON q.token_hash = ? AND q.status = 'available'
-           JOIN products p ON p.id = q.product_id AND p.active = 1
-           WHERE c.token_hash = ? AND c.status = 'available' AND c.expires_at > CURRENT_TIMESTAMP AND COALESCE(p.stock_quantity, 0) > 0
-             AND (r.product_id IS NULL OR r.product_id = p.id)
-           RETURNING id, customer_id, product_id, qr_code_id, regular_price_cents, discount_percent, final_price_cents`
-        ).bind(targetQrTokenHash, claimHash),
+      // Reward V2: bind the seller-scanned physical QR. D1 remote does not
+      // reliably expose an earlier statement's RETURNING row to later
+      // statements in the same batch, so use concrete IDs after the insert.
+      insertResult = await db.prepare(
+        `INSERT INTO purchases (
+           customer_id, product_id, qr_code_id, regular_price_cents, discount_percent, final_price_cents
+         )
+         SELECT
+           c.customer_id, p.id, q.id, p.price_cents, r.discount_percent, ROUND(p.price_cents * (100 - r.discount_percent) / 100.0)
+         FROM reward_claims c
+         JOIN rewards r ON r.id = c.reward_id AND r.status = 'available'
+         JOIN qr_codes q ON q.token_hash = ? AND q.status = 'available'
+         JOIN products p ON p.id = q.product_id AND p.active = 1
+         WHERE c.token_hash = ? AND c.status = 'available' AND c.expires_at > CURRENT_TIMESTAMP AND COALESCE(p.stock_quantity, 0) > 0
+           AND (r.product_id IS NULL OR r.product_id = p.id)
+         RETURNING id, customer_id, product_id, qr_code_id, regular_price_cents, discount_percent, final_price_cents`
+      ).bind(targetQrTokenHash, claimHash).all();
 
-        db.prepare(
-          `UPDATE qr_codes SET status = 'used', used_at = CURRENT_TIMESTAMP
-           WHERE token_hash = ? AND status = 'available'
-             AND EXISTS (SELECT 1 FROM purchases WHERE purchases.qr_code_id = qr_codes.id)
-           RETURNING public_number`
-        ).bind(targetQrTokenHash),
+      const insertedPurchase = firstRow(insertResult);
+      if (!insertedPurchase || changes(insertResult) !== 1) {
+        return { ok: false, code: await classifyClaimFailure(db, claimHash) };
+      }
+      v2InsertedPurchaseId = insertedPurchase.id;
 
-        db.prepare(
-          `UPDATE rewards SET status = 'redeemed', redeemed_at = CURRENT_TIMESTAMP,
-               redeemed_purchase_id = (SELECT id FROM purchases WHERE qr_code_id = (SELECT id FROM qr_codes WHERE token_hash = ?) LIMIT 1)
-           WHERE id = (SELECT reward_id FROM reward_claims WHERE token_hash = ?) AND status = 'available'
-           RETURNING status, cycle_number`
-        ).bind(targetQrTokenHash, claimHash),
+      qrResult = await db.prepare(
+        `UPDATE qr_codes SET status = 'used', used_at = CURRENT_TIMESTAMP
+         WHERE id = ? AND token_hash = ? AND status = 'available'
+         RETURNING public_number`
+      ).bind(insertedPurchase.qr_code_id, targetQrTokenHash).all();
 
-        db.prepare(
-          `UPDATE reward_claims SET status = 'redeemed', redeemed_at = CURRENT_TIMESTAMP,
-               qr_code_id = (SELECT id FROM qr_codes WHERE token_hash = ?),
-               redeemed_purchase_id = (SELECT id FROM purchases WHERE qr_code_id = (SELECT id FROM qr_codes WHERE token_hash = ?) LIMIT 1)
-           WHERE token_hash = ? AND status = 'available'
-           RETURNING status`
-        ).bind(targetQrTokenHash, targetQrTokenHash, claimHash),
+      rewardResult = await db.prepare(
+        `UPDATE rewards SET status = 'redeemed', redeemed_at = CURRENT_TIMESTAMP, redeemed_purchase_id = ?
+         WHERE id = (SELECT reward_id FROM reward_claims WHERE token_hash = ?) AND status = 'available'
+         RETURNING status, cycle_number`
+      ).bind(insertedPurchase.id, claimHash).all();
 
-        db.prepare(
-          `UPDATE products SET stock_quantity = stock_quantity - 1, updated_at = CURRENT_TIMESTAMP
-           WHERE id = (SELECT product_id FROM qr_codes WHERE token_hash = ?) AND stock_quantity > 0`
-        ).bind(targetQrTokenHash),
+      claimResult = await db.prepare(
+        `UPDATE reward_claims SET status = 'redeemed', redeemed_at = CURRENT_TIMESTAMP,
+             qr_code_id = ?, redeemed_purchase_id = ?
+         WHERE token_hash = ? AND status = 'available'
+         RETURNING status`
+      ).bind(insertedPurchase.qr_code_id, insertedPurchase.id, claimHash).all();
 
-        db.prepare(
-          `INSERT INTO inventory_movements (product_id, movement_type, quantity_delta, reason, purchase_id, actor_type, actor_identifier, created_at)
-           SELECT q.product_id, 'sale', -1, ?, p.id, ?, ?, CURRENT_TIMESTAMP
-           FROM qr_codes q JOIN purchases p ON p.qr_code_id = q.id WHERE q.token_hash = ? LIMIT 1`
-        ).bind(movementReason, actorType, actorIdentifier, targetQrTokenHash)
-      ]);
+      stockResult = await db.prepare(
+        `UPDATE products SET stock_quantity = stock_quantity - 1, updated_at = CURRENT_TIMESTAMP
+         WHERE id = ? AND stock_quantity > 0
+         RETURNING id`
+      ).bind(insertedPurchase.product_id).all();
+
+      inventoryResult = await db.prepare(
+        `INSERT INTO inventory_movements (product_id, movement_type, quantity_delta, reason, purchase_id, actor_type, actor_identifier, created_at)
+         VALUES (?, 'sale', -1, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+         RETURNING id`
+      ).bind(insertedPurchase.product_id, movementReason, insertedPurchase.id, inventoryActorType, actorIdentifier).all();
     } else {
       // Legacy mode: Exact legacy query batch structure for pre-linked physical QR
       [insertResult, qrResult, rewardResult, claimResult, stockResult, inventoryResult] = await db.batch([
@@ -410,7 +420,7 @@ export async function redeemClaim(db, rawCode, options = {}) {
            JOIN purchases p ON p.qr_code_id = c.qr_code_id
            WHERE c.token_hash = ?
            LIMIT 1`
-        ).bind(movementReason, actorType, actorIdentifier, claimHash)
+        ).bind(movementReason, inventoryActorType, actorIdentifier, claimHash)
       ]);
     }
 
@@ -431,6 +441,9 @@ export async function redeemClaim(db, rawCode, options = {}) {
       !reward ||
       !claim
     ) {
+      if (v2InsertedPurchaseId !== null) {
+        await db.prepare("DELETE FROM purchases WHERE id = ?").bind(v2InsertedPurchaseId).run().catch(() => {});
+      }
       return { ok: false, code: "REDEMPTION_CONFLICT" };
     }
 
@@ -452,7 +465,7 @@ export async function redeemClaim(db, rawCode, options = {}) {
            actor_type, actor_identifier, action, entity_type, entity_identifier, metadata_json, created_at
          ) VALUES (?, ?, 'reward_redeemed', 'reward', ?, ?, CURRENT_TIMESTAMP)`
       ).bind(
-        actorType,
+        auditActorType,
         actorIdentifier,
         String(reward.cycle_number),
         JSON.stringify({
