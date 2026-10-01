@@ -652,6 +652,7 @@ export function onRequestGet() {
     let assistedQrToken = "";
     let assistedQrPreview = null;
     let assistedIdentity = null;
+    let assistedSelectedRewardId = null;
 
     function detectPrintCapabilities() {
       return {
@@ -967,6 +968,7 @@ export function onRequestGet() {
       assistedQrToken = "";
       assistedQrPreview = null;
       assistedIdentity = null;
+      assistedSelectedRewardId = null;
       contentArea.innerHTML = \`
         <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(340px, 1fr)); gap:24px;">
           <div class="card">
@@ -985,6 +987,7 @@ export function onRequestGet() {
             <div class="card-header"><div class="card-title">Compra</div></div>
             <div id="assistedSelectedCustomer" class="badge badge-neutral">Selecciona un cliente</div>
             <div id="assistedIdentityPanel" style="margin-top:16px;"></div>
+            <div id="assistedCouponsPanel"></div>
             <div class="form-group" style="margin-top:16px;">
               <label class="form-label">QR físico de bebida</label>
               <input id="assistedQrInput" class="form-control" placeholder="Escanea el QR o escribe el codigo #127">
@@ -1015,17 +1018,84 @@ export function onRequestGet() {
         <div class="card" style="margin:8px 0; box-shadow:none;">
           <strong>\${escapeHtml(c.displayName || "Cliente")}</strong><br>
           <span style="color:var(--text-muted)">\${escapeHtml(c.customerLabel)}</span>
-          <button class="btn-secondary" style="float:right;" onclick="selectAssistedCustomer('\${c.id}', '\${escapeHtml(c.displayName || "Cliente")}', '\${escapeHtml(c.customerLabel)}', \${c.identityIssued ? "true" : "false"})">Seleccionar</button>
+          <span class="badge badge-success" style="margin-left:8px;">\${Number(c.availableRewardsCount || 0)} cupones</span>
+          <button class="btn-secondary" style="float:right;" onclick="selectAssistedCustomerFromPayload('\${encodeURIComponent(JSON.stringify(c)).replace(/'/g, "%27")}')">Seleccionar</button>
         </div>
       \`).join("") || '<p style="color:var(--text-muted);">Sin resultados.</p>';
     }
 
-    function selectAssistedCustomer(id, displayName, customerLabel, identityIssued = false) {
-      assistedCustomer = { id, displayName, customerLabel, identityIssued: Boolean(identityIssued) };
+    function selectAssistedCustomerFromPayload(payload) {
+      try {
+        selectAssistedCustomer(JSON.parse(decodeURIComponent(payload)));
+      } catch {
+        showToast("No se pudo seleccionar el cliente.", true);
+      }
+    }
+
+    function selectAssistedCustomer(customer) {
+      assistedCustomer = {
+        id: customer.id,
+        displayName: customer.displayName || "Cliente",
+        customerLabel: customer.customerLabel,
+        identityIssued: Boolean(customer.identityIssued),
+        availableRewardsCount: Number(customer.availableRewardsCount || 0),
+        availableRewards: Array.isArray(customer.availableRewards) ? customer.availableRewards : []
+      };
       assistedIdentity = null;
+      assistedSelectedRewardId = null;
+      assistedQrPreview = null;
       const badge = document.getElementById("assistedSelectedCustomer");
       renderAssistedIdentityPanel();
-      if (badge) badge.textContent = displayName + " · " + customerLabel;
+      renderAssistedCoupons();
+      if (badge) badge.textContent = assistedCustomer.displayName + " - " + assistedCustomer.customerLabel + " - " + assistedCustomer.availableRewardsCount + " cupones disponibles";
+    }
+
+    function formatDiscountLabel(percent) {
+      const value = Number(percent || 0);
+      return value >= 100 ? "GRATIS" : value + "% OFF";
+    }
+
+    function renderAssistedCoupons() {
+      const box = document.getElementById("assistedCouponsPanel");
+      if (!box) return;
+      if (!assistedCustomer) { box.innerHTML = ""; return; }
+      const rewards = assistedCustomer.availableRewards || [];
+      const grouped = rewards.reduce((acc, reward) => {
+        const key = String(reward.productId || "general");
+        acc[key] = (acc[key] || 0) + 1;
+        return acc;
+      }, {});
+      box.innerHTML = [
+        '<div class="card" style="margin-top:16px; box-shadow:none; background:var(--bg-page);">',
+        '<div class="card-header"><div class="card-title">Cupones disponibles</div><span class="badge badge-success">' + rewards.length + '</span></div>',
+        '<p><strong>' + escapeHtml(assistedCustomer.displayName || "Cliente") + '</strong> - ' + escapeHtml(assistedCustomer.customerLabel) + '</p>',
+        '<p style="color:var(--text-muted);">' + rewards.length + ' cupones disponibles</p>',
+        '<button class="btn-secondary" onclick="selectAssistedReward(null)" style="margin-bottom:10px;">Venta normal / No usar cupon</button>',
+        rewards.length ? rewards.map((reward) => [
+          '<div class="card" style="margin:8px 0; box-shadow:none; border-color:' + (Number(assistedSelectedRewardId) === Number(reward.id) ? 'var(--accent)' : 'var(--border)') + ';">',
+          '<div style="display:flex; justify-content:space-between; gap:12px; align-items:flex-start;">',
+          '<div>',
+          '<strong>' + escapeHtml(reward.productName || "Producto") + '</strong>',
+          '<p>Descuento: <strong>' + formatDiscountLabel(reward.discountPercent) + '</strong></p>',
+          '<p>Estado: <strong>Disponible</strong></p>',
+          reward.cycleNumber ? '<p>Ciclo #' + escapeHtml(String(reward.cycleNumber)) + '</p>' : '',
+          '<p>Obtenido: ' + escapeHtml(formatDate(reward.unlockedAt)) + '</p>',
+          '<p style="color:var(--text-muted);">Cupon #' + escapeHtml(String(reward.id)) + ' - disponibles de este producto: ' + (grouped[String(reward.productId || "general")] || 1) + '</p>',
+          '</div>',
+          '<button class="btn-secondary" onclick="selectAssistedReward(' + Number(reward.id) + ')">' + (Number(assistedSelectedRewardId) === Number(reward.id) ? "Seleccionado" : "Usar en esta venta") + '</button>',
+          '</div>',
+          '</div>'
+        ].join("")).join("") : '<p style="color:var(--text-muted);">Este cliente no tiene cupones disponibles.</p>',
+        '</div>'
+      ].join("");
+    }
+
+    function selectAssistedReward(rewardId) {
+      assistedSelectedRewardId = rewardId ? Number(rewardId) : null;
+      assistedQrPreview = null;
+      renderAssistedCoupons();
+      const box = document.getElementById("assistedPreview");
+      if (box) box.innerHTML = '<div class="badge badge-neutral">' + (assistedSelectedRewardId ? "Cupon preparado. Valida el QR fisico para aplicarlo." : "Venta normal preparada. Valida el QR fisico.") + '</div>';
     }
     function renderAssistedIdentityPanel() {
       const box = document.getElementById("assistedIdentityPanel");
@@ -1086,7 +1156,7 @@ export function onRequestGet() {
         const res = await apiFetch("/admin/assisted/customers", { method: "POST", body: JSON.stringify({ displayName }) });
         if (!res.ok) return showToast(res.details || res.code || "No se pudo crear cliente", true);
         closeModal();
-        selectAssistedCustomer(res.customer.id, res.customer.displayName, res.customer.customerLabel, false);
+        selectAssistedCustomer({ ...res.customer, availableRewardsCount: 0, availableRewards: [] });
         await searchAssistedCustomers();
         showToast("Cliente creado");
       });
@@ -1098,7 +1168,8 @@ export function onRequestGet() {
       if (!assistedQrToken) return showToast("Ingresa o escanea el QR o codigo de bebida.", true);
       const box = document.getElementById("assistedPreview");
       box.innerHTML = '<div class="badge badge-neutral">Validando QR...</div>';
-      const res = await apiFetch("/admin/assisted/qr?input=" + encodeURIComponent(assistedQrToken));
+      const rewardQuery = assistedSelectedRewardId ? "&rewardId=" + encodeURIComponent(assistedSelectedRewardId) : "";
+      const res = await apiFetch("/admin/assisted/qr?input=" + encodeURIComponent(assistedQrToken) + "&customerId=" + encodeURIComponent(assistedCustomer.id) + rewardQuery);
       if (!res.ok) {
         box.innerHTML = \`<div class="badge badge-danger">\${res.code || "QR_INVALID"}</div>\`;
         return;
@@ -1108,7 +1179,9 @@ export function onRequestGet() {
         <div class="card" style="margin:0; box-shadow:none; background:var(--bg-page);">
           <div class="card-title">\${escapeHtml(res.product?.name || "Producto")}</div>
           <p>Codigo de bebida #\${res.qr?.publicNumber || ""}</p>
-          <p>El servidor calculará promoción, stock y precio final.</p>
+          <p>Cliente: \${escapeHtml(assistedCustomer.displayName || "Cliente")} - \${escapeHtml(assistedCustomer.customerLabel)}</p>
+          <p>Descuento: <strong>\${formatDiscountLabel(res.pricing?.discountPercent || 0)}</strong></p>
+          <p>Precio final: <strong>\${Number(res.pricing?.finalPriceCents || 0) === 0 ? "GRATIS / C$0.00" : formatMoney(res.pricing?.finalPriceCents)}</strong></p>
           <button class="btn-primary" onclick="confirmAssistedSale()" style="width:100%; justify-content:center; margin-top:12px;">Confirmar venta asistida</button>
         </div>
       \`;
@@ -1118,9 +1191,10 @@ export function onRequestGet() {
       if (!assistedCustomer || !assistedQrToken) return showToast("Falta cliente o QR.", true);
       const res = await apiFetch("/admin/assisted/sale", {
         method: "POST",
-        body: JSON.stringify({ customerId: assistedCustomer.id, token: assistedQrToken })
+        body: JSON.stringify({ customerId: assistedCustomer.id, token: assistedQrToken, rewardId: assistedSelectedRewardId })
       });
       if (!res.ok) return showToast(res.code || "No se pudo registrar la venta", true);
+      await refreshSelectedAssistedCustomer();
       document.getElementById("assistedPreview").innerHTML = \`
         <div class="card" style="margin:0; box-shadow:none; background:var(--bg-page);">
           <div class="card-title">Compra registrada</div>
@@ -1128,6 +1202,20 @@ export function onRequestGet() {
           <p><strong>\${escapeHtml(res.purchase?.product?.name || "Producto")}</strong> · \${formatMoney(res.purchase?.finalPriceCents)}</p>
         </div>
       \`;
+    }
+
+    async function refreshSelectedAssistedCustomer() {
+      if (!assistedCustomer) return;
+      const res = await apiFetch("/admin/assisted/customers?q=" + encodeURIComponent(assistedCustomer.customerLabel || assistedCustomer.id));
+      if (!res.ok) return;
+      const current = (res.items || []).find((item) => item.id === assistedCustomer.id);
+      if (!current) return;
+      assistedCustomer.availableRewardsCount = Number(current.availableRewardsCount || 0);
+      assistedCustomer.availableRewards = Array.isArray(current.availableRewards) ? current.availableRewards : [];
+      assistedSelectedRewardId = null;
+      renderAssistedCoupons();
+      const badge = document.getElementById("assistedSelectedCustomer");
+      if (badge) badge.textContent = assistedCustomer.displayName + " - " + assistedCustomer.customerLabel + " - " + assistedCustomer.availableRewardsCount + " cupones disponibles";
     }
 
     function showCustomerIdentityQr() {

@@ -2,6 +2,7 @@ import { requirePermission } from "../../../_lib/staffAuth.js";
 import { adminError, adminJson, validateCsrf } from "../../../_lib/adminResponses.js";
 import { generateCustomerId } from "../../../_lib/cookies.js";
 import { formatFriendlyCustomerId, validateDisplayName } from "../../../_lib/customerProfile.js";
+import { listAvailableCustomerRewards } from "../../../_lib/promotions.js";
 
 function customerIdSearchPattern(query) {
   const value = String(query || "").trim();
@@ -29,14 +30,20 @@ export async function onRequestGet({ request, env }) {
      LIMIT 25`
   ).bind(q, like, idLike).all();
 
-  const items = (rows?.results || []).map((row) => ({
-    id: row.id,
-    displayName: row.display_name || null,
-    customerLabel: formatFriendlyCustomerId(row.id),
-    identityIssued: Boolean(row.identity_issued),
-    createdAt: row.created_at,
-    lastSeenAt: row.last_seen_at
-  }));
+  const items = [];
+  for (const row of rows?.results || []) {
+    const rewards = await listAvailableCustomerRewards(db, row.id);
+    items.push({
+      id: row.id,
+      displayName: row.display_name || null,
+      customerLabel: formatFriendlyCustomerId(row.id),
+      identityIssued: Boolean(row.identity_issued),
+      availableRewardsCount: rewards.length,
+      availableRewards: rewards,
+      createdAt: row.created_at,
+      lastSeenAt: row.last_seen_at
+    });
+  }
 
   return adminJson({ ok: true, items });
 }

@@ -7,7 +7,6 @@ import { resolvePhysicalQrInput } from "../../../_lib/physicalQr.js";
 import {
   countValidProductPurchases,
   getPromotionRuleForProduct,
-  lookupAvailableProductReward,
   productProgress
 } from "../../../_lib/promotions.js";
 import { generateClaimCode, hashClaimCode } from "../../../_lib/claims.js";
@@ -99,6 +98,7 @@ export async function onRequestPost({ request, env }) {
 
   const customerId = String(body?.customerId || "").trim();
   const token = body?.token;
+  const rewardId = Number.parseInt(body?.rewardId || "", 10);
   if (!customerId) return adminError("CUSTOMER_REQUIRED", 400);
 
   const event = await requireEventActive(db);
@@ -114,11 +114,20 @@ export async function onRequestPost({ request, env }) {
   const shift = staffUserId ? await getCurrentShift(db, staffUserId) : null;
   const actorIdentifier = perm.actor?.identifier || perm.actor?.displayName || "staff";
 
-  // If this customer already has an available reward for the scanned product,
-  // Venta Asistida is itself a seller-authorized flow, so redeem it server-side.
+  // Venta Asistida only uses a reward when staff explicitly selects one.
   // No percentage or price is accepted from the browser.
-  const availableReward = await lookupAvailableProductReward(db, customerId, resolved.qr.productId);
-  if (availableReward) {
+  if (Number.isInteger(rewardId)) {
+    const availableReward = await db.prepare(
+      `SELECT id, customer_id, reward_type, discount_percent, cycle_number, product_id, promotion_rule_id
+       FROM rewards
+       WHERE id = ?
+         AND customer_id = ?
+         AND status = 'available'
+         AND (product_id IS NULL OR product_id = ?)
+       LIMIT 1`
+    ).bind(rewardId, customerId, resolved.qr.productId).first();
+    if (!availableReward) return adminError("REWARD_NOT_AVAILABLE", 409);
+
     const internalClaim = await createInternalAssistedClaim(db, {
       rewardId: availableReward.id,
       customerId,
@@ -160,6 +169,7 @@ export async function onRequestPost({ request, env }) {
   const result = await registerPurchase(db, request, token, {
     customerId,
     allowPhysicalQrInput: true,
+    allowAvailableRewardBypass: true,
     actor: {
       actorType: "staff",
       actorIdentifier,

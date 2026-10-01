@@ -147,7 +147,7 @@ function previewFromResolvedQr(resolved) {
   };
 }
 
-async function createPurchaseAndConsumeQr(db, tokenHash, customerId, productId, rule = null, actor = {}) {
+async function createPurchaseAndConsumeQr(db, tokenHash, customerId, productId, rule = null, actor = {}, options = {}) {
   const rewardType = rule?.enabled && !rule.legacy ? rewardTypeForProduct(productId) : REWARD_TYPE;
   const everyN = rule?.enabled ? rule.everyN : 3;
   const discountPercent = rule?.enabled ? rule.discountPercent : REWARD_DISCOUNT_PERCENT;
@@ -186,7 +186,9 @@ async function createPurchaseAndConsumeQr(db, tokenHash, customerId, productId, 
          WHERE q.token_hash = ?
            AND q.status = 'available'
            AND COALESCE(p.stock_quantity, 0) > 0
-           AND NOT EXISTS (
+           AND (
+             ? = 1
+             OR NOT EXISTS (
              SELECT 1
              FROM rewards
              WHERE rewards.customer_id = ?
@@ -195,9 +197,10 @@ async function createPurchaseAndConsumeQr(db, tokenHash, customerId, productId, 
                  rewards.product_id = p.id
                  OR (rewards.product_id IS NULL AND rewards.reward_type = ?)
                )
+             )
            )`
       )
-      .bind(customerId, tokenHash, customerId, REWARD_TYPE),
+      .bind(customerId, tokenHash, options.allowAvailableRewardBypass ? 1 : 0, customerId, REWARD_TYPE),
     db
       .prepare(
         `UPDATE qr_codes
@@ -561,7 +564,7 @@ export async function registerPurchase(db, request, rawToken, options = {}) {
   const rule = await getPromotionRuleForProduct(db, qrPreview.product_id);
   const availableReward = await lookupAvailableReward(db, customer.customerId, qrPreview.product_id);
 
-  if (availableReward) {
+  if (availableReward && !options.allowAvailableRewardBypass) {
     return {
       ok: false,
       code: "REWARD_REQUIRES_SELLER",
@@ -573,7 +576,9 @@ export async function registerPurchase(db, request, rawToken, options = {}) {
   let purchaseTransaction;
 
   try {
-    purchaseTransaction = await createPurchaseAndConsumeQr(db, tokenHash, customer.customerId, qrPreview.product_id, rule, options.actor);
+    purchaseTransaction = await createPurchaseAndConsumeQr(db, tokenHash, customer.customerId, qrPreview.product_id, rule, options.actor, {
+      allowAvailableRewardBypass: Boolean(options.allowAvailableRewardBypass)
+    });
   } catch (error) {
     if (isMissingPromotionSchemaError(error)) {
       try {
@@ -605,7 +610,7 @@ export async function registerPurchase(db, request, rawToken, options = {}) {
   if (!purchaseTransaction) {
     const currentReward = await lookupAvailableReward(db, customer.customerId, qrPreview.product_id);
 
-    if (currentReward) {
+    if (currentReward && !options.allowAvailableRewardBypass) {
       return {
         ok: false,
         code: "REWARD_REQUIRES_SELLER",
