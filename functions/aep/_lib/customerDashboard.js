@@ -64,7 +64,7 @@ export async function getCustomerDashboard(db, request) {
     const purchaseCount = await countValidProductPurchases(db, customerId, product.id);
     const availableReward = await lookupAvailableProductReward(db, customerId, product.id);
     const progress = productProgress(purchaseCount, rule);
-    const currentProgress = availableReward ? rule.everyN : Math.min(purchaseCount % rule.everyN || rule.everyN, rule.everyN);
+    const currentProgress = availableReward ? rule.everyN : purchaseCount % rule.everyN;
     promotionProgress.push({
       productId: product.id,
       productName: product.name,

@@ -1388,6 +1388,56 @@ test("customer dashboard is cookie scoped and returns purchases, rewards, and pr
   assert.equal(endpointBody.customer.customerLabel, "Cliente #DASH");
 });
 
+test("customer dashboard promotion progress resets after redeemed N purchase", async () => {
+  const db = await createTestDb();
+  const product = await createProduct(db, { name: "Cacao", priceCents: 3500, stockQuantity: 20 });
+  await upsertProductPromotionRule(db, {
+    productId: product.product.id,
+    enabled: true,
+    everyN: 3,
+    discountPercent: 25,
+    repeatCycle: true
+  });
+
+  async function dashboardProgress(customerId) {
+    const body = await getCustomerDashboard(db, new Request("https://example.com/aep/api/customer/dashboard", {
+      headers: { cookie: `GAMMS-AEP-Customer=${customerId}` }
+    }));
+    assert.equal(body.ok, true);
+    assert.equal(body.promotionProgress[0].everyN, 3);
+    return body.promotionProgress[0].currentProgress;
+  }
+
+  async function createCustomerWithPurchases(customerId, count) {
+    await db.prepare("INSERT INTO customers (id, display_name) VALUES (?, ?)").bind(customerId, customerId).run();
+    for (let index = 0; index < count; index += 1) {
+      const publicNumber = 800 + count * 10 + index;
+      await insertCompletedPurchase(db, {
+        customerId,
+        token: `PROGRESSQR${count}${index}`.padEnd(16, "0"),
+        publicNumber,
+        productId: product.product.id,
+        priceCents: 3500
+      });
+    }
+  }
+
+  await createCustomerWithPurchases("cust_progress_0", 0);
+  await createCustomerWithPurchases("cust_progress_1", 1);
+  await createCustomerWithPurchases("cust_progress_2", 2);
+  await createCustomerWithPurchases("cust_progress_3", 3);
+  await createCustomerWithPurchases("cust_progress_4", 4);
+
+  await db.prepare("INSERT INTO rewards (customer_id, reward_type, discount_percent, status, cycle_number, product_id) VALUES ('cust_progress_2', 'product_test', 25, 'available', 1, ?)").bind(product.product.id).run();
+  await db.prepare("INSERT INTO rewards (customer_id, reward_type, discount_percent, status, cycle_number, product_id) VALUES ('cust_progress_3', 'product_test', 25, 'redeemed', 1, ?)").bind(product.product.id).run();
+
+  assert.equal(await dashboardProgress("cust_progress_0"), 0);
+  assert.equal(await dashboardProgress("cust_progress_1"), 1);
+  assert.equal(await dashboardProgress("cust_progress_2"), 3);
+  assert.equal(await dashboardProgress("cust_progress_3"), 0);
+  assert.equal(await dashboardProgress("cust_progress_4"), 1);
+});
+
 test("product promotion rules are stored per product and listed for event configuration", async () => {
   const db = await createTestDb();
   const product = await createProduct(db, { name: "Agua", priceCents: 2500, stockQuantity: 20 });
