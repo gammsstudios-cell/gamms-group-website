@@ -13,22 +13,34 @@ export function generateCustomerIdentityToken() {
 
 export function normalizeCustomerIdentityToken(value) {
   const raw = String(value ?? "").trim();
-  return raw.startsWith(CUSTOMER_IDENTITY_PREFIX) ? raw.slice(CUSTOMER_IDENTITY_PREFIX.length).trim() : raw;
+  if (raw.startsWith(CUSTOMER_IDENTITY_PREFIX)) return raw.slice(CUSTOMER_IDENTITY_PREFIX.length).trim();
+  try {
+    const url = new URL(raw);
+    const match = url.pathname.match(/\/aep\/cliente\/r\/([^/?#]+)/);
+    if (match) return decodeURIComponent(match[1]).trim();
+  } catch {}
+  return raw;
 }
 
 export async function hashCustomerIdentityToken(value) {
   return sha256Hex(normalizeCustomerIdentityToken(value));
 }
 
-function publicIdentity(customer, token = null) {
-  const payload = token ? `${CUSTOMER_IDENTITY_PREFIX}${token}` : null;
+export function buildCustomerRecoveryUrl(token, request) {
+  const base = request ? new URL(request.url) : new URL("https://gammsgroup.pages.dev");
+  return `${base.origin}/aep/cliente/r/${encodeURIComponent(token)}`;
+}
+
+function publicIdentity(customer, token = null, request = null) {
+  const payload = token ? buildCustomerRecoveryUrl(token, request) : null;
   return {
     customer: {
       id: customer.id,
       displayName: customer.display_name || null,
       customerLabel: formatFriendlyCustomerId(customer.id)
     },
-    token: token ? payload : undefined,
+    token: token ? `${CUSTOMER_IDENTITY_PREFIX}${token}` : undefined,
+    recoveryUrl: payload || undefined,
     qrSvg: payload ? renderQrSvg(payload) : undefined
   };
 }
@@ -66,7 +78,7 @@ export async function ensureCustomerIdentityToken(db, customerId, options = {}) 
     ).bind(customerId, tokenHash)
   ]);
 
-  return { ok: true, identity: publicIdentity(existing, token) };
+  return { ok: true, identity: publicIdentity(existing, token, options.request || null) };
 }
 
 export async function resolveCustomerIdentityToken(db, rawToken, request, options = {}) {

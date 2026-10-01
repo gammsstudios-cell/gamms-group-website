@@ -16,7 +16,8 @@ export async function onRequestPost({ request, env, params }) {
   } catch {}
 
   const result = await ensureCustomerIdentityToken(db, params.id, {
-    rotate: body?.rotate === true
+    rotate: body?.rotate === true,
+    request
   });
   if (!result.ok) return adminError(result.code, 400);
   return adminJson({ ok: true, alreadyIssued: Boolean(result.alreadyIssued), identity: result.identity });
