@@ -56,6 +56,7 @@ import { onRequestPost as adminCustomerIdentityPost } from "../api/admin/custome
 import { onRequestGet as customerRecoveryGet, onRequestPost as customerRecoveryPost } from "../cliente/r/[token].js";
 import { onRequestGet as customerDashboardGet } from "../api/customer/dashboard.js";
 import { createRewardClaim } from "./claims.js";
+import { createRewardClaimForReward } from "./productClaim.js";
 import { previewClaimProduct, redeemClaim } from "./redemption.js";
 import { resolvePhysicalQrInput } from "./physicalQr.js";
 
@@ -1378,7 +1379,7 @@ test("customer dashboard is cookie scoped and returns purchases, rewards, and pr
   assert.equal(body.purchases.length, 2);
   assert.equal(body.purchases[0].discountPercent, 25);
   assert.equal(body.purchases[0].finalPriceCents, 2625);
-  assert.equal(body.promotionProgress[0].currentProgress, 3);
+  assert.equal(body.promotionProgress[0].currentProgress, 2);
   assert.equal(body.promotionProgress[0].everyN, 3);
   assert.equal(body.promotionProgress[0].rewardAvailable, true);
 
@@ -1433,7 +1434,7 @@ test("customer dashboard promotion progress resets after redeemed N purchase", a
 
   assert.equal(await dashboardProgress("cust_progress_0"), 0);
   assert.equal(await dashboardProgress("cust_progress_1"), 1);
-  assert.equal(await dashboardProgress("cust_progress_2"), 3);
+  assert.equal(await dashboardProgress("cust_progress_2"), 2);
   assert.equal(await dashboardProgress("cust_progress_3"), 0);
   assert.equal(await dashboardProgress("cust_progress_4"), 1);
 });
@@ -1783,9 +1784,9 @@ test("product promotion progress is independent and same-product reward blocks o
   assert.equal(secondA.progress.reward.available, true);
   assert.equal(secondA.progress.reward.discountPercent, 50);
 
-  const blockedA = await registerPurchase(db, request(), "PRODAAAAAA03");
-  assert.equal(blockedA.ok, false);
-  assert.equal(blockedA.code, "REWARD_REQUIRES_SELLER");
+  const normalA = await registerPurchase(db, request(), "PRODAAAAAA03");
+  assert.equal(normalA.ok, true);
+  assert.equal((await db.prepare("SELECT COUNT(*) AS count FROM rewards WHERE customer_id = 'cust_product_progress' AND status = 'available'").first()).count, 1);
 
   const secondB = await registerPurchase(db, request(), "PRODBBBBBB02");
   assert.equal(secondB.ok, true);
@@ -1838,6 +1839,77 @@ test("product promotion cycles support N=2, N=3, N=5, repeat=false, disabled, an
   const free = await buy(pFree.product.id, "FREEPROMO001", 8601, "cust_free");
   assert.equal(free.progress.reward.available, true);
   assert.equal(free.progress.reward.discountPercent, 100);
+});
+
+test("everyN=3 coupons persist through normal purchases and accumulate by cycle", async () => {
+  const db = await createTestDb();
+  const product = await createProduct(db, { name: "Cycle Coupon", priceCents: 3000, stockQuantity: 20 });
+  await upsertProductPromotionRule(db, {
+    productId: product.product.id,
+    enabled: true,
+    everyN: 3,
+    discountPercent: 25,
+    repeatCycle: true
+  });
+
+  async function buy(index) {
+    const token = `CYCLE3PROMO${String(index).padStart(2, "0")}`;
+    await insertAvailableQr(db, token, 8700 + index, product.product.id);
+    return registerPurchase(db, new Request("https://example.com/aep/api/purchases", {
+      headers: { cookie: "GAMMS-AEP-Customer=cust_cycle3_wallet" }
+    }), token);
+  }
+
+  async function availableCount() {
+    const row = await db.prepare(
+      "SELECT COUNT(*) AS count FROM rewards WHERE customer_id = 'cust_cycle3_wallet' AND product_id = ? AND status = 'available'"
+    ).bind(product.product.id).first();
+    return Number(row.count || 0);
+  }
+
+  assert.equal((await buy(1)).ok, true);
+  assert.equal(await availableCount(), 0);
+  assert.equal((await buy(2)).progress.reward.available, true);
+  assert.equal(await availableCount(), 1);
+  assert.equal((await buy(3)).ok, true);
+  assert.equal(await availableCount(), 1);
+  assert.equal((await buy(4)).ok, true);
+  assert.equal(await availableCount(), 1);
+  assert.equal((await buy(5)).progress.reward.available, true);
+  assert.equal(await availableCount(), 2);
+});
+
+test("reward claims are temporary while rewards persist until one coupon is redeemed", async () => {
+  const db = await createTestDb();
+  const product = await createProduct(db, { name: "Claim Wallet", priceCents: 3000, stockQuantity: 20 });
+  await db.prepare("INSERT INTO customers (id, display_name) VALUES ('cust_claim_wallet', 'Claim Wallet')").run();
+  await db.prepare("INSERT INTO rewards (customer_id, reward_type, discount_percent, status, cycle_number, product_id) VALUES ('cust_claim_wallet', 'product_test', 25, 'available', 1, ?)").bind(product.product.id).run();
+  await db.prepare("INSERT INTO rewards (customer_id, reward_type, discount_percent, status, cycle_number, product_id) VALUES ('cust_claim_wallet', 'product_test', 50, 'available', 2, ?)").bind(product.product.id).run();
+  const rewards = await db.prepare("SELECT id FROM rewards WHERE customer_id = 'cust_claim_wallet' ORDER BY id ASC").all();
+  const firstRewardId = rewards.results[0].id;
+  const secondRewardId = rewards.results[1].id;
+  const request = new Request("https://example.com/aep/api/rewards/claim", {
+    headers: { cookie: "GAMMS-AEP-Customer=cust_claim_wallet" }
+  });
+
+  const firstClaim = await createRewardClaimForReward(db, request, firstRewardId);
+  assert.equal(firstClaim.ok, true);
+  assert.equal((await db.prepare("SELECT status FROM rewards WHERE id = ?").bind(firstRewardId).first()).status, "available");
+
+  await db.prepare("UPDATE reward_claims SET expires_at = '2000-01-01T00:00:00Z' WHERE reward_id = ?").bind(firstRewardId).run();
+  const regenerated = await createRewardClaimForReward(db, request, firstRewardId);
+  assert.equal(regenerated.ok, true);
+  assert.equal((await db.prepare("SELECT status FROM rewards WHERE id = ?").bind(firstRewardId).first()).status, "available");
+
+  await insertAvailableQr(db, "CLAIMWALLET01", 8801, product.product.id);
+  const redeemed = await redeemClaim(db, regenerated.claim.code, {
+    physicalQrToken: "CLAIMWALLET01",
+    actorType: "seller",
+    actorIdentifier: "test"
+  });
+  assert.equal(redeemed.ok, true);
+  assert.equal((await db.prepare("SELECT status FROM rewards WHERE id = ?").bind(firstRewardId).first()).status, "redeemed");
+  assert.equal((await db.prepare("SELECT status FROM rewards WHERE id = ?").bind(secondRewardId).first()).status, "available");
 });
 
 test("available product reward follows updated rule discount without changing redeemed history", async () => {

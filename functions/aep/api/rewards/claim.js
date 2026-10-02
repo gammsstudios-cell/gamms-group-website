@@ -1,5 +1,5 @@
 import { createRewardClaim } from "../../_lib/claims.js";
-import { createRewardClaimForProduct } from "../../_lib/productClaim.js";
+import { createRewardClaimForProduct, createRewardClaimForReward } from "../../_lib/productClaim.js";
 import { lookupQrByToken } from "../../_lib/qr.js";
 import { json, safeError } from "../../_lib/responses.js";
 
@@ -43,11 +43,14 @@ export async function onRequestPost(context) {
   }
 
   try {
-    const productId = body?.token
+    const rewardId = Number.parseInt(body?.rewardId, 10);
+    const productId = body?.token || (Number.isInteger(rewardId) && rewardId > 0)
       ? null
       : await resolveRequestedProductId(context.env.DB, context.request, body);
 
-    const result = productId
+    const result = Number.isInteger(rewardId) && rewardId > 0
+      ? await createRewardClaimForReward(context.env.DB, context.request, rewardId)
+      : productId
       ? await createRewardClaimForProduct(context.env.DB, context.request, productId)
       : await createRewardClaim(context.env.DB, context.request, body?.token || null);
 

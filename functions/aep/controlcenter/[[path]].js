@@ -171,6 +171,46 @@ export function onRequestGet() {
       .main-wrapper { margin-left: 0; }
       .mobile-menu-btn { display: block; }
     }
+    @media (max-width: 600px) {
+      body { overflow-x: hidden; }
+      .top-header { min-height: 58px; height: auto; padding: 8px 12px; gap: 8px; align-items: center; }
+      .header-left { min-width: 0; gap: 8px; flex: 1; }
+      .header-title { font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .header-right { gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+      .user-profile-tag { display: none; }
+      .event-badge { padding: 5px 8px; font-size: 10.5px; max-width: 116px; overflow: hidden; white-space: nowrap; }
+      .theme-toggle, .mobile-menu-btn { min-width: 44px; min-height: 44px; }
+      .btn-logout { display: none; }
+      .content-area { padding: 12px; max-width: 100%; }
+      .card { padding: 14px; border-radius: 14px; margin-bottom: 14px; min-width: 0; }
+      .grid-stats { grid-template-columns: 1fr; gap: 12px; margin-bottom: 14px; }
+      .stat-card { padding: 16px; }
+      .stat-value { font-size: 24px; }
+      .filter-bar, .card-header { display: flex; flex-wrap: wrap; gap: 8px; }
+      .filter-bar > *, .card-header > * { min-width: 0; }
+      .btn-primary, .btn-secondary, .btn-danger { min-height: 44px; justify-content: center; }
+      .form-control, .input-search, select, textarea { width: 100%; min-width: 0; font-size: 16px; }
+      table { min-width: 640px; }
+      .table-container { max-width: 100%; }
+      .modal-card { width: calc(100% - 20px); padding: 16px; max-height: 88vh; }
+    }
+    @media (max-width: 430px) {
+      .content-area { padding: 12px 10px; }
+      .card { padding: 14px 12px; }
+      .event-badge { max-width: 92px; }
+    }
+    @media (max-width: 390px) {
+      .header-right { max-width: 150px; }
+      .event-badge { max-width: 84px; }
+    }
+    @media (max-width: 360px) {
+      .content-area { padding: 10px 8px; }
+      .card-title { font-size: 15px; }
+    }
+    @media (max-width: 320px) {
+      .header-title { font-size: 14px; }
+      .event-badge { display: none; }
+    }
   </style>
 </head>
 <body>
@@ -343,8 +383,9 @@ export function onRequestGet() {
           return { ok: false, code: "ACCESS_DENIED", halt: true };
         }
         return res.json();
-      } catch (err) {
-        return { ok: false, code: "NETWORK_ERROR", message: err.message };
+      } catch {
+        showToast("Sin conexion o servidor no disponible. Intenta nuevamente.", true);
+        return { ok: false, code: "NETWORK_ERROR", message: "Sin conexion o servidor no disponible. Intenta nuevamente." };
       }
     }
 
@@ -1180,8 +1221,11 @@ export function onRequestGet() {
           <div class="card-title">\${escapeHtml(res.product?.name || "Producto")}</div>
           <p>Codigo de bebida #\${res.qr?.publicNumber || ""}</p>
           <p>Cliente: \${escapeHtml(assistedCustomer.displayName || "Cliente")} - \${escapeHtml(assistedCustomer.customerLabel)}</p>
+          <p>Precio normal: <strong>\${formatMoney(res.pricing?.regularPriceCents)}</strong></p>
+          <p>Cupon seleccionado: <strong>\${res.pricing?.rewardId ? ("#" + res.pricing.rewardId) : "Venta normal / No usar cupon"}</strong></p>
           <p>Descuento: <strong>\${formatDiscountLabel(res.pricing?.discountPercent || 0)}</strong></p>
           <p>Precio final: <strong>\${Number(res.pricing?.finalPriceCents || 0) === 0 ? "GRATIS / C$0.00" : formatMoney(res.pricing?.finalPriceCents)}</strong></p>
+          <p>Stock: <strong>\${res.product?.stockQuantity ?? ""}</strong></p>
           <button class="btn-primary" onclick="confirmAssistedSale()" style="width:100%; justify-content:center; margin-top:12px;">Confirmar venta asistida</button>
         </div>
       \`;
@@ -1375,11 +1419,11 @@ export function onRequestGet() {
       const select = document.getElementById("qrCameraSelect");
       const torchBtn = document.getElementById("qrTorchBtn");
       if (!navigator.mediaDevices?.getUserMedia) {
-        if (status) status.textContent = "Camara no disponible. Usa el input manual.";
+        if (status) status.textContent = "No se pudo usar la camara. Puedes escribir el codigo o numero del QR manualmente.";
         return;
       }
       if (!("BarcodeDetector" in window)) {
-        if (status) status.textContent = "Scanner no soportado por este navegador. Usa el input manual.";
+        if (status) status.textContent = "No se pudo usar la camara. Puedes escribir el codigo o numero del QR manualmente.";
         return;
       }
       try {
@@ -1417,8 +1461,8 @@ export function onRequestGet() {
           };
         }
         scanQrFrame();
-      } catch (error) {
-        if (status) status.textContent = "Permiso denegado o camara no disponible. Usa el input manual.";
+      } catch {
+        if (status) status.textContent = "No se pudo usar la camara. Puedes escribir el codigo o numero del QR manualmente.";
       }
     }
 

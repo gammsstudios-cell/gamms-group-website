@@ -51,3 +51,22 @@ test("assisted customer API supports lookup by the visible customer code", () =>
   assert.match(source, /cust_\$\{friendly\[1\]\}%/);
   assert.match(source, /c\.id LIKE \?/);
 });
+
+test("seller POS uses real reward percentages and supports free rewards", () => {
+  const source = readFileSync(resolve(process.cwd(), "functions/aep/seller.js"), "utf8");
+  assert.doesNotMatch(source, /Descuento 50%|50% OFF/);
+  assert.match(source, /discountLabel\(discountPercent\)/);
+  assert.match(source, /GRATIS \/ C\$0\.00/);
+  assert.match(source, /data\.reward\?\.discountPercent \?\? data\.pricing\?\.discountPercent/);
+});
+
+test("AEP mobile responsive CSS covers narrow phone widths", () => {
+  const controlCenter = readFileSync(resolve(process.cwd(), "functions/aep/controlcenter/[[path]].js"), "utf8");
+  const cliente = readFileSync(resolve(process.cwd(), "functions/aep/cliente.js"), "utf8");
+  for (const width of [600, 500, 430, 390, 360, 320]) {
+    assert.match(controlCenter + cliente, new RegExp(`max-width:\\s*${width}px`));
+  }
+  assert.match(controlCenter, /font-size:\s*16px/);
+  assert.match(controlCenter, /flex-wrap:\s*wrap/);
+  assert.match(cliente, /table-scroll/);
+});

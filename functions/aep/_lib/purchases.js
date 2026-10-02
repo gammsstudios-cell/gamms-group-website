@@ -562,22 +562,12 @@ export async function registerPurchase(db, request, rawToken, options = {}) {
   }
 
   const rule = await getPromotionRuleForProduct(db, qrPreview.product_id);
-  const availableReward = await lookupAvailableReward(db, customer.customerId, qrPreview.product_id);
-
-  if (availableReward && !options.allowAvailableRewardBypass) {
-    return {
-      ok: false,
-      code: "REWARD_REQUIRES_SELLER",
-      customerCookie: customer.cookie,
-      reward: publicReward(availableReward)
-    };
-  }
 
   let purchaseTransaction;
 
   try {
     purchaseTransaction = await createPurchaseAndConsumeQr(db, tokenHash, customer.customerId, qrPreview.product_id, rule, options.actor, {
-      allowAvailableRewardBypass: Boolean(options.allowAvailableRewardBypass)
+      allowAvailableRewardBypass: true
     });
   } catch (error) {
     if (isMissingPromotionSchemaError(error)) {
@@ -608,17 +598,6 @@ export async function registerPurchase(db, request, rawToken, options = {}) {
   }
 
   if (!purchaseTransaction) {
-    const currentReward = await lookupAvailableReward(db, customer.customerId, qrPreview.product_id);
-
-    if (currentReward && !options.allowAvailableRewardBypass) {
-      return {
-        ok: false,
-        code: "REWARD_REQUIRES_SELLER",
-        customerCookie: customer.cookie,
-        reward: publicReward(currentReward)
-      };
-    }
-
     return {
       ok: false,
       code: await classifyQrFailure(db, tokenHash),

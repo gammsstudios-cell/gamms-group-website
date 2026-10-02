@@ -152,13 +152,26 @@ export function onRequestGet() {
       posStatus.textContent = "Escanear el premio del cliente para comenzar.";
     }
 
+    function money(cents) {
+      return "C$ " + ((Number(cents) || 0) / 100).toFixed(2);
+    }
+
+    function discountLabel(percent) {
+      const value = Number(percent || 0);
+      return value >= 100 ? "GRATIS" : value + "% OFF";
+    }
+
     async function api(path, options = {}) {
-      const response = await fetch(path, {
-        credentials: "same-origin",
-        headers: { accept: "application/json", "content-type": "application/json" },
-        ...options
-      });
-      return response.json();
+      try {
+        const response = await fetch(path, {
+          credentials: "same-origin",
+          headers: { accept: "application/json", "content-type": "application/json" },
+          ...options
+        });
+        return response.json();
+      } catch {
+        return { ok: false, code: "NETWORK_ERROR", error: "Sin conexion o servidor no disponible. Intenta nuevamente." };
+      }
     }
 
     fetch("/aep/api/staff/session", { credentials: "same-origin" })
@@ -209,12 +222,13 @@ export function onRequestGet() {
       }
 
       currentClaim = data;
+      const claimDiscount = data.reward?.discountPercent ?? data.pricing?.discountPercent ?? 0;
       step1.hidden = true;
       step2.hidden = false;
       customerSummary.innerHTML = "<strong>Premio Válido ✓</strong><br>" +
         "<div class='customer-name'>" + (data.customer?.displayName || "Cliente") + "</div>" +
         "<div class='customer-label'>" + (data.customer?.customerLabel || "") + "</div>" +
-        "Descuento: 50% OFF · Ciclo #" + (data.reward?.cycleNumber || 1);
+        "Descuento: " + discountLabel(claimDiscount) + " · Ciclo #" + (data.reward?.cycleNumber || 1);
       posStatus.className = "state ok";
       posStatus.textContent = "Premio verificado. Ahora escanea el QR físico de la bebida.";
     });
@@ -244,13 +258,15 @@ export function onRequestGet() {
 
       step2.hidden = true;
       step3.hidden = false;
+      const discountPercent = data.reward?.discountPercent ?? data.pricing?.discountPercent ?? 0;
+      const discountAmount = Number(data.pricing.regularPriceCents || 0) - Number(data.pricing.finalPriceCents || 0);
       previewCard.innerHTML =
         "<div class='customer-name'>" + (data.customer?.displayName || "Cliente") + "</div>" +
         "<div class='customer-label'>" + (data.customer?.customerLabel || "") + "</div><hr>" +
         "<strong>" + data.product.name + "</strong> (QR #" + data.qr.publicNumber + ")<br>" +
-        "Precio normal: C$ " + (data.pricing.regularPriceCents / 100).toFixed(2) + "<br>" +
-        "Descuento 50%: -C$ " + ((data.pricing.regularPriceCents - data.pricing.finalPriceCents) / 100).toFixed(2) + "<br>" +
-        "<span class='price'>TOTAL: C$ " + (data.pricing.finalPriceCents / 100).toFixed(2) + "</span><br>" +
+        "Precio normal: " + money(data.pricing.regularPriceCents) + "<br>" +
+        "Descuento " + discountLabel(discountPercent) + ": -" + money(discountAmount) + "<br>" +
+        "<span class='price'>TOTAL: " + (Number(data.pricing.finalPriceCents || 0) === 0 ? "GRATIS / C$0.00" : money(data.pricing.finalPriceCents)) + "</span><br>" +
         "<small>Stock restante: " + data.product.stockQuantity + "</small>";
 
       posStatus.className = "state ok";
@@ -279,7 +295,7 @@ export function onRequestGet() {
       posStatus.innerHTML = "✓ <strong>VENTA COMPLETADA</strong><br>" +
         (data.customer?.displayName || "Cliente") + " (" + (data.customer?.customerLabel || "") + ")<br>" +
         data.purchase.product.name + " (QR #" + data.purchase.qrNumber + ")<br>" +
-        "<strong>Total cobrado: C$ " + (data.purchase.finalPriceCents / 100).toFixed(2) + "</strong><br>" +
+        "<strong>Total cobrado: " + (Number(data.purchase.finalPriceCents || 0) === 0 ? "GRATIS / C$0.00" : money(data.purchase.finalPriceCents)) + "</strong><br>" +
         "<button type='button' onclick='resetPos()' style='margin-top:10px;'>NUEVA VENTA</button>";
     });
 
@@ -301,7 +317,13 @@ export function onRequestGet() {
       const startScanner = async (targetInput) => {
         activeScanTarget = targetInput;
         const detector = new BarcodeDetector({ formats: ["qr_code"] });
-        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+        } catch {
+          posStatus.className = "state bad";
+          posStatus.textContent = "No se pudo usar la camara. Puedes escribir el codigo o numero del QR manualmente.";
+          return;
+        }
         video.srcObject = stream;
         video.hidden = false;
         await video.play();
@@ -321,6 +343,8 @@ export function onRequestGet() {
 
       scanClaimButton.addEventListener("click", () => startScanner(claimCode));
       scanQrButton.addEventListener("click", () => startScanner(physicalQrInput));
+    } else {
+      posStatus.textContent = "No se pudo usar la camara. Puedes escribir el codigo o numero del QR manualmente.";
     }
   </script>
 </body>

@@ -1,6 +1,6 @@
 import { getCustomerIdFromRequest } from "./cookies.js";
 import { formatFriendlyCustomerId } from "./customerProfile.js";
-import { getPromotionRuleForProduct, countValidProductPurchases, productProgress, lookupAvailableProductReward } from "./promotions.js";
+import { getPromotionRuleForProduct, countValidProductPurchases, productProgress, lookupAvailableProductReward, listAvailableCustomerRewards } from "./promotions.js";
 
 export async function getCustomerDashboard(db, request) {
   const customerId = getCustomerIdFromRequest(request);
@@ -64,7 +64,7 @@ export async function getCustomerDashboard(db, request) {
     const purchaseCount = await countValidProductPurchases(db, customerId, product.id);
     const availableReward = await lookupAvailableProductReward(db, customerId, product.id);
     const progress = productProgress(purchaseCount, rule);
-    const currentProgress = availableReward ? rule.everyN : purchaseCount % rule.everyN;
+    const currentProgress = purchaseCount % rule.everyN;
     promotionProgress.push({
       productId: product.id,
       productName: product.name,
@@ -76,6 +76,8 @@ export async function getCustomerDashboard(db, request) {
       purchaseCount: progress.purchaseCount
     });
   }
+
+  const availableCoupons = await listAvailableCustomerRewards(db, customerId);
 
   return {
     ok: true,
@@ -108,6 +110,7 @@ export async function getCustomerDashboard(db, request) {
       createdAt: row.unlocked_at,
       redeemedAt: row.redeemed_at || null
     })),
-    promotionProgress
+    promotionProgress,
+    availableCoupons
   };
 }
