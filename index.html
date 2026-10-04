@@ -3,155 +3,258 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <meta name="theme-color" content="#05070b" />
+  <meta name="theme-color" content="#05070a" />
   <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />
-  <meta name="googlebot" content="index,follow" />
-  <meta name="description" content="GAMMS GROUP (Group for Advanced Modern Multiplatform Systems) es un ecosistema tecnológico de Managua, Nicaragua, que desarrolla GMA-64, SecretOS, software, servicios y experiencias multiplataforma." />
-  <meta name="author" content="GAMMS GROUP" />
+  <meta name="description" content="GAMMS GROUP crea software, plataformas, infraestructura y tecnología propia para empresas, dispositivos y nuevas arquitecturas." />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="GAMMS GROUP" />
-  <meta property="og:title" content="GAMMS GROUP | Group for Advanced Modern Multiplatform Systems" />
-  <meta property="og:description" content="GAMMS GROUP desarrolla GMA-64, SecretOS y un ecosistema de tecnología, software y servicios desde Managua, Nicaragua." />
+  <meta property="og:title" content="GAMMS GROUP | We build technology" />
+  <meta property="og:description" content="Software, systems, infrastructure and research built as one ecosystem." />
   <meta property="og:url" content="https://gammsgroup.pages.dev/" />
   <meta property="og:image" content="https://gammsgroup.pages.dev/assets/gamms-logo.webp" />
-  <meta property="og:locale" content="es_NI" />
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="GAMMS GROUP | Building what comes next" />
-  <meta name="twitter:description" content="Group for Advanced Modern Multiplatform Systems. GMA-64, SecretOS and the GAMMS technology ecosystem." />
-  <meta name="twitter:image" content="https://gammsgroup.pages.dev/assets/gamms-logo.webp" />
   <link rel="canonical" href="https://gammsgroup.pages.dev/" />
-  <title>GAMMS GROUP | Technology, GMA-64 & SecretOS</title>
-  <link rel="stylesheet" href="styles.css" />
-  <style>.tech-link{display:block;color:inherit;text-decoration:none}.tech-link:focus-visible{outline:2px solid #20e5ff;outline-offset:4px}.eco-node[href]{text-decoration:none;color:inherit}</style>
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","@id":"https://gammsgroup.pages.dev/#website","name":"GAMMS GROUP","alternateName":"Group for Advanced Modern Multiplatform Systems","url":"https://gammsgroup.pages.dev/","inLanguage":["es","en"],"publisher":{"@id":"https://gammsgroup.pages.dev/#organization"}}</script>
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","@id":"https://gammsgroup.pages.dev/#organization","name":"GAMMS GROUP","alternateName":"Group for Advanced Modern Multiplatform Systems","url":"https://gammsgroup.pages.dev/","logo":"https://gammsgroup.pages.dev/assets/gamms-logo.webp","slogan":"Building what comes next.","description":"Technology group and multiplatform systems ecosystem developing GMA-64, SecretOS, software, services and connected digital experiences.","address":{"@type":"PostalAddress","addressLocality":"Managua","addressCountry":"NI"},"foundingLocation":{"@type":"Place","name":"Managua, Nicaragua"},"knowsAbout":["GMA-64","SecretOS","SecretOS Native","SNOSP","Junix UI","Secret Suite","Software engineering","Multiplatform systems"]}</script>
+  <title>GAMMS GROUP | We build technology</title>
+  <link rel="stylesheet" href="home-v2.css" />
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
-  <div class="noise" aria-hidden="true"></div>
-  <div class="ambient ambient-1" aria-hidden="true"></div>
-  <div class="ambient ambient-2" aria-hidden="true"></div>
-  <div class="ambient ambient-3" aria-hidden="true"></div>
+  <div class="page-noise" aria-hidden="true"></div>
+  <div class="page-glow glow-a" aria-hidden="true"></div>
+  <div class="page-glow glow-b" aria-hidden="true"></div>
 
-  <header class="site-header" id="top">
-    <nav class="nav container" aria-label="Main navigation">
-      <a href="#home" class="brand" aria-label="GAMMS GROUP">
-        <span class="brand-symbol">G</span>
-        <span class="brand-name">GAMMS GROUP</span>
+  <header class="topbar" id="topbar">
+    <div class="shell nav-shell">
+      <a class="brand" href="#home" aria-label="GAMMS GROUP home">
+        <img src="assets/gamms-logo.webp" alt="" class="brand-logo" />
+        <span>GAMMS GROUP</span>
       </a>
-      <button class="menu-btn" id="menuBtn" aria-label="Open menu" aria-expanded="false"><span></span><span></span></button>
-      <div class="nav-panel" id="navPanel">
-        <a href="#home" data-i18n="nav.home">Inicio</a>
-        <a href="#technology" data-i18n="nav.technology">Tecnología</a>
-        <a href="/secretos/">SecretOS</a>
-        <a href="#companies" data-i18n="nav.companies">Compañías</a>
-        <a href="#newsroom" data-i18n="nav.newsroom">Newsroom</a>
-        <a href="#about" data-i18n="nav.about">Nosotros</a>
-        <a href="#contact" data-i18n="nav.contact">Contacto</a>
+
+      <button class="menu-toggle" id="menuToggle" aria-label="Abrir menú" aria-expanded="false">
+        <span></span><span></span>
+      </button>
+
+      <nav class="nav-links" id="navLinks" aria-label="Navegación principal">
+        <a href="#products" data-es="Productos" data-en="Products">Productos</a>
+        <a href="#solutions" data-es="Soluciones" data-en="Solutions">Soluciones</a>
+        <a href="#research" data-es="Investigación" data-en="Research">Investigación</a>
+        <a href="#group" data-es="Grupo" data-en="Group">Grupo</a>
+      </nav>
+
+      <div class="nav-actions">
+        <button class="lang-toggle" id="langToggle" type="button">EN</button>
+        <button class="account-pill" id="accountButton" type="button">
+          <span class="account-pill-label" data-es="Get Started" data-en="Get Started">Get Started</span>
+        </button>
       </div>
-      <div class="lang-switch" role="group" aria-label="Language selector">
-        <button class="lang active" data-lang="es">ES</button><span>/</span><button class="lang" data-lang="en">EN</button>
-      </div>
-    </nav>
+    </div>
   </header>
 
   <main>
-    <section class="hero container" id="home">
-      <div class="hero-media reveal">
-        <div class="logo-aura"></div>
-        <div class="logo-ring ring-1"></div>
-        <div class="logo-ring ring-2"></div>
-        <img id="heroLogo" class="hero-logo" alt="Logotipo oficial de GAMMS GROUP" />
-      </div>
+    <section class="hero shell" id="home">
       <div class="hero-copy reveal">
-        <p class="eyebrow">GAMMS GROUP · TECHNOLOGY ECOSYSTEM</p>
-        <h1><span data-home-es="Construimos tecnología." data-home-en="We build technology.">Construimos tecnología.</span><br><span data-home-es="Del software a los sistemas." data-home-en="From software to systems.">Del software a los sistemas.</span></h1>
-        <p class="hero-subtitle" data-home-es="Creamos software, infraestructura y plataformas para empresas, dispositivos y nuevas arquitecturas. Todo conectado por un mismo ecosistema tecnológico." data-home-en="We create software, infrastructure and platforms for businesses, devices and new architectures. All connected through one technology ecosystem.">Creamos software, infraestructura y plataformas para empresas, dispositivos y nuevas arquitecturas. Todo conectado por un mismo ecosistema tecnológico.</p>
+        <div class="eyebrow-row">
+          <span class="eyebrow-dot"></span>
+          <span data-es="TECNOLOGÍA · SOFTWARE · SISTEMAS" data-en="TECHNOLOGY · SOFTWARE · SYSTEMS">TECNOLOGÍA · SOFTWARE · SISTEMAS</span>
+        </div>
+        <h1>
+          <span data-es="Construimos tecnología" data-en="We build technology">Construimos tecnología</span>
+          <em data-es="que conecta todo." data-en="that connects everything.">que conecta todo.</em>
+        </h1>
+        <p class="hero-lead" data-es="Desde aplicaciones y plataformas empresariales hasta sistemas operativos y nuevas arquitecturas. GAMMS GROUP diseña cada capa para funcionar como parte de un mismo ecosistema." data-en="From applications and enterprise platforms to operating systems and new architectures. GAMMS GROUP designs every layer to work as part of one ecosystem.">
+          Desde aplicaciones y plataformas empresariales hasta sistemas operativos y nuevas arquitecturas. GAMMS GROUP diseña cada capa para funcionar como parte de un mismo ecosistema.
+        </p>
         <div class="hero-actions">
-          <a href="#technology" class="button button-primary" data-home-es="Explorar productos" data-home-en="Explore products">Explorar productos</a>
-          <a href="#business" class="button button-secondary" data-home-es="Soluciones para empresas" data-home-en="Business solutions">Soluciones para empresas</a>
+          <button class="cta-primary js-get-started" type="button">
+            <span data-es="Get Started" data-en="Get Started">Get Started</span>
+            <span class="cta-arrow">↗</span>
+          </button>
+          <a class="cta-secondary" href="#products" data-es="Explorar tecnología" data-en="Explore technology">Explorar tecnología</a>
+        </div>
+        <div class="hero-proof">
+          <div><strong>Android · Web · Desktop</strong><span data-es="Multiplataforma" data-en="Multiplatform">Multiplataforma</span></div>
+          <div><strong>Local · Private · Connected</strong><span data-es="Infraestructura flexible" data-en="Flexible infrastructure">Infraestructura flexible</span></div>
+          <div><strong>Software → Systems</strong><span data-es="Un ecosistema" data-en="One ecosystem">Un ecosistema</span></div>
         </div>
       </div>
-      <a href="#technology" class="scroll-cue" aria-label="Scroll"><span></span></a>
-    </section>
 
-    <section class="section" id="technology">
-      <div class="container">
-        <div class="section-heading reveal">
-          <p class="eyebrow">BUILT BY GAMMS</p>
-          <h2 data-home-es="Tecnología que estamos construyendo." data-home-en="Technology we are building.">Tecnología que estamos construyendo.</h2>
-          <p data-home-es="Productos, plataformas e investigación que forman el ecosistema tecnológico de GAMMS GROUP." data-home-en="Products, platforms and research that form the GAMMS GROUP technology ecosystem.">Productos, plataformas e investigación que forman el ecosistema tecnológico de GAMMS GROUP.</p>
+      <div class="hero-stage reveal" aria-label="GAMMS technology ecosystem preview">
+        <div class="stage-grid"></div>
+        <div class="stage-orbit orbit-one"></div>
+        <div class="stage-orbit orbit-two"></div>
+        <div class="stage-core">
+          <img src="assets/gamms-logo.webp" alt="GAMMS GROUP" />
+          <span>GAMMS</span>
         </div>
-        <div class="tech-grid">
-          <article class="tech-card tech-services reveal"><div class="tech-visual"><div class="network"><span></span><span></span><span></span><span></span><i></i></div></div><div class="tech-body"><span class="status">Enterprise</span><h3>GAMMS MDM</h3><p data-home-es="Administración empresarial de dispositivos, políticas, seguridad y ubicación, diseñada para operar también dentro de la infraestructura del cliente." data-home-en="Enterprise device management, policies, security and location, designed to also run inside customer infrastructure.">Administración empresarial de dispositivos, políticas, seguridad y ubicación, diseñada para operar también dentro de la infraestructura del cliente.</p></div></article>
-          <article class="tech-card tech-junix reveal"><div class="tech-visual"><div class="glass-window"><div class="glass-top"></div><div class="glass-content"></div><div class="glass-dock"><i></i><i></i><i></i><i></i></div></div></div><div class="tech-body"><span class="status">Multiplatform</span><h3>GAMMS.UI</h3><p data-home-es="Toolkit y sistema de diseño para crear interfaces GAMMS consistentes y adaptables entre plataformas." data-home-en="A toolkit and design system for building consistent, adaptive GAMMS interfaces across platforms.">Toolkit y sistema de diseño para crear interfaces GAMMS consistentes y adaptables entre plataformas.</p></div></article>
-          <a href="/gma-64/" class="tech-card tech-gma reveal tech-link" aria-label="Explorar GMA-64"><div class="tech-visual"><div class="cpu"><i></i><b>64</b><em>GMA</em></div></div><div class="tech-body"><span class="status">Architecture · R&amp;D</span><h3>GMA-64 ↗</h3><p data-home-es="Arquitectura computacional propia y entorno de investigación con ensamblador, emulación y evolución de ISA." data-home-en="A proprietary computing architecture and research environment spanning assembly, emulation and ISA evolution.">Arquitectura computacional propia y entorno de investigación con ensamblador, emulación y evolución de ISA.</p></div></a>
-          <a href="/secretos/" class="tech-card tech-secretos reveal tech-link" aria-label="Explorar SecretOS"><div class="tech-visual"><div class="phone"><div class="phone-screen"><span class="secret-orb"></span><small>SecretOS</small></div></div></div><div class="tech-body"><span class="status">Operating system</span><h3>SecretOS ↗</h3><p data-home-es="Sistema operativo desarrollado alrededor del ecosistema GAMMS, con enfoque en continuidad, control y experiencia de plataforma." data-home-en="An operating system developed around the GAMMS ecosystem, focused on continuity, control and platform experience.">Sistema operativo desarrollado alrededor del ecosistema GAMMS, con enfoque en continuidad, control y experiencia de plataforma.</p></div></a>
-          <article class="tech-card tech-services reveal"><div class="tech-visual"><div class="network"><span></span><span></span><span></span><span></span><i></i></div></div><div class="tech-body"><span class="status">APIs · Infrastructure</span><h3>GAMMS Services</h3><p data-home-es="APIs, identidad, conectividad e infraestructura compartida para productos GAMMS y soluciones de clientes." data-home-en="APIs, identity, connectivity and shared infrastructure for GAMMS products and customer solutions.">APIs, identidad, conectividad e infraestructura compartida para productos GAMMS y soluciones de clientes.</p></div></article>
-          <article class="tech-card tech-suite reveal"><div class="tech-visual"><div class="suite-icons"><span>AP</span><span>WEB</span><span>PC</span><span>SV</span></div></div><div class="tech-body"><span class="status">Applications</span><h3>GAMMS Apps</h3><p data-home-es="Aplicaciones móviles, web, escritorio y servicios creados para nuestro ecosistema y para necesidades empresariales reales." data-home-en="Mobile, web, desktop and service applications built for our ecosystem and real business needs.">Aplicaciones móviles, web, escritorio y servicios creados para nuestro ecosistema y para necesidades empresariales reales.</p></div></article>
-        </div>
-      </div>
-    </section>
 
-    <section class="section section-tight" id="layers">
-      <div class="container reveal">
-        <div class="section-heading center">
-          <p class="eyebrow">ONE ECOSYSTEM</p>
-          <h2 data-home-es="Desde la interfaz hasta la arquitectura." data-home-en="From interface to architecture.">Desde la interfaz hasta la arquitectura.</h2>
-          <p data-home-es="No pensamos cada producto como una pieza aislada. Software, infraestructura e investigación comparten tecnología, servicios y una misma dirección." data-home-en="We do not treat each product as an isolated piece. Software, infrastructure and research share technology, services and one direction.">No pensamos cada producto como una pieza aislada. Software, infraestructura e investigación comparten tecnología, servicios y una misma dirección.</p>
-        </div>
-        <div class="system-stack" aria-label="GAMMS technology stack">
-          <div class="stack-layer layer-experience" data-depth="4"><span>Experiences</span><strong>GAMMS.UI · Apps</strong></div>
-          <div class="stack-layer layer-os" data-depth="3"><span>Systems</span><strong><a href="/secretos/" style="color:inherit;text-decoration:none">SecretOS</a> · GAMMS MDM</strong></div>
-          <div class="stack-layer layer-platform" data-depth="2"><span>Services</span><strong>APIs · Identity · Connectivity</strong></div>
-          <div class="stack-layer layer-arch" data-depth="1"><span>Research</span><strong><a href="/gma-64/" style="color:inherit;text-decoration:none">GMA-64</a> · Computing</strong></div>
-          <div class="stack-layer layer-infra" data-depth="0"><span>Foundation</span><strong>GAMMS GROUP</strong></div>
-        </div>
-      </div>
-    </section>
-
-    <section class="section ecosystem-section" id="ecosystem">
-      <div class="container ecosystem-layout">
-        <div class="section-heading reveal"><p class="eyebrow" data-i18n="ecosystem.kicker">THE GAMMS ECOSYSTEM</p><h2 data-home-es="Un grupo. Diferentes tecnologías. Una dirección." data-home-en="One group. Different technologies. One direction.">Un grupo. Diferentes tecnologías. Una dirección.</h2><p data-home-es="El ecosistema conecta investigación, sistemas, servicios, productos digitales y compañías alrededor de una base tecnológica compartida." data-home-en="The ecosystem connects research, systems, services, digital products and companies around a shared technology foundation.">El ecosistema conecta investigación, sistemas, servicios, productos digitales y compañías alrededor de una base tecnológica compartida.</p></div>
-        <div class="ecosystem-map reveal" id="ecosystemMap">
-          <svg class="map-lines" viewBox="0 0 700 700" aria-hidden="true"><g><line x1="350" y1="350" x2="350" y2="90"/><line x1="350" y1="350" x2="555" y2="165"/><line x1="350" y1="350" x2="610" y2="350"/><line x1="350" y1="350" x2="545" y2="540"/><line x1="350" y1="350" x2="350" y2="610"/><line x1="350" y1="350" x2="155" y2="540"/><line x1="350" y1="350" x2="90" y2="350"/><line x1="350" y1="350" x2="155" y2="165"/></g></svg>
-          <button class="eco-node center-node" data-node="group"><strong>GAMMS</strong><small>GROUP</small></button><a class="eco-node n1" data-node="secretos" href="/secretos/">SecretOS</a><a class="eco-node n2" data-node="gma" href="/gma-64/">GMA-64</a><button class="eco-node n3" data-node="mobile">Mobile</button><button class="eco-node n4" data-node="credit">Credit</button><button class="eco-node n5" data-node="nog">NOG</button><button class="eco-node n6" data-node="aero">Aerospace</button><button class="eco-node n7" data-node="ent">Entertainment</button><button class="eco-node n8" data-node="services">Services</button>
-          <div class="map-info" id="mapInfo"><strong>GAMMS GROUP</strong><span data-i18n="ecosystem.defaultInfo">Centro estratégico del ecosistema.</span></div>
-        </div>
+        <a href="#products" class="floating-card card-mdm">
+          <span class="floating-icon">M</span>
+          <div><strong>GAMMS MDM</strong><small>Enterprise Device Platform</small></div>
+          <i>↗</i>
+        </a>
+        <a href="#products" class="floating-card card-ui">
+          <span class="floating-icon glass">UI</span>
+          <div><strong>GAMMS.UI</strong><small>Multiplatform Design System</small></div>
+          <i>↗</i>
+        </a>
+        <a href="/gma-64/" class="floating-card card-gma">
+          <span class="floating-icon chip">64</span>
+          <div><strong>GMA-64</strong><small>Architecture · R&amp;D</small></div>
+          <i>↗</i>
+        </a>
+        <a href="/secretos/" class="floating-card card-secret">
+          <span class="floating-icon secret">S</span>
+          <div><strong>SecretOS</strong><small>Operating System</small></div>
+          <i>↗</i>
+        </a>
       </div>
     </section>
 
-    <section class="section philosophy" id="business">
-      <div class="container">
-        <div class="section-heading center reveal"><p class="eyebrow">TECHNOLOGY FOR REAL BUSINESSES</p><h2 data-home-es="Tecnología que se adapta a la empresa." data-home-en="Technology that adapts to the business.">Tecnología que se adapta a la empresa.</h2><p data-home-es="Construimos soluciones que pueden integrarse con infraestructura existente, operar localmente y conectarse a servicios externos cuando realmente hacen falta." data-home-en="We build solutions that can integrate with existing infrastructure, operate locally and connect to external services only when they are actually needed.">Construimos soluciones que pueden integrarse con infraestructura existente, operar localmente y conectarse a servicios externos cuando realmente hacen falta.</p></div>
-        <div class="philosophy-grid">
-          <article class="principle reveal"><span>01</span><h3>Device Management</h3><p data-home-es="Administración, políticas, seguridad, aplicaciones y geolocalización de dispositivos empresariales." data-home-en="Management, policies, security, applications and geolocation for enterprise devices.">Administración, políticas, seguridad, aplicaciones y geolocalización de dispositivos empresariales.</p></article>
-          <article class="principle reveal"><span>02</span><h3>Business Software</h3><p data-home-es="Sistemas web, escritorio, móvil y automatización diseñados alrededor del proceso real del cliente." data-home-en="Web, desktop, mobile and automation systems designed around the customer's real workflow.">Sistemas web, escritorio, móvil y automatización diseñados alrededor del proceso real del cliente.</p></article>
-          <article class="principle reveal"><span>03</span><h3>Infrastructure &amp; Integration</h3><p data-home-es="APIs, servicios, bases de datos, integración entre sistemas y despliegues privados o locales." data-home-en="APIs, services, databases, system integrations and private or local deployments.">APIs, servicios, bases de datos, integración entre sistemas y despliegues privados o locales.</p></article>
-          <article class="principle reveal"><span>04</span><h3>Built to evolve</h3><p data-home-es="Arquitecturas pensadas para crecer por módulos sin obligar a reemplazar todo el sistema." data-home-en="Architectures designed to grow in modules without forcing a full system replacement.">Arquitecturas pensadas para crecer por módulos sin obligar a reemplazar todo el sistema.</p></article>
+    <section class="marquee-section" aria-hidden="true">
+      <div class="marquee-track">
+        <span>SOFTWARE</span><i>✦</i><span>INFRASTRUCTURE</span><i>✦</i><span>RESEARCH</span><i>✦</i><span>PLATFORMS</span><i>✦</i><span>SECURITY</span><i>✦</i><span>DESIGN SYSTEMS</span><i>✦</i>
+        <span>SOFTWARE</span><i>✦</i><span>INFRASTRUCTURE</span><i>✦</i><span>RESEARCH</span><i>✦</i><span>PLATFORMS</span><i>✦</i><span>SECURITY</span><i>✦</i><span>DESIGN SYSTEMS</span><i>✦</i>
+      </div>
+    </section>
+
+    <section class="section shell" id="products">
+      <div class="section-head reveal">
+        <div>
+          <span class="section-kicker">BUILT BY GAMMS</span>
+          <h2 data-es="Productos que comparten una misma dirección." data-en="Products moving in one direction.">Productos que comparten una misma dirección.</h2>
+        </div>
+        <p data-es="Cada producto resuelve un problema distinto, pero todos comparten infraestructura, identidad visual y una visión de largo plazo." data-en="Each product solves a different problem, but they share infrastructure, visual identity and a long-term vision.">Cada producto resuelve un problema distinto, pero todos comparten infraestructura, identidad visual y una visión de largo plazo.</p>
+      </div>
+
+      <div class="bento-grid">
+        <article class="bento bento-large product-mdm reveal">
+          <div class="bento-topline"><span>01</span><span>ENTERPRISE</span></div>
+          <div class="mdm-visual">
+            <div class="device-card device-one"><span></span><strong>Managed</strong><small>Android Device</small></div>
+            <div class="device-card device-two"><span></span><strong>Live</strong><small>Location</small></div>
+            <div class="device-card device-three"><span></span><strong>Policy</strong><small>Applied</small></div>
+          </div>
+          <div class="bento-copy">
+            <h3>GAMMS MDM</h3>
+            <p data-es="Administración empresarial de dispositivos, políticas, seguridad, aplicaciones y ubicación en tiempo real." data-en="Enterprise device management, policies, security, apps and real-time location.">Administración empresarial de dispositivos, políticas, seguridad, aplicaciones y ubicación en tiempo real.</p>
+          </div>
+        </article>
+
+        <article class="bento product-ui reveal">
+          <div class="bento-topline"><span>02</span><span>MULTIPLATFORM</span></div>
+          <div class="ui-visual">
+            <div class="ui-window">
+              <span class="ui-pill"></span>
+              <div class="ui-lines"><i></i><i></i><i></i></div>
+              <div class="ui-dock"><b></b><b></b><b></b></div>
+            </div>
+          </div>
+          <div class="bento-copy"><h3>GAMMS.UI</h3><p data-es="Componentes, materiales y tokens para construir interfaces GAMMS coherentes." data-en="Components, materials and tokens for consistent GAMMS interfaces.">Componentes, materiales y tokens para construir interfaces GAMMS coherentes.</p></div>
+        </article>
+
+        <a class="bento product-secret reveal" href="/secretos/">
+          <div class="bento-topline"><span>03</span><span>OPERATING SYSTEM</span></div>
+          <div class="secret-visual"><div class="secret-sphere"></div><div class="secret-ring"></div></div>
+          <div class="bento-copy"><h3>SecretOS <span>↗</span></h3><p data-es="Un sistema operativo dentro del ecosistema GAMMS." data-en="An operating system inside the GAMMS ecosystem.">Un sistema operativo dentro del ecosistema GAMMS.</p></div>
+        </a>
+
+        <a class="bento bento-wide product-gma reveal" href="/gma-64/">
+          <div class="gma-chip"><span>GMA</span><strong>64</strong><small>ARCHITECTURE</small></div>
+          <div class="bento-copy"><div class="bento-topline"><span>04</span><span>COMPUTING R&amp;D</span></div><h3>GMA-64 <span>↗</span></h3><p data-es="Arquitectura, ISA, ensamblador y emulación: investigación desde debajo del software." data-en="Architecture, ISA, assembler and emulation: research beneath the software layer.">Arquitectura, ISA, ensamblador y emulación: investigación desde debajo del software.</p></div>
+        </a>
+      </div>
+    </section>
+
+    <section class="section section-soft" id="solutions">
+      <div class="shell">
+        <div class="section-head reveal">
+          <div><span class="section-kicker">FOR BUSINESS</span><h2 data-es="Tecnología para operaciones reales." data-en="Technology for real operations.">Tecnología para operaciones reales.</h2></div>
+          <p data-es="Construimos soluciones capaces de vivir en la infraestructura del cliente, conectarse a servicios externos cuando hace falta y adaptarse a procesos concretos." data-en="We build solutions that can live inside customer infrastructure, connect to external services when needed and adapt to concrete workflows.">Construimos soluciones capaces de vivir en la infraestructura del cliente, conectarse a servicios externos cuando hace falta y adaptarse a procesos concretos.</p>
+        </div>
+
+        <div class="solution-grid">
+          <article class="solution-card reveal"><span class="solution-number">01</span><h3 data-es="Device Management" data-en="Device Management">Device Management</h3><p data-es="Dispositivos, políticas, seguridad, geolocalización y operación de flotas." data-en="Devices, policies, security, geolocation and fleet operations.">Dispositivos, políticas, seguridad, geolocalización y operación de flotas.</p><div class="solution-tags"><span>Android</span><span>MDM</span><span>Realtime</span></div></article>
+          <article class="solution-card reveal"><span class="solution-number">02</span><h3 data-es="Business Software" data-en="Business Software">Business Software</h3><p data-es="Aplicaciones web, escritorio y móviles conectadas a procesos empresariales." data-en="Web, desktop and mobile applications connected to business workflows.">Aplicaciones web, escritorio y móviles conectadas a procesos empresariales.</p><div class="solution-tags"><span>Web</span><span>Desktop</span><span>Mobile</span></div></article>
+          <article class="solution-card reveal"><span class="solution-number">03</span><h3 data-es="Infrastructure & Integration" data-en="Infrastructure & Integration">Infrastructure & Integration</h3><p data-es="APIs, automatización, despliegues privados y conexión entre sistemas." data-en="APIs, automation, private deployments and system integration.">APIs, automatización, despliegues privados y conexión entre sistemas.</p><div class="solution-tags"><span>API</span><span>Private</span><span>Cloud</span></div></article>
         </div>
       </div>
     </section>
 
-    <section class="section timeline-section" id="research"><div class="container"><div class="section-heading reveal"><p class="eyebrow">RESEARCH AT GAMMS</p><h2 data-home-es="No solo construimos aplicaciones." data-home-en="We do not only build applications.">No solo construimos aplicaciones.</h2><p data-home-es="También exploramos las capas que están debajo: arquitectura, sistemas operativos, herramientas de desarrollo y nuevas formas de construir software." data-home-en="We also explore the layers underneath: architecture, operating systems, development tools and new ways to build software.">También exploramos las capas que están debajo: arquitectura, sistemas operativos, herramientas de desarrollo y nuevas formas de construir software.</p></div><div class="timeline reveal"><div class="timeline-item current"><time>GMA-64</time><div><h3 data-home-es="Arquitectura e ISA" data-home-en="Architecture and ISA">Arquitectura e ISA</h3><p data-home-es="Investigación sobre una arquitectura propia, su ensamblador, emulador y toolchain." data-home-en="Research into a proprietary architecture, assembler, emulator and toolchain.">Investigación sobre una arquitectura propia, su ensamblador, emulador y toolchain.</p></div></div><div class="timeline-item current"><time>SecretOS</time><div><h3 data-home-es="Sistemas operativos" data-home-en="Operating systems">Sistemas operativos</h3><p data-home-es="Desarrollo de una plataforma de sistema operativo que pueda evolucionar junto al ecosistema GAMMS." data-home-en="Development of an operating-system platform that can evolve with the GAMMS ecosystem.">Desarrollo de una plataforma de sistema operativo que pueda evolucionar junto al ecosistema GAMMS.</p></div></div><div class="timeline-item current"><time>SL</time><div><h3>Secret Language</h3><p data-home-es="Exploración de un lenguaje y herramientas capaces de integrarse progresivamente en nuestras plataformas." data-home-en="Exploration of a language and tooling that can progressively integrate into our platforms.">Exploración de un lenguaje y herramientas capaces de integrarse progresivamente en nuestras plataformas.</p></div></div><div class="timeline-item future"><time>R&amp;D</time><div><h3 data-home-es="Lo que sigue" data-home-en="What comes next">Lo que sigue</h3><p data-home-es="Nuevas tecnologías se incorporarán cuando tengan una dirección técnica clara y resultados que podamos mostrar." data-home-en="New technologies will be added when they have a clear technical direction and results we can show.">Nuevas tecnologías se incorporarán cuando tengan una dirección técnica clara y resultados que podamos mostrar.</p></div></div></div></div></section>
+    <section class="section shell research-layout" id="research">
+      <div class="research-copy reveal">
+        <span class="section-kicker">RESEARCH AT GAMMS</span>
+        <h2 data-es="No solo construimos sobre plataformas. También exploramos lo que hay debajo." data-en="We do not only build on platforms. We explore what is underneath.">No solo construimos sobre plataformas. También exploramos lo que hay debajo.</h2>
+        <p data-es="Nuestra investigación abarca arquitectura computacional, sistemas operativos, lenguajes y herramientas que pueden convertirse en las bases de futuras plataformas GAMMS." data-en="Our research spans computer architecture, operating systems, languages and tools that can become foundations for future GAMMS platforms.">Nuestra investigación abarca arquitectura computacional, sistemas operativos, lenguajes y herramientas que pueden convertirse en las bases de futuras plataformas GAMMS.</p>
+        <a href="/gma-64/" class="text-link" data-es="Explorar GMA-64 →" data-en="Explore GMA-64 →">Explorar GMA-64 →</a>
+      </div>
+      <div class="research-console reveal">
+        <div class="console-bar"><span></span><span></span><span></span><b>gamms://research</b></div>
+        <div class="console-body">
+          <p><span>&gt;</span> load architecture/GMA-64</p>
+          <p class="dim">ISA · emulator · assembler · toolchain</p>
+          <p><span>&gt;</span> load systems/SecretOS</p>
+          <p class="dim">platform · security · continuity · UX</p>
+          <p><span>&gt;</span> load languages/SL</p>
+          <p class="dim">compiler · native targets · research</p>
+          <p class="console-ready">SYSTEM READY <i></i></p>
+        </div>
+      </div>
+    </section>
 
-    <section class="section" id="companies"><div class="container"><div class="section-heading reveal"><p class="eyebrow" data-i18n="companies.kicker">OUR COMPANIES</p><h2 data-i18n="companies.title">Identidades propias. Una visión compartida.</h2><p data-home-es="GAMMS GROUP reúne compañías y marcas con enfoques diferentes, conectadas por tecnología, diseño e ingeniería compartida." data-home-en="GAMMS GROUP brings together companies and brands with different focuses, connected through shared technology, design and engineering.">GAMMS GROUP reúne compañías y marcas con enfoques diferentes, conectadas por tecnología, diseño e ingeniería compartida.</p></div><div class="company-grid" id="companyGrid"></div></div></section>
+    <section class="section section-soft" id="group">
+      <div class="shell">
+        <div class="section-head reveal">
+          <div><span class="section-kicker">THE GROUP</span><h2 data-es="Una estructura para construir más de una cosa." data-en="A structure built for more than one thing.">Una estructura para construir más de una cosa.</h2></div>
+          <p data-es="GAMMS GROUP reúne investigación, productos digitales, software empresarial, servicios de plataforma y nuevas iniciativas bajo una misma dirección tecnológica." data-en="GAMMS GROUP brings together research, digital products, enterprise software, platform services and new initiatives under one technology direction.">GAMMS GROUP reúne investigación, productos digitales, software empresarial, servicios de plataforma y nuevas iniciativas bajo una misma dirección tecnológica.</p>
+        </div>
+        <div class="group-grid">
+          <article class="group-card reveal"><span>01</span><strong>GAMMS Secret Labs</strong><small data-es="Investigación y tecnología" data-en="Research & technology">Investigación y tecnología</small></article>
+          <article class="group-card reveal"><span>02</span><strong>GAMMS Secret Studios</strong><small data-es="Productos digitales" data-en="Digital products">Productos digitales</small></article>
+          <article class="group-card reveal"><span>03</span><strong>Expertum Solutions</strong><small data-es="Software empresarial" data-en="Enterprise software">Software empresarial</small></article>
+          <article class="group-card reveal"><span>04</span><strong>GAMMS Services</strong><small data-es="Servicios e infraestructura" data-en="Services & infrastructure">Servicios e infraestructura</small></article>
+        </div>
+      </div>
+    </section>
 
-    <section class="managua-section" id="about"><div class="managua-art" aria-hidden="true"><div class="moon"></div><div class="mountain mountain-a"></div><div class="mountain mountain-b"></div><div class="cityline"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="lake"></div></div><div class="container managua-copy reveal"><p class="eyebrow">GAMMS GROUP · MANAGUA · NICARAGUA</p><h2 data-i18n="managua.title">Engineered from Managua. Designed for the world.</h2><p data-home-es="Construimos desde Managua con una visión que no está limitada por una plataforma, una industria o una frontera." data-home-en="We build from Managua with a vision that is not limited by one platform, one industry or one border.">Construimos desde Managua con una visión que no está limitada por una plataforma, una industria o una frontera.</p></div></section>
-
-    <section class="section newsroom" id="newsroom"><div class="container"><div class="section-heading reveal"><p class="eyebrow">GAMMS NEWSROOM</p><h2 data-i18n="news.title">Actualizaciones del grupo.</h2><p data-i18n="news.copy">Un espacio para anuncios oficiales, avances y publicaciones del ecosistema GAMMS.</p></div><div class="news-grid"><article class="news-card reveal"><div class="news-visual news-web"><span>G</span></div><div class="news-body"><time>SEP 2026</time><h3 data-i18n="news.n1t">GAMMS GROUP estrena presencia web corporativa.</h3><p data-i18n="news.n1c">La primera versión reúne identidad, tecnologías, compañías y visión del grupo en un solo sitio.</p><a href="#home" data-i18n="news.read">Leer actualización →</a></div></article><article class="news-card reveal"><div class="news-visual news-gma"><span>64</span></div><div class="news-body"><time>2026</time><h3 data-i18n="news.n2t">GMA-64 continúa su fase de desarrollo.</h3><p data-i18n="news.n2c">La documentación y el roadmap evolucionan junto al emulador, ensamblador y pruebas de la arquitectura.</p><a href="/gma-64/" data-i18n="news.explore">Explorar tecnología →</a></div></article><article class="news-card reveal"><div class="news-visual news-secret"><span>S</span></div><div class="news-body"><time>2026</time><h3 data-i18n="news.n3t">Secret ecosystem toma forma como plataforma conectada.</h3><p data-i18n="news.n3c">SecretOS, Secret Suite y servicios compartidos avanzan como partes de una experiencia coherente.</p><a href="/secretos/" data-i18n="news.exploreEco">Explorar SecretOS →</a></div></article></div></div></section>
-
-    <section class="section careers" id="careers"><div class="container careers-card reveal"><div><p class="eyebrow">BUILD WITH GAMMS</p><h2 data-home-es="Software, plataformas e infraestructura alrededor de necesidades reales." data-home-en="Software, platforms and infrastructure around real needs.">Software, plataformas e infraestructura alrededor de necesidades reales.</h2><p data-home-es="Desde una aplicación empresarial hasta administración de dispositivos o investigación de sistemas: construimos por capas y pensamos a largo plazo." data-home-en="From enterprise applications to device management or systems research: we build in layers and think long term.">Desde una aplicación empresarial hasta administración de dispositivos o investigación de sistemas: construimos por capas y pensamos a largo plazo.</p></div><a href="#contact" class="button button-primary" data-home-es="Contactar GAMMS GROUP" data-home-en="Contact GAMMS GROUP">Contactar GAMMS GROUP</a></div></section>
-
-    <section class="section contact" id="contact"><div class="container contact-grid"><div class="section-heading reveal"><p class="eyebrow" data-i18n="contact.kicker">CONTACT GAMMS GROUP</p><h2 data-i18n="contact.title">Una conversación puede ser el comienzo.</h2><p data-i18n="contact.copy">Selecciona el motivo y escribe tu mensaje. El formulario abrirá tu aplicación de correo para que tú decidas cuándo enviarlo.</p><div class="contact-tags"><span>Business</span><span>Press</span><span>Developers</span><span>Partnerships</span><span>General</span></div></div><form class="contact-form reveal" id="contactForm"><label><span data-i18n="contact.name">Nombre</span><input id="contactName" name="name" autocomplete="name" required /></label><label><span data-i18n="contact.email">Correo</span><input id="contactEmail" name="email" type="email" autocomplete="email" required /></label><label><span data-i18n="contact.topic">Motivo</span><select id="contactTopic" name="topic"><option>Business</option><option>Press</option><option>Developers</option><option>Partnerships</option><option>General</option></select></label><label><span data-i18n="contact.message">Mensaje</span><textarea id="contactMessage" name="message" rows="6" required></textarea></label><button class="button button-primary" type="submit" data-i18n="contact.send">Preparar correo</button><p class="form-note" data-i18n="contact.note">No se envía nada automáticamente.</p></form></div></section>
-
-    <script>
-      (()=>{const applyHomeLanguage=lang=>document.querySelectorAll('[data-home-es][data-home-en]').forEach(el=>{el.textContent=el.getAttribute(lang==='en'?'data-home-en':'data-home-es')});applyHomeLanguage(localStorage.getItem('gamms-lang')||'es');document.querySelectorAll('.lang').forEach(btn=>btn.addEventListener('click',()=>applyHomeLanguage(btn.dataset.lang)));})();
-    </script>
+    <section class="section shell">
+      <div class="final-cta reveal">
+        <div class="final-cta-orb"></div>
+        <span class="section-kicker">GAMMS ACCOUNT</span>
+        <h2 data-es="Empieza con una cuenta GAMMS." data-en="Start with a GAMMS account.">Empieza con una cuenta GAMMS.</h2>
+        <p data-es="Una identidad para acceder gradualmente a productos, documentación, experiencias y servicios del ecosistema." data-en="One identity for future access to products, documentation, experiences and ecosystem services.">Una identidad para acceder gradualmente a productos, documentación, experiencias y servicios del ecosistema.</p>
+        <button class="cta-primary js-get-started" type="button"><span data-es="Get Started" data-en="Get Started">Get Started</span><span class="cta-arrow">↗</span></button>
+      </div>
+    </section>
   </main>
 
-  <footer class="footer"><div class="container footer-top"><div class="footer-brand-block"><span class="brand-symbol large">G</span><div><strong>GAMMS GROUP</strong><p>Group for Advanced Modern Multiplatform Systems · Managua, Nicaragua</p></div></div><div class="footer-columns"><div><h4 data-i18n="footer.company">Company</h4><a href="#about" data-i18n="nav.about">Nosotros</a><a href="#companies" data-i18n="nav.companies">Compañías</a><a href="#careers">Careers</a></div><div><h4 data-i18n="footer.tech">Technologies</h4><a href="/gma-64/">GMA-64</a><a href="/secretos/">SecretOS</a><a href="#technology">Secret Suite</a></div><div><h4 data-i18n="footer.resources">Resources</h4><a href="#newsroom">Newsroom</a><a href="#research">Research</a><a href="#contact" data-i18n="nav.contact">Contacto</a></div><div><h4>Legal</h4><a href="#" data-i18n="footer.privacy">Privacy</a><a href="#" data-i18n="footer.terms">Terms</a></div></div></div><div class="container footer-bottom"><span>GAMMS GROUP · Managua, Nicaragua</span><span>© <b id="year"></b> GAMMS GROUP</span><div class="lang-switch footer-lang"><button class="lang active" data-lang="es">ES</button><span>/</span><button class="lang" data-lang="en">EN</button></div></div></footer>
+  <footer class="footer">
+    <div class="shell footer-main">
+      <div class="footer-brand"><img src="assets/gamms-logo.webp" alt="" /><div><strong>GAMMS GROUP</strong><span>Group for Advanced Modular Multiplatform Systems</span></div></div>
+      <div class="footer-links">
+        <a href="#products">Products</a><a href="#solutions">Solutions</a><a href="#research">Research</a><a href="#group">Group</a><a href="#home">Back to top ↑</a>
+      </div>
+    </div>
+    <div class="shell footer-bottom"><span>Managua, Nicaragua</span><span>© <b id="year"></b> GAMMS GROUP</span></div>
+  </footer>
 
-  <dialog class="company-modal" id="companyModal"><button class="modal-close" id="modalClose" aria-label="Close">×</button><div class="modal-accent" id="modalAccent"></div><p class="eyebrow" id="modalSector"></p><h2 id="modalName"></h2><p class="modal-summary" id="modalSummary"></p><div class="modal-columns"><div><h4 data-i18n="labels.mission">Misión</h4><p id="modalMission"></p></div><div><h4 data-i18n="labels.vision">Visión</h4><p id="modalVision"></p></div></div><div class="modal-products"><h4 data-i18n="labels.focus">Enfoque / proyectos</h4><div id="modalProducts"></div></div></dialog>
-  <script src="app.js"></script>
+  <dialog class="account-dialog" id="accountDialog">
+    <button class="dialog-close" id="accountClose" type="button" aria-label="Cerrar">×</button>
+    <div class="account-brand"><img src="assets/gamms-logo.webp" alt="" /><span>GAMMS ACCOUNT</span></div>
+
+    <div id="signedOutView">
+      <h2 data-es="Tu cuenta GAMMS empieza aquí." data-en="Your GAMMS account starts here.">Tu cuenta GAMMS empieza aquí.</h2>
+      <p data-es="Usa tu cuenta de Google. No necesitas crear otra contraseña." data-en="Use your Google account. No extra password required.">Usa tu cuenta de Google. No necesitas crear otra contraseña.</p>
+      <div class="google-button-wrap" id="googleButton"></div>
+      <p class="auth-status" id="authStatus" aria-live="polite"></p>
+      <small data-es="Al continuar, se crea una cuenta GAMMS vinculada a tu identidad de Google." data-en="Continuing creates a GAMMS account linked to your Google identity.">Al continuar, se crea una cuenta GAMMS vinculada a tu identidad de Google.</small>
+    </div>
+
+    <div id="signedInView" hidden>
+      <div class="profile-block"><img id="profileAvatar" alt="" /><div><span data-es="Sesión iniciada" data-en="Signed in">Sesión iniciada</span><h2 id="profileName">GAMMS User</h2><p id="profileEmail"></p></div></div>
+      <div class="profile-note" data-es="Tu cuenta ya está lista para futuros servicios del ecosistema GAMMS." data-en="Your account is ready for future GAMMS ecosystem services.">Tu cuenta ya está lista para futuros servicios del ecosistema GAMMS.</div>
+      <button class="logout-button" id="logoutButton" type="button" data-es="Cerrar sesión" data-en="Sign out">Cerrar sesión</button>
+    </div>
+  </dialog>
+
+  <script src="home-v2.js"></script>
 </body>
 </html>
