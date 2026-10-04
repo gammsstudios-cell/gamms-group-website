@@ -90,7 +90,8 @@ function closeAccountDialog() {
 }
 
 function escapeHtml(value = '') {
-  return String(value).replace(/[&<>'\"]/g, (char) => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','\"':'&quot;'}[char]));
+  const entities = {'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'};
+  return String(value).replace(/[&<>'"]/g, (char) => entities[char]);
 }
 
 function setUser(user) {
@@ -106,12 +107,12 @@ function setUser(user) {
     renderIdentityNote();
 
     accountButton.classList.add('signed-in');
-    accountButton.innerHTML = `${state.user.picture ? `<img src=\"${escapeHtml(state.user.picture)}\" alt=\"\">` : ''}<span class=\"account-pill-label\">${escapeHtml((state.user.name || 'Account').split(' ')[0])}</span>`;
+    accountButton.innerHTML = `${state.user.picture ? `<img src="${escapeHtml(state.user.picture)}" alt="">` : ''}<span class="account-pill-label">${escapeHtml((state.user.name || 'Account').split(' ')[0])}</span>`;
   } else {
     signedOutView.hidden = false;
     signedInView.hidden = true;
     accountButton.classList.remove('signed-in');
-    accountButton.innerHTML = '<span class=\"account-pill-label\">Get Started</span>';
+    accountButton.innerHTML = '<span class="account-pill-label">Get Started</span>';
   }
 }
 
