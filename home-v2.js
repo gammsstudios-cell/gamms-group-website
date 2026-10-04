@@ -22,6 +22,40 @@ const googleButton = qs('#googleButton');
 
 qs('#year').textContent = new Date().getFullYear();
 
+function setBilingual(el, es, en) {
+  if (!el) return;
+  el.dataset.es = es;
+  el.dataset.en = en;
+  el.textContent = state.lang === 'es' ? es : en;
+}
+
+function configureSecretIdUi() {
+  const brand = qs('.account-brand span');
+  if (brand) brand.textContent = 'SECRET ID';
+
+  setBilingual(qs('h2', signedOutView), 'Tu Secret ID empieza aquí.', 'Your Secret ID starts here.');
+  setBilingual(
+    qs('p:not(.auth-status)', signedOutView),
+    'Continúa con Google para crear o acceder a tu Secret ID. No necesitas otra contraseña.',
+    'Continue with Google to create or access your Secret ID. No extra password required.',
+  );
+  setBilingual(
+    qs('small', signedOutView),
+    'Google verifica tu identidad y vincula tu correo; tu cuenta dentro del ecosistema es Secret ID.',
+    'Google verifies your identity and links your email; your account inside the ecosystem is Secret ID.',
+  );
+
+  const profileLabel = qs('.profile-block span', signedInView);
+  if (profileLabel) profileLabel.textContent = 'Secret ID';
+
+  const finalCta = qs('.final-cta');
+  if (finalCta) {
+    const kicker = qs('.section-kicker', finalCta);
+    if (kicker) kicker.textContent = 'SECRET ID';
+    setBilingual(qs('h2', finalCta), 'Empieza con Secret ID.', 'Start with Secret ID.');
+  }
+}
+
 function applyLanguage() {
   document.documentElement.lang = state.lang;
   qsa('[data-es][data-en]').forEach((el) => {
@@ -31,9 +65,18 @@ function applyLanguage() {
   localStorage.setItem('gamms-lang', state.lang);
 }
 
+function renderIdentityNote() {
+  const note = qs('.profile-note', signedInView);
+  if (!note || !state.user) return;
+  const providerText = state.lang === 'es' ? 'Vinculado con Google ✓' : 'Signed with Google ✓';
+  const secretId = escapeHtml(state.user.id || '');
+  note.innerHTML = `<strong>${providerText}</strong><br><span>Secret ID</span><br><code>${secretId}</code>`;
+}
+
 function toggleLanguage() {
   state.lang = state.lang === 'es' ? 'en' : 'es';
   applyLanguage();
+  if (state.user) renderIdentityNote();
   if (state.googleReady) renderGoogleButton();
 }
 
@@ -47,7 +90,7 @@ function closeAccountDialog() {
 }
 
 function escapeHtml(value = '') {
-  return String(value).replace(/[&<>'"]/g, (char) => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
+  return String(value).replace(/[&<>'\"]/g, (char) => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','\"':'&quot;'}[char]));
 }
 
 function setUser(user) {
@@ -55,19 +98,20 @@ function setUser(user) {
   if (state.user) {
     signedOutView.hidden = true;
     signedInView.hidden = false;
-    qs('#profileName').textContent = state.user.name || 'GAMMS User';
+    qs('#profileName').textContent = state.user.name || 'Secret ID User';
     qs('#profileEmail').textContent = state.user.email || '';
     const avatar = qs('#profileAvatar');
     avatar.src = state.user.picture || 'assets/gamms-logo.webp';
-    avatar.alt = state.user.name || 'GAMMS User';
+    avatar.alt = state.user.name || 'Secret ID User';
+    renderIdentityNote();
 
     accountButton.classList.add('signed-in');
-    accountButton.innerHTML = `${state.user.picture ? `<img src="${escapeHtml(state.user.picture)}" alt="">` : ''}<span class="account-pill-label">${escapeHtml((state.user.name || 'Account').split(' ')[0])}</span>`;
+    accountButton.innerHTML = `${state.user.picture ? `<img src=\"${escapeHtml(state.user.picture)}\" alt=\"\">` : ''}<span class=\"account-pill-label\">${escapeHtml((state.user.name || 'Account').split(' ')[0])}</span>`;
   } else {
     signedOutView.hidden = false;
     signedInView.hidden = true;
     accountButton.classList.remove('signed-in');
-    accountButton.innerHTML = '<span class="account-pill-label">Get Started</span>';
+    accountButton.innerHTML = '<span class=\"account-pill-label\">Get Started</span>';
   }
 }
 
@@ -144,7 +188,7 @@ function renderGoogleButton() {
 
 async function handleGoogleCredential(response) {
   if (!response?.credential) return;
-  authStatus.textContent = state.lang === 'es' ? 'Creando tu sesión…' : 'Creating your session…';
+  authStatus.textContent = state.lang === 'es' ? 'Creando tu Secret ID…' : 'Creating your Secret ID…';
   try {
     const result = await fetch('/api/account/google', {
       method: 'POST',
@@ -208,5 +252,6 @@ const observer = new IntersectionObserver((entries) => {
 }, { threshold: .12 });
 qsa('.reveal').forEach((node) => observer.observe(node));
 
+configureSecretIdUi();
 applyLanguage();
 loadSession();
