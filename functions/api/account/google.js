@@ -1,4 +1,4 @@
-﻿const COOKIE_NAME = 'GAMMS-ACCOUNT-SESSION';
+const COOKIE_NAME = 'GAMMS-ACCOUNT-SESSION';
 const SESSION_MAX_AGE = 60 * 60 * 24 * 30;
 function json(data, init = {}) { const headers = new Headers(init.headers || {}); headers.set('Content-Type', 'application/json; charset=utf-8'); headers.set('Cache-Control', 'no-store'); return new Response(JSON.stringify(data), { ...init, headers }); }
 function publicUser(row) { return { id: row.id, email: row.email, name: row.display_name, picture: row.avatar_url || null, locale: row.locale || null }; }
@@ -92,8 +92,10 @@ export async function onRequestPost({ request, env }) {
   const name = String(claims.name || claims.given_name || email.split('@')[0]).slice(0, 160);
   const picture = claims.picture ? String(claims.picture).slice(0, 1000) : null;
   const locale = claims.locale ? String(claims.locale).slice(0, 24) : null;
+  const userAgent = String(request.headers.get('User-Agent') || '').slice(0, 600);
 
   let account = await env.ACCOUNTS_DB.prepare(`SELECT * FROM site_accounts WHERE google_sub = ?1 LIMIT 1`).bind(claims.sub).first();
+  const isNewAccount = !account;
   if (!account) {
     const id = crypto.randomUUID();
     await env.ACCOUNTS_DB.prepare(`
@@ -111,18 +113,49 @@ export async function onRequestPost({ request, env }) {
     account = await env.ACCOUNTS_DB.prepare(`SELECT * FROM site_accounts WHERE id = ?1`).bind(account.id).first();
   }
 
+  await env.ACCOUNTS_DB.prepare(`
+    INSERT INTO site_account_preferences (account_id, language)
+    VALUES (?1, ?2)
+    ON CONFLICT(account_id) DO NOTHING
+  `).bind(account.id, locale?.startsWith('en') ? 'en' : 'es').run().catch(() => {});
+
   const token = randomToken();
   const hash = await sha256(token);
   const sessionId = crypto.randomUUID();
   await env.ACCOUNTS_DB.prepare(`DELETE FROM site_account_sessions WHERE expires_at <= datetime('now')`).run();
+  try {
+    await env.ACCOUNTS_DB.prepare(`
+      INSERT INTO site_account_sessions (id, account_id, token_hash, expires_at, user_agent, auth_method)
+      VALUES (?1, ?2, ?3, datetime('now', '+30 days'), ?4, 'google')
+    `).bind(sessionId, account.id, hash, userAgent).run();
+  } catch (error) {
+    console.warn('Using legacy session schema until Secret ID migration is applied:', error?.message || error);
+    await env.ACCOUNTS_DB.prepare(`
+      INSERT INTO site_account_sessions (id, account_id, token_hash, expires_at)
+      VALUES (?1, ?2, ?3, datetime('now', '+30 days'))
+    `).bind(sessionId, account.id, hash).run();
+  }
+
   await env.ACCOUNTS_DB.prepare(`
-    INSERT INTO site_account_sessions (id, account_id, token_hash, expires_at)
-    VALUES (?1, ?2, ?3, datetime('now', '+30 days'))
-  `).bind(sessionId, account.id, hash).run();
+    INSERT INTO site_account_activity (id, account_id, event_type, summary, metadata_json)
+    VALUES (?1, ?2, ?3, ?4, ?5)
+  `).bind(
+    crypto.randomUUID(),
+    account.id,
+    isNewAccount ? 'secret_id_created' : 'sign_in',
+    isNewAccount ? 'Secret ID created with Google' : 'Signed in with Google',
+    JSON.stringify({ provider: 'google', userAgent }),
+  ).run().catch(() => {});
+
+  if (isNewAccount) {
+    await env.ACCOUNTS_DB.prepare(`
+      INSERT INTO site_account_notifications (id, account_id, notification_type, title, body)
+      VALUES (?1, ?2, 'success', 'Welcome to Secret ID', 'Your Google account is linked and your Secret ID is ready.')
+    `).bind(crypto.randomUUID(), account.id).run().catch(() => {});
+  }
 
   return json({ user: publicUser(account) }, {
     status: 200,
     headers: { 'Set-Cookie': sessionCookie(token) },
   });
 }
-
