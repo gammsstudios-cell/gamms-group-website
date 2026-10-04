@@ -1,4 +1,4 @@
-const COOKIE_NAME = 'GAMMS-ACCOUNT-SESSION';
+﻿const COOKIE_NAME = 'GAMMS-ACCOUNT-SESSION';
 const SESSION_MAX_AGE = 60 * 60 * 24 * 30;
 function json(data, init = {}) { const headers = new Headers(init.headers || {}); headers.set('Content-Type', 'application/json; charset=utf-8'); headers.set('Cache-Control', 'no-store'); return new Response(JSON.stringify(data), { ...init, headers }); }
 function publicUser(row) { return { id: row.id, email: row.email, name: row.display_name, picture: row.avatar_url || null, locale: row.locale || null }; }
@@ -71,7 +71,7 @@ function sameOrigin(request) {
 
 export async function onRequestPost({ request, env }) {
   if (!sameOrigin(request)) return json({ error: 'Cross-origin request rejected' }, { status: 403 });
-  if (!env.DB) return json({ error: 'Database unavailable' }, { status: 503 });
+  if (!env.ACCOUNTS_DB) return json({ error: 'Database unavailable' }, { status: 503 });
   if (!env.GOOGLE_CLIENT_ID) return json({ error: 'Google Sign-In is not configured' }, { status: 503 });
 
   let body;
@@ -93,29 +93,29 @@ export async function onRequestPost({ request, env }) {
   const picture = claims.picture ? String(claims.picture).slice(0, 1000) : null;
   const locale = claims.locale ? String(claims.locale).slice(0, 24) : null;
 
-  let account = await env.DB.prepare(`SELECT * FROM site_accounts WHERE google_sub = ?1 LIMIT 1`).bind(claims.sub).first();
+  let account = await env.ACCOUNTS_DB.prepare(`SELECT * FROM site_accounts WHERE google_sub = ?1 LIMIT 1`).bind(claims.sub).first();
   if (!account) {
     const id = crypto.randomUUID();
-    await env.DB.prepare(`
+    await env.ACCOUNTS_DB.prepare(`
       INSERT INTO site_accounts (id, google_sub, email, display_name, avatar_url, locale)
       VALUES (?1, ?2, ?3, ?4, ?5, ?6)
     `).bind(id, claims.sub, email, name, picture, locale).run();
-    account = await env.DB.prepare(`SELECT * FROM site_accounts WHERE id = ?1`).bind(id).first();
+    account = await env.ACCOUNTS_DB.prepare(`SELECT * FROM site_accounts WHERE id = ?1`).bind(id).first();
   } else {
-    await env.DB.prepare(`
+    await env.ACCOUNTS_DB.prepare(`
       UPDATE site_accounts
       SET email = ?1, display_name = ?2, avatar_url = ?3, locale = ?4,
           updated_at = datetime('now'), last_login_at = datetime('now')
       WHERE id = ?5
     `).bind(email, name, picture, locale, account.id).run();
-    account = await env.DB.prepare(`SELECT * FROM site_accounts WHERE id = ?1`).bind(account.id).first();
+    account = await env.ACCOUNTS_DB.prepare(`SELECT * FROM site_accounts WHERE id = ?1`).bind(account.id).first();
   }
 
   const token = randomToken();
   const hash = await sha256(token);
   const sessionId = crypto.randomUUID();
-  await env.DB.prepare(`DELETE FROM site_account_sessions WHERE expires_at <= datetime('now')`).run();
-  await env.DB.prepare(`
+  await env.ACCOUNTS_DB.prepare(`DELETE FROM site_account_sessions WHERE expires_at <= datetime('now')`).run();
+  await env.ACCOUNTS_DB.prepare(`
     INSERT INTO site_account_sessions (id, account_id, token_hash, expires_at)
     VALUES (?1, ?2, ?3, datetime('now', '+30 days'))
   `).bind(sessionId, account.id, hash).run();
@@ -125,3 +125,4 @@ export async function onRequestPost({ request, env }) {
     headers: { 'Set-Cookie': sessionCookie(token) },
   });
 }
+
