@@ -15,7 +15,20 @@
   P.refresh=async(force=false)=>{if(P.loading)return P.data;if(P.data&&!force)return P.data;P.loading=true;try{P.data=await P.api('/api/account/overview');P.updateBadge();P.augmentMenu();P.augmentNav();return P.data}catch(e){if(String(e.message)!=='Not authenticated')console.warn('Secret ID overview:',e);P.data=null;P.updateBadge();return null}finally{P.loading=false}};
 
   P.installBell=()=>{if($('#secretNotificationButton'))return;const b=document.createElement('button');b.id='secretNotificationButton';b.className='secret-notification-button';b.type='button';b.hidden=true;b.setAttribute('aria-label',P.tr('Notificaciones','Notifications'));b.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9Z"></path><path d="M10 21h4"></path></svg><span class="secret-notification-badge" hidden>0</span>';navActions.insertBefore(b,accountButton);b.addEventListener('click',e=>{e.stopPropagation();P.openSection('notifications')})};
-  P.updateBadge=()=>{const b=$('#secretNotificationButton');if(!b)return;const signed=accountButton.classList.contains('signed-in');b.hidden=!signed;const badge=$('.secret-notification-badge',b),n=P.data?.unreadNotifications||0;badge.textContent=n>99?'99+':String(n);badge.hidden=n<1};
+  P.updateBadge=()=>{
+    const b=$('#secretNotificationButton');
+    if(!b)return;
+    const signed=accountButton.classList.contains('signed-in');
+    const shouldHide=!signed;
+    if(b.hidden!==shouldHide)b.hidden=shouldHide;
+    const badge=$('.secret-notification-badge',b);
+    if(!badge)return;
+    const unread=P.data?.unreadNotifications||0;
+    const label=unread>99?'99+':String(unread);
+    if(badge.textContent!==label)badge.textContent=label;
+    const shouldHideBadge=unread<1;
+    if(badge.hidden!==shouldHideBadge)badge.hidden=shouldHideBadge;
+  };
 
   P.augmentMenu=()=>{const m=$('#accountMenu');if(!m||m.hidden||$('.secret-platform-nav',m))return;const n=P.data?.unreadNotifications||0,block=document.createElement('div');block.className='secret-platform-nav';block.innerHTML=`<span class="secret-platform-nav-label">Secret ID Platform</span><button class="secret-platform-menu-item" data-platform-section="organizations"><span class="spi">◎</span>${P.tr('Organizaciones y roles','Organizations & roles')}<em>›</em></button><button class="secret-platform-menu-item" data-platform-section="activity"><span class="spi">◷</span>${P.tr('Actividad','Activity')}<em>›</em></button><button class="secret-platform-menu-item" data-platform-section="notifications"><span class="spi">◌</span>${P.tr('Notificaciones','Notifications')}${n?`<span class="count">${n}</span>`:'<em>›</em>'}</button><button class="secret-platform-menu-item" data-platform-section="developer"><span class="spi">⌘</span>Developer<em>›</em></button>`;const danger=$('[data-menu-logout]',m),sep=danger?.previousElementSibling;m.insertBefore(block,sep||danger||null)};
   P.augmentNav=()=>{const nav=$('.ac-nav');if(!nav||$('.secret-platform-center-nav',nav))return;const w=document.createElement('div');w.className='secret-platform-center-nav';w.style.display='contents';w.innerHTML=`<button data-platform-section="organizations">◎ ${P.tr('Organizaciones','Organizations')}</button><button data-platform-section="activity">◷ ${P.tr('Actividad','Activity')}</button><button data-platform-section="notifications">◌ ${P.tr('Notificaciones','Notifications')}</button><button data-platform-section="developer">⌘ Developer</button>`;nav.appendChild(w)};
