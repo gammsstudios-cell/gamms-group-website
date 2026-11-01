@@ -29,6 +29,14 @@ Todas las páginas usan rutas de Cloudflare Pages con directorios `index.html`. 
 - [ ] Validar los requisitos para el registro y tratamiento de datos de personas menores de edad. Si quien ejerce la titularidad del proyecto fuera menor de edad, verificar además capacidad para contratar, comercio, representación legal y gestión de obligaciones con abogado/contador local antes de ofrecer productos de pago.
 - [ ] Pedir revisión jurídica local. Quitar etiquetas «Borrador» y `noindex` **solo tras aprobar y completar** los textos.
 
+## Secret ID: cláusulas operativas añadidas (1 de noviembre de 2026)
+
+- [x] La política de privacidad explica que Secret ID es una función gratuita, opcional y en desarrollo, y que la web pública no exige una cuenta.
+- [x] Los términos separan el inicio de sesión con Google del tratamiento propio de datos y no atribuyen a Google responsabilidad por la base de Secret ID.
+- [x] Se describen la asociación del identificador Google con el perfil, la ausencia de contraseñas de Google en el servicio, el mantenimiento de sesiones y los correos para acceso o supresión.
+- [x] Se aclara que cerrar sesión o desvincular la cuenta en Google no elimina automáticamente los datos guardados por Secret ID.
+- [ ] **Estas cláusulas no eximen del deber de identificar al responsable real y su domicilio, respetar los requisitos de capacidad/representación de menores, atender derechos ni validar la base jurídica del tratamiento.** No presentar el texto como un permiso legal independiente para abrir registros a cualquier usuario.
+
 ## Consentimiento y scripts
 
 - `/legal/cookie-consent.js` guarda `gamms-consent-v1` en localStorage. La API `window.GAMMSConsent.get()` y `window.GAMMSConsent.has('analytics'|'marketing')` permite condicionar integraciones futuras.
