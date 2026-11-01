@@ -13,3 +13,7 @@
 .footer-cookie-settings{border:0;background:none;color:#9db8d2;text-decoration:underline;cursor:pointer;font-size:11px;padding:0;text-align:left}
 .legal-auth-note{margin:12px 0 0;color:#9aabbe;font-size:12px;line-height:1.6}
 .legal-auth-note a{color:#aacfff;text-decoration:underline}
+
+/* Acknowledgement-only panel: no misleading switches for unused categories. */
+.cc-fixed{display:inline-flex;white-space:nowrap;align-items:center;padding:6px 10px;color:#c0d9eb;border:1px solid rgba(164,199,227,.20);background:rgba(90,150,199,.12);border-radius:999px;font-size:11px;font-weight:650}
+.cc-modal a{color:#a9d9ff}
