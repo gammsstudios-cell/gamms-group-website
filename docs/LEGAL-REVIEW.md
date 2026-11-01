@@ -15,7 +15,9 @@ Todas las páginas usan rutas de Cloudflare Pages con directorios `index.html`. 
 ## Datos y decisiones imprescindibles antes de aprobar
 
 - [ ] Identificar y verificar a la persona natural o personas **reales** responsables del sitio y del fichero de Secret ID. GAMMS GROUP es actualmente un proyecto no constituido: no poner razón social, registro mercantil, RUC ni representaciones inventadas.
-- [ ] Confirmar un domicilio para notificaciones y correos de contacto y privacidad reales, accesibles y atendidos. **Evitar divulgar automáticamente el domicilio residencial o datos personales del promotor**; consultar con asesor local la solución que cumpla el artículo 7 de la Ley 787.
+- [x] Contactos de recepción configurados en Cloudflare: `privacidad@gammsgroup.top`, `legal@gammsgroup.top` y `soporte@gammsgroup.top`, todos redirigidos al Gmail de destino. El usuario confirmó recepción de los tres correos de prueba el 1 de noviembre de 2026; uno llegó a Spam.
+- [ ] Designar a la persona que atenderá las solicitudes y establecer un procedimiento de seguimiento, respuesta y protección de datos en correos.
+- [ ] Confirmar un domicilio apto para notificaciones. **Evitar divulgar automáticamente el domicilio residencial o datos personales del promotor**; consultar con asesor local la solución que cumpla los requisitos de información de la Ley 787.
 - [ ] Revisar qué empresas, productos o entidades del grupo actúan efectivamente como responsable/encargado de cada tratamiento.
 - [ ] Auditar operaciones reales del sitio en producción (cookies, localStorage, integraciones, scripts y Cloudflare) con navegador limpio, con y sin sesión, en desktop y móvil.
 - [ ] Completar inventario y plazos de conservación de cuentas, actividad, seguridad, solicitudes y copias de respaldo. El código actual define 30 días para la cookie y las sesiones de Secret ID.
