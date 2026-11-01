@@ -2,6 +2,8 @@
 
 **Estado:** BORRADOR. No fusionar ni presentar las páginas como textos legales definitivos hasta completar la información y aprobarlas.
 
+**Confirmado el 1 de noviembre de 2026 por el promotor:** GAMMS GROUP **todavía no está constituido ni registrado como empresa**. Debe tratarse como denominación de un proyecto, nunca como sociedad mercantil existente. No inventar personalidad jurídica, registro mercantil, RUC empresarial ni representante corporativo. Esta constatación no resuelve quién es el responsable individual ni el estatus registral/fiscal que pudiera corresponderle.
+
 ## Páginas propuestas
 - `/aviso-legal/` · identidad y responsabilidad del operador.
 - `/privacidad/` · tratamiento de datos del sitio y Secret ID.
@@ -12,8 +14,8 @@ Todas las páginas usan rutas de Cloudflare Pages con directorios `index.html`. 
 
 ## Datos y decisiones imprescindibles antes de aprobar
 
-- [ ] Identificar a la persona natural o entidad **real** titular del sitio (GAMMS GROUP puede ser solo un nombre comercial). Nunca inventar razón social, registro mercantil o RUC.
-- [ ] Confirmar domicilio para notificaciones, correo real de contacto y correo real para privacidad. Verificar que reciben mensajes y tienen responsable de respuesta.
+- [ ] Identificar y verificar a la persona natural o personas **reales** responsables del sitio y del fichero de Secret ID. GAMMS GROUP es actualmente un proyecto no constituido: no poner razón social, registro mercantil, RUC ni representaciones inventadas.
+- [ ] Confirmar un domicilio para notificaciones y correos de contacto y privacidad reales, accesibles y atendidos. **Evitar divulgar automáticamente el domicilio residencial o datos personales del promotor**; consultar con asesor local la solución que cumpla el artículo 7 de la Ley 787.
 - [ ] Revisar qué empresas, productos o entidades del grupo actúan efectivamente como responsable/encargado de cada tratamiento.
 - [ ] Auditar operaciones reales del sitio en producción (cookies, localStorage, integraciones, scripts y Cloudflare) con navegador limpio, con y sin sesión, en desktop y móvil.
 - [ ] Completar inventario y plazos de conservación de cuentas, actividad, seguridad, solicitudes y copias de respaldo. El código actual define 30 días para la cookie y las sesiones de Secret ID.
@@ -22,7 +24,7 @@ Todas las páginas usan rutas de Cloudflare Pages con directorios `index.html`. 
 - [ ] Confirmar obligaciones administrativas de inscripción de ficheros de datos, seguridad y otras bajo la Ley 787 y Decreto 36-2012, con asesoría local.
 - [ ] Revisar la aplicabilidad de Ley 842 si se vende o contrata por medios electrónicos. Añadir precio, medios de reclamo, domicilio y condiciones específicas antes de activar compras.
 - [ ] Preparar **avisos separados** para GAMMS MDM, dispositivos administrados y geolocalización; no basta la política de la web corporativa.
-- [ ] Validar requisitos de menores de edad si se permite el registro y tratamiento de sus datos.
+- [ ] Validar los requisitos para el registro y tratamiento de datos de personas menores de edad. Si quien ejerce la titularidad del proyecto fuera menor de edad, verificar además capacidad para contratar, comercio, representación legal y gestión de obligaciones con abogado/contador local antes de ofrecer productos de pago.
 - [ ] Pedir revisión jurídica local. Quitar etiquetas «Borrador» y `noindex` **solo tras aprobar y completar** los textos.
 
 ## Consentimiento y scripts
@@ -50,4 +52,4 @@ Todas las páginas usan rutas de Cloudflare Pages con directorios `index.html`. 
 - Decreto 36-2012, Reglamento de la Ley 787: https://www.leybook.com/doc/7686
 - Ley No. 842, texto consolidado de protección a personas consumidoras y usuarias: https://www.leybook.com/doc/30861
 
-Estas referencias son información para la revisión, **no** certificación de cumplimiento normativo.
+La Ley 787 contempla como responsable de fichero tanto a una **persona natural** como a una **persona jurídica** (art. 3) y exige informar identidad y domicilio del responsable antes de recopilar datos (art. 7); el hecho de no registrar una empresa no elimina estas obligaciones. Estas referencias son información para la revisión, **no** certificación de cumplimiento normativo.
