@@ -1,153 +1,76 @@
-/* GAMMS consent panel — no third-party trackers are installed by this script. */
-(function () {
+/* GAMMS GROUP — transparent notice of necessary storage; no optional trackers. */
+(() => {
   'use strict';
-  var KEY = 'gamms-consent-v1';
-  var fallback = null;
-
-  function read() {
-    try {
-      var data = localStorage.getItem(KEY);
-      if (!data) return fallback;
-      var parsed = JSON.parse(data);
-      return parsed && parsed.version === 1 && parsed.necessary === true ? parsed : null;
-    } catch (_) { return fallback; }
-  }
-  function write(value) {
-    fallback = value;
-    try { localStorage.setItem(KEY, JSON.stringify(value)); } catch (_) {}
-    document.dispatchEvent(new CustomEvent('gamms:consentchange', { detail: value }));
-    window.dispatchEvent(new CustomEvent('gamms:consentchange', { detail: value }));
-  }
-  function decision(analytics, marketing) {
-    return {
-      version: 1,
-      necessary: true,
-      analytics: !!analytics,
-      marketing: !!marketing,
-      savedAt: new Date().toISOString()
-    };
-  }
-  function el(tag, className, html) {
-    var node = document.createElement(tag);
-    if (className) node.className = className;
-    if (html) node.innerHTML = html;
-    return node;
-  }
-  var banner, dialog, analyticsInput, marketingInput;
-
-  function close() {
-    if (dialog && dialog.open) dialog.close();
-  }
-  function store(value) {
-    write(value);
-    if (banner) banner.hidden = true;
-    close();
-  }
-  function open() {
-    if (!dialog) return;
-    var previous = read();
-    analyticsInput.checked = !!(previous && previous.analytics);
-    marketingInput.checked = !!(previous && previous.marketing);
-    if (!dialog.open) dialog.showModal();
-  }
-  function makeButton(label, role, primary) {
-    var b = el('button', 'cc-button' + (primary ? ' primary' : ''));
+  const KEY = 'gamms-cookie-notice-v2';
+  const isAcknowledged = () => {
+    try { return localStorage.getItem(KEY) === 'acknowledged'; } catch { return false; }
+  };
+  let banner;
+  let dialog;
+  const button = (label, action, primary = false) => {
+    const b = document.createElement('button');
     b.type = 'button';
+    b.className = 'cc-button' + (primary ? ' primary' : '');
+    b.dataset.ccAction = action;
     b.textContent = label;
-    b.setAttribute('data-cc-action', role);
     return b;
+  };
+  function acknowledge() {
+    try { localStorage.setItem(KEY, 'acknowledged'); } catch { /* unavailable storage */ }
+    banner.hidden = true;
+    if (dialog.open) dialog.close();
+    document.dispatchEvent(new CustomEvent('gamms:consentchange', { detail: window.GAMMSConsent.get() }));
   }
-  function row(title, desc, id, checked, disabled) {
-    var label = el('label', 'cc-option');
-    var copy = el('span');
-    var strong = el('strong');
-    strong.textContent = title;
-    var small = el('small');
-    small.textContent = desc;
-    copy.append(strong, small);
-    var input = el('input', 'cc-switch');
-    input.type = 'checkbox';
-    input.id = id;
-    input.checked = checked;
-    input.disabled = !!disabled;
-    input.setAttribute('aria-label', title);
-    label.append(copy, input);
-    return { label: label, input: input };
-  }
-
+  function open() { if (dialog && !dialog.open) dialog.showModal(); }
   function setup() {
-    if (!document.body || document.getElementById('gamms-cookie-banner')) return;
+    if (document.getElementById('gamms-cookie-banner')) return;
     if (!document.querySelector('link[href="/legal/cookie-consent.css"]')) {
-      var css = document.createElement('link');
+      const css = document.createElement('link');
       css.rel = 'stylesheet';
       css.href = '/legal/cookie-consent.css';
       document.head.appendChild(css);
     }
-
-    banner = el('section', 'cc-banner');
+    banner = document.createElement('section');
     banner.id = 'gamms-cookie-banner';
-    banner.setAttribute('aria-label', 'Privacidad y cookies');
-    banner.appendChild(el('div', '', '<div class="cc-title">Tu privacidad importa.</div><p class="cc-note">Usamos almacenamiento necesario para tus preferencias y, si inicias sesión, para mantener Secret ID. Tú decides sobre categorías opcionales futuras. <a href="/cookies/">Ver política de cookies</a>.</p>'));
-    var actions = el('div', 'cc-actions');
-    actions.append(makeButton('Rechazar opcionales', 'reject'), makeButton('Personalizar', 'settings'), makeButton('Aceptar todas', 'accept', true));
-    banner.appendChild(actions);
-    banner.hidden = !!read();
+    banner.className = 'cc-banner';
+    banner.setAttribute('aria-label', 'Información sobre cookies y privacidad');
+    const heading = document.createElement('div');
+    heading.innerHTML = '<div class="cc-title">Privacidad y funcionamiento</div><p class="cc-note">Utilizamos almacenamiento local para recordar el idioma y, si inicias sesión, una cookie necesaria para Secret ID. Actualmente no utilizamos cookies publicitarias ni de analítica. <a href="/cookies/">Política de cookies</a>.</p>';
+    const actions = document.createElement('div');
+    actions.className = 'cc-actions';
+    actions.append(button('Ver detalles', 'details'), button('Entendido', 'ack', true));
+    banner.append(heading, actions);
+    banner.hidden = isAcknowledged();
 
-    dialog = el('dialog', 'cc-modal');
+    dialog = document.createElement('dialog');
     dialog.id = 'gamms-cookie-dialog';
+    dialog.className = 'cc-modal';
     dialog.setAttribute('aria-labelledby', 'gamms-cookie-heading');
-    var content = el('div', 'cc-modal-body');
-    var top = el('div', 'cc-modal-header');
-    var topCopy = el('div');
-    var title = el('h2'); title.id = 'gamms-cookie-heading'; title.textContent = 'Preferencias de privacidad';
-    var hint = el('p'); hint.textContent = 'Elige qué categorías opcionales deseas permitir. Puedes modificar esta decisión cuando quieras.';
-    topCopy.append(title, hint);
-    var closeBtn = el('button', 'cc-close'); closeBtn.type = 'button'; closeBtn.textContent = '×'; closeBtn.setAttribute('aria-label', 'Cerrar preferencias'); closeBtn.setAttribute('data-cc-action', 'close');
-    top.append(topCopy, closeBtn);
-    content.appendChild(top);
-    var status = el('div', 'cc-status');
-    status.textContent = 'Actualmente no hay scripts de analítica o publicidad integrados en este paquete.';
-    content.appendChild(status);
-    var necessary = row('Necesarias', 'Autenticación, seguridad y preferencias técnicas. Siempre activas.', 'cc-necessary', true, true);
-    var analytics = row('Analítica (futura)', 'No activa actualmente. Su uso requerirá integración y actualización de la política.', 'cc-analytics', false, false);
-    var marketing = row('Marketing (futuro)', 'No activo actualmente. Su uso requerirá integración y actualización de la política.', 'cc-marketing', false, false);
-    analyticsInput = analytics.input;
-    marketingInput = marketing.input;
-    content.append(necessary.label, analytics.label, marketing.label);
-    var footer = el('div', 'cc-modal-footer');
-    footer.append(makeButton('Rechazar opcionales', 'reject'), makeButton('Guardar elección', 'save', true));
-    content.appendChild(footer);
-    dialog.appendChild(content);
+    dialog.innerHTML = '<div class="cc-modal-body"><div class="cc-modal-header"><div><h2 id="gamms-cookie-heading">Almacenamiento y cookies</h2><p>Este panel explica qué utiliza actualmente GAMMS GROUP. No solicitamos aceptar publicidad o analítica porque no están habilitadas.</p></div><button class="cc-close" type="button" data-cc-action="close" aria-label="Cerrar">×</button></div><div class="cc-option"><div><strong>Necesarias y de preferencias</strong><small>Idioma del sitio, registro de este aviso y sesión de Secret ID únicamente al iniciar sesión.</small></div><span class="cc-fixed">En uso</span></div><div class="cc-option"><div><strong>Analítica y publicidad</strong><small>Actualmente no instaladas ni activadas.</small></div><span class="cc-fixed">No usadas</span></div><p><a href="/cookies/">Leer la política completa de cookies</a></p><div class="cc-modal-footer"></div></div>';
+    dialog.querySelector('.cc-modal-footer').append(button('Entendido', 'ack', true));
     document.body.append(banner, dialog);
-
-    document.addEventListener('click', function (event) {
-      var link = event.target.closest('[data-cookie-settings]');
-      if (link) { event.preventDefault(); open(); return; }
-      var button = event.target.closest('[data-cc-action]');
-      if (!button) return;
-      var action = button.getAttribute('data-cc-action');
-      if (action === 'settings') open();
-      else if (action === 'reject') store(decision(false, false));
-      else if (action === 'accept') store(decision(true, true));
-      else if (action === 'save') store(decision(analyticsInput.checked, marketingInput.checked));
-      else if (action === 'close') close();
+    document.addEventListener('click', event => {
+      const settings = event.target.closest('[data-cookie-settings]');
+      if (settings) { event.preventDefault(); open(); return; }
+      const b = event.target.closest('[data-cc-action]');
+      if (!b) return;
+      const action = b.dataset.ccAction;
+      if (action === 'ack') acknowledge();
+      else if (action === 'details') open();
+      else if (action === 'close' && dialog.open) dialog.close();
     });
-    dialog.addEventListener('click', function (event) {
-      if (event.target === dialog) close();
-    });
+    dialog.addEventListener('click', event => { if (event.target === dialog) dialog.close(); });
   }
-
   window.GAMMSConsent = {
-    get: read,
-    has: function (category) {
-      var settings = read();
-      return !!(settings && settings[category] === true);
-    },
-    open: open
+    get: () => ({
+      necessary: true,
+      analytics: false,
+      marketing: false,
+      noticeAcknowledged: isAcknowledged()
+    }),
+    has: category => category === 'necessary',
+    open
   };
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', setup, { once: true });
-  } else {
-    setup();
-  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setup, { once: true });
+  else setup();
 })();
