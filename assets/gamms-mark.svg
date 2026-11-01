@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 320 320" role="img" aria-labelledby="title desc">
+<title id="title">GAMMS GROUP</title><desc id="desc">Marca geométrica metálica formada por una G estilizada de dos trazos</desc>
+<defs>
+  <linearGradient id="metalTop" x1=".1" y1="0" x2=".9" y2="1" gradientUnits="objectBoundingBox"><stop stop-color="#F9FAFC"/><stop offset=".25" stop-color="#D0D3D8"/><stop offset=".6" stop-color="#6C747D"/><stop offset="1" stop-color="#252C36"/></linearGradient>
+  <linearGradient id="metalBottom" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#7B838D"/><stop offset=".45" stop-color="#313943"/><stop offset=".78" stop-color="#4B525B"/><stop offset="1" stop-color="#0D131D"/></linearGradient>
+  <linearGradient id="cross" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#BFC4CB"/><stop offset=".48" stop-color="#68717D"/><stop offset="1" stop-color="#18222C"/></linearGradient>
+  <linearGradient id="blue" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#1D4B71" stop-opacity="0"/><stop offset=".7" stop-color="#188EDD" stop-opacity=".8"/><stop offset="1" stop-color="#41C9F9" stop-opacity=".45"/></linearGradient>
+</defs>
+<!-- Upper arc of the original GAMMS mark -->
+<path d="M 270 69 L 245 91 C 223 69 196 59 162 60 C 108 61 70 98 66 152 C 64 169 67 185 72 198 L 232 198 L 210 229 L 52 229 C 41 206 36 180 40 153 C 46 80 96 33 158 29 C 204 25 244 41 270 69 Z" fill="url(#metalTop)" stroke="#aab4bf" stroke-opacity=".4" stroke-width=".8"/>
+<!-- Inner cut and straight metal crossbar -->
+<path d="M 169 126 L 286 126 C 290 136 293 149 294 163 L 151 163 Z" fill="url(#cross)" stroke="#b8c8d8" stroke-opacity=".35" stroke-width=".8"/>
+<!-- Lower arc and G terminal -->
+<path d="M 294 164 C 298 222 262 276 208 291 C 167 305 118 293 87 263 L 114 245 C 139 265 171 274 201 264 C 237 250 260 211 259 164 Z" fill="url(#metalBottom)" stroke="#8796a6" stroke-opacity=".26" stroke-width=".8"/>
+<path d="M 191 229 L 210 229 L 236 198 L 228 198 L 205 228 Z" fill="url(#blue)" opacity=".85"/>
+<path d="M 255 169 Q 264 209 239 243" fill="none" stroke="#1895EC" stroke-width="2.2" stroke-opacity=".7" stroke-linecap="round"/>
+</svg>
