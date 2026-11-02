@@ -4,7 +4,7 @@ export async function onRequest(context) {
   const url = new URL(context.request.url);
   const response = await context.next();
   const contentType = response.headers.get('Content-Type') || '';
-  if (!contentType.includes('text/html')) return response;
+  if (response.status >= 400 || url.pathname === '/404.html' || !contentType.includes('text/html')) return response;
 
   const isHome = url.pathname === '/' || url.pathname === '/index.html';
   const isLegalPage = /^\/(?:aviso-legal|privacidad|cookies|terminos)(?:\/|\/index\.html)?$/.test(url.pathname);
