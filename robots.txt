@@ -1,5 +1,37 @@
+# GAMMS GROUP: las fichas públicas son rastreables; los portales internos requieren autorización.
+# robots.txt no es un mecanismo de seguridad: la autenticación del servidor sigue siendo obligatoria.
 User-agent: *
 Allow: /
+Disallow: /api/
+Disallow: /aep/
+Disallow: /mdm/
+Disallow: /controlcenter/
+Disallow: /admin/
+Disallow: /account/
 Disallow: /cdn-cgi/
+
+User-agent: OAI-SearchBot
+Allow: /
+Disallow: /api/
+Disallow: /aep/
+Disallow: /mdm/
+Disallow: /controlcenter/
+Disallow: /admin/
+Disallow: /account/
+Disallow: /cdn-cgi/
+
+User-agent: bingbot
+Allow: /
+Disallow: /api/
+Disallow: /aep/
+Disallow: /mdm/
+Disallow: /controlcenter/
+Disallow: /admin/
+Disallow: /account/
+Disallow: /cdn-cgi/
+
+# Opt-out de rastreo para entrenamiento de modelos de OpenAI.
+User-agent: GPTBot
+Disallow: /
 
 Sitemap: https://gammsgroup.top/sitemap.xml
