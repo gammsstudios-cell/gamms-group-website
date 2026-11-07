@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 const read = name => readFileSync(new URL('../' + name, import.meta.url), 'utf8');
 const canonical = {
   'index.html': 'https://gammsgroup.top/',
+  'empresa/index.html': 'https://gammsgroup.top/empresa/',
   'gma-64/index.html': 'https://gammsgroup.top/gma-64/',
   'secretos/index.html': 'https://gammsgroup.top/secretos/'
 };
