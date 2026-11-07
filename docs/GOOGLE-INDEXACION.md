@@ -3,12 +3,12 @@
 Dominio oficial: **https://gammsgroup.top/**
 
 ## Cambios técnicos aplicados
-- Canonicals de la portada, `/gma-64/` y `/secretos/` apuntan a `gammsgroup.top`.
-- `/robots.txt` permite el rastreo y anuncia `https://gammsgroup.top/sitemap.xml`.
-- `/sitemap.xml` contiene solo las tres URL públicas que queremos indexar; no se incluyen documentos legales con `noindex` provisional.
+- Las URL canónicas de la portada, `/empresa/`, `/gma-64/` y `/secretos/` apuntan a `gammsgroup.top`.
+- `/robots.txt` permite el rastreo público a Google y Bingbot, permite `OAI-SearchBot` para ChatGPT Search y bloquea `GPTBot` para entrenamiento de modelos fundacionales de OpenAI. No sustituye controles de acceso.
+- `/sitemap.xml` contiene cuatro URL públicas: la portada, `/empresa/`, `/gma-64/` y `/secretos/`; no se incluyen documentos legales con `noindex` provisional.
 - La portada tiene título y descripción como empresa privada de tecnología, Open Graph/Twitter y una introducción visible acorde.
 - `WebSite` define seis nombres alternativos ordenados: GAMMS, GAMMSGROUP, Gamms Group, Grupo GAMMS, GammsGroup y Group for Advanced Modular Multiplatform Systems.
-- `Organization` usa la misma identidad, el logo público y una descripción empresarial; no inventa razón social, registro legal, teléfono ni perfiles sociales.
+- `Organization` usa la misma identidad, el logo público y enlaza mediante `subjectOf` a la ficha corporativa `AboutPage` en `/empresa/`; no inventa razón social, registro legal, teléfono ni perfiles sociales.
 - No se inventa una empresa constituida, dirección física, teléfono o perfil en redes.
 
 ## Estado de indexación
@@ -28,7 +28,7 @@ El 6 de noviembre de 2026, Search Console indicó «La URL está en Google» par
    No borrar ni reemplazar MX/SPF/DKIM existentes de Email Routing.
 5. Regresar a Search Console y pulsar **Verificar**. Si el TXT todavía no ha propagado, volver a comprobar más tarde.
 6. Abrir **Indexación → Sitemaps**, añadir `sitemap.xml` y pulsar **Enviar**.
-7. Usar **Inspección de URL** con `https://gammsgroup.top/`, ejecutar **Probar URL publicada** y, si es accesible, **Solicitar indexación**. Repetir, si procede, con `/secretos/` y `/gma-64/`.
+7. La portada ya fue inspeccionada y se solicitó su nuevo rastreo el 6 de noviembre de 2026. Inspeccionar también `https://gammsgroup.top/empresa/` tras su despliegue: **Probar URL publicada** y **Solicitar indexación**. Repetir, si procede, con `/secretos/` y `/gma-64/`.
 8. Consultar el informe de **Páginas** y el de **Rendimiento** para detectar problemas de rastreo e indexación.
 
 ## Precauciones
@@ -44,3 +44,5 @@ Referencias:
 
 - https://developers.google.com/search/docs/appearance/site-names
 - https://developers.google.com/search/docs/appearance/structured-data/organization
+
+Para la estrategia de visibilidad en ChatGPT Search y Bing/Copilot, ver [AI-DISCOVERY.md](AI-DISCOVERY.md).
