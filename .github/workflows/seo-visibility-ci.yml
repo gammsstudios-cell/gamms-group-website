@@ -1,0 +1,42 @@
+name: Public SEO and AI Discovery
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "index.html"
+      - "empresa/**"
+      - "robots.txt"
+      - "sitemap.xml"
+      - "_redirects"
+      - "tests/seo-search.test.mjs"
+      - "tests/ai-discovery.test.mjs"
+      - ".github/workflows/seo-visibility-ci.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "index.html"
+      - "empresa/**"
+      - "robots.txt"
+      - "sitemap.xml"
+      - "_redirects"
+      - "tests/seo-search.test.mjs"
+      - "tests/ai-discovery.test.mjs"
+      - ".github/workflows/seo-visibility-ci.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  seo-discovery:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Validate structured data, sitemap and crawler rules
+        run: node --test tests/seo-search.test.mjs tests/ai-discovery.test.mjs
