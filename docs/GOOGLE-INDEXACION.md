@@ -6,10 +6,16 @@ Dominio oficial: **https://gammsgroup.top/**
 - Canonicals de la portada, `/gma-64/` y `/secretos/` apuntan a `gammsgroup.top`.
 - `/robots.txt` permite el rastreo y anuncia `https://gammsgroup.top/sitemap.xml`.
 - `/sitemap.xml` contiene solo las tres URL públicas que queremos indexar; no se incluyen documentos legales con `noindex` provisional.
-- La portada tiene título y descripción de GAMMS GROUP y nombre alternativo GAMMSGROUP en JSON-LD `WebSite`.
+- La portada tiene título y descripción como empresa privada de tecnología, Open Graph/Twitter y una introducción visible acorde.
+- `WebSite` define seis nombres alternativos ordenados: GAMMS, GAMMSGROUP, Gamms Group, Grupo GAMMS, GammsGroup y Group for Advanced Modular Multiplatform Systems.
+- `Organization` usa la misma identidad, el logo público y una descripción empresarial; no inventa razón social, registro legal, teléfono ni perfiles sociales.
 - No se inventa una empresa constituida, dirección física, teléfono o perfil en redes.
 
-## Paso humano pendiente: Google Search Console
+## Estado de indexación
+
+El 6 de noviembre de 2026, Search Console indicó «La URL está en Google» para la portada (captura facilitada por el propietario). Tras publicar esta actualización, se puede solicitar un nuevo rastreo de la página principal y supervisar consultas de marca en el informe de Rendimiento. Los `alternateName` no garantizan ranking.
+
+## Google Search Console: verificación y seguimiento
 
 1. Entrar a https://search.google.com/search-console con la cuenta Google que controlará el sitio.
 2. Elegir **Añadir propiedad** → **Dominio** e introducir `gammsgroup.top` **sin** https:// ni barras.
@@ -35,3 +41,6 @@ Referencias:
 - https://developers.google.com/search/docs/crawling-indexing/sitemaps/build-sitemap
 - https://developers.google.com/search/docs/crawling-indexing/ask-google-to-recrawl
 - https://support.google.com/webmasters/answer/9008080?hl=es
+
+- https://developers.google.com/search/docs/appearance/site-names
+- https://developers.google.com/search/docs/appearance/structured-data/organization
